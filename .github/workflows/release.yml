@@ -96,7 +96,7 @@ jobs:
           sbom-path: dist/fast_mnist_native-release-sbom.spdx.json
 
       - name: Publish GitHub release
-        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda
+        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b
         with:
           name: Fast MNIST NN ${{ github.ref_name }}
           generate_release_notes: true
