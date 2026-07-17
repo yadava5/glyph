@@ -9,6 +9,7 @@
 #include <numeric>
 #include <random>
 #include <sstream>
+#include <stdexcept>
 #include <vector>
 
 #include "fast_mnist/Matrix.h"
@@ -155,6 +156,23 @@ TEST_CASE("classifyWithHidden exposes hidden activations",
     REQUIRE(out.height() == refOut.height());
     REQUIRE(out[0][0] == Catch::Approx(refOut[0][0]));
     REQUIRE(out[1][0] == Catch::Approx(refOut[1][0]));
+}
+
+TEST_CASE("NeuralNet classify rejects mismatched input shape",
+          "[neural_net][contract]") {
+    NeuralNet net({2, 3, 1});
+    Matrix wrongInput(3, 1, 0.0);
+
+    REQUIRE_THROWS_AS(net.classify(wrongInput), std::invalid_argument);
+}
+
+TEST_CASE("NeuralNet learn rejects mismatched expected output shape",
+          "[neural_net][contract]") {
+    NeuralNet net({2, 3, 1});
+    Matrix input(2, 1, 0.0);
+    Matrix wrongExpected(2, 1, 0.0);
+
+    REQUIRE_THROWS_AS(net.learn(input, wrongExpected), std::invalid_argument);
 }
 
 TEST_CASE("classifyWithHidden is deterministic across repeated calls",
