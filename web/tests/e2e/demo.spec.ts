@@ -1,9 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 
-async function forceStaticFallback(page: Page) {
-  await page.route('http://localhost:8080/**', (route) => route.abort());
-  await page.route('http://127.0.0.1:8080/**', (route) => route.abort());
-  await page.route('**/wasm/**', (route) => route.abort());
+interface InstrumentedPage extends Page {
+  __consoleIssues?: string[];
+  __pageErrors?: string[];
+  __requestFailures?: string[];
 }
 
 async function saveScreenshot(page: Page, name: string) {
@@ -13,88 +13,290 @@ async function saveScreenshot(page: Page, name: string) {
   });
 }
 
-test.describe('Fast MNIST interactive demo', () => {
+async function openCommandPalette(page: Page) {
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
+  const dialog = page.getByRole('dialog', { name: /command palette/i });
+  await expect(dialog).toBeVisible();
+  return dialog;
+}
+
+async function scrollToId(page: Page, id: string) {
+  await page.evaluate((targetId) => {
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    const top = target.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top, left: 0, behavior: 'auto' });
+  }, id);
+  await page.waitForTimeout(180);
+}
+
+async function getReducedMotionHeroSnapshot(page: Page) {
+  return page.evaluate(() => {
+    const rectFor = (selector: string) => {
+      const node = document.querySelector(selector);
+      if (!node) return null;
+      const rect = node.getBoundingClientRect();
+      return {
+        left: Math.round(rect.left),
+        top: Math.round(rect.top),
+        right: Math.round(rect.right),
+        bottom: Math.round(rect.bottom),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      };
+    };
+
+    return {
+      reduced: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+      scrollY: Math.round(window.scrollY),
+      heading: rectFor('#hero h1'),
+      metrics: rectFor('#hero dl'),
+      subhead: (document.querySelector('#hero p')?.textContent ?? '').trim().slice(0, 80),
+    };
+  });
+}
+
+/** The fold visual is the live draw pad — assert it renders at a usable size. */
+async function waitForReadableDrawPad(page: Page) {
+  const pad = page.locator('#classifier .drawing-canvas').first();
+
+  await expect
+    .poll(
+      async () => {
+        if ((await pad.count()) === 0) return 0;
+        const box = await pad.boundingBox();
+        return Math.min(box?.width ?? 0, box?.height ?? 0);
+      },
+      {
+        message: 'draw pad should settle before measuring its rendered size',
+        timeout: 12_000,
+      },
+    )
+    .toBeGreaterThan(160);
+
+  return pad;
+}
+
+test.describe('Fast MNIST landing experience', () => {
   test.beforeEach(async ({ page }) => {
-    await forceStaticFallback(page);
+    const instrumentedPage = page as InstrumentedPage;
+    instrumentedPage.__consoleIssues = [];
+    instrumentedPage.__pageErrors = [];
+    instrumentedPage.__requestFailures = [];
+
+    page.on('console', (message) => {
+      if (message.type() === 'error' || message.type() === 'warning') {
+        instrumentedPage.__consoleIssues?.push(`${message.type()}: ${message.text()}`);
+      }
+    });
+
+    page.on('pageerror', (error) => {
+      instrumentedPage.__pageErrors?.push(error.message);
+    });
+
+    page.on('requestfailed', (request) => {
+      instrumentedPage.__requestFailures?.push(
+        `${request.method()} ${request.url()} ${request.failure()?.errorText ?? 'failed'}`,
+      );
+    });
   });
 
-  test('renders the first viewport without hiding the actual tool', async ({ page }) => {
-    await page.goto('/index.html');
-
-    await expect(page.getByRole('heading', { name: /Fast MNIST Neural Network/i })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Draw Here/i })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Prediction/i })).toBeVisible();
-    await expect(page.getByText(/browser fallback ready/i)).toBeVisible();
-
-    const canvasBox = await page.locator('.drawing-canvas').boundingBox();
-    const viewport = page.viewportSize();
-    expect(canvasBox, 'drawing canvas should be present').not.toBeNull();
-    expect(canvasBox!.y, 'drawing canvas should start inside the first viewport').toBeLessThan(
-      viewport?.height ?? 1080,
-    );
-
-    await saveScreenshot(page, 'first-viewport');
+  test.afterEach(async ({ page }) => {
+    const instrumentedPage = page as InstrumentedPage;
+    expect(instrumentedPage.__consoleIssues ?? []).toEqual([]);
+    expect(instrumentedPage.__pageErrors ?? []).toEqual([]);
+    expect(instrumentedPage.__requestFailures ?? []).toEqual([]);
   });
 
-  test('opens command palette and runs the sample digit fallback path', async ({ page }) => {
+  test('@visual @artifacts renders the monochrome hero with verified metrics and no WebGL', async ({
+    page,
+  }) => {
     await page.goto('/index.html');
-    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
 
-    const dialog = page.getByRole('dialog', { name: /command palette/i });
-    await expect(dialog).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Handed a neural network/i })).toBeVisible();
+    await expect(page.getByText(/benchmarked live|Live SIMD benchmark/i).first()).toBeVisible();
+    await expect(page.getByText(/97\.01% \/ 10,000/i)).toBeVisible();
+    await expect(page.getByText(/81,628 img\/s/i).first()).toBeVisible();
+
+    // The redesign is WebGL-free: no three.js canvas may exist in the hero.
+    await expect(page.locator('#hero canvas')).toHaveCount(0);
+
+    // The live workbench (the product) must be present with the draw pad.
+    await expect(page.locator('#classifier .drawing-canvas')).toHaveCount(1);
+
+    await saveScreenshot(page, 'landing-hero');
+  });
+
+  test('@visual @artifacts keeps the command palette and sample classifier path usable', async ({
+    page,
+  }) => {
+    await page.goto('/index.html');
+
+    const dialog = await openCommandPalette(page);
     await expect(dialog.getByText(/Load sample digit/i)).toBeVisible();
-    await page.waitForTimeout(250);
     await saveScreenshot(page, 'command-palette');
 
     await dialog.getByText(/Load sample digit/i).click();
+    await scrollToId(page, 'classifier');
 
-    await expect(page.locator('.predicted-digit')).toBeVisible();
-    await expect(page.locator('.runtime-badge')).toHaveText(/js-demo-mode|wasm-mode/);
-    await expect(page.locator('.confidence-chart')).toBeVisible();
-    await expect(page.locator('.activation-panels')).toBeVisible();
+    await expect(page.getByTestId('verdict-digit')).toBeVisible();
+    await expect(page.getByTestId('verdict-digit')).toHaveText(/^[0-9]$/);
+    await expect(page.getByLabel(/Prediction source:/i)).toHaveText(
+      /wasm|js demo fallback|native/i,
+    );
+    await expect(page.locator('.softmax-bars')).toBeVisible();
+    await expect(page.locator('.activation-panel')).toHaveCount(2);
 
-    await saveScreenshot(page, 'sample-prediction');
+    await saveScreenshot(page, 'classifier-sample');
   });
 
-  test('keeps command palette and drawing workflow usable on mobile', async ({
+  test('does not expose the removed light-theme control', async ({ page }) => {
+    await page.goto('/index.html');
+
+    const dialog = await openCommandPalette(page);
+
+    await expect(dialog.getByText(/toggle theme/i)).toHaveCount(0);
+    await expect(dialog.getByText(/light/i)).toHaveCount(0);
+    await expect(page.locator('html')).not.toHaveAttribute('data-theme', 'light');
+  });
+
+  test('static mode skips localhost backend and labels the fallback truthfully', async ({
     page,
-    isMobile,
   }) => {
-    test.skip(!isMobile, 'mobile-only audit');
+    const backendRequests: string[] = [];
+    page.on('request', (request) => {
+      if (/^http:\/\/(localhost|127\.0\.0\.1):8080\//.test(request.url())) {
+        backendRequests.push(request.url());
+      }
+    });
 
     await page.goto('/index.html');
-    await expect(page.getByRole('heading', { name: /Fast MNIST Neural Network/i })).toBeVisible();
+    await page.waitForTimeout(250);
+    expect(backendRequests).toEqual([]);
 
-    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
-    const dialog = page.getByRole('dialog', { name: /command palette/i });
-    await expect(dialog).toBeVisible();
-    await dialog.getByText(/Go to drawing canvas/i).click();
-    await expect(page.getByRole('heading', { name: /Draw Here/i })).toBeVisible();
+    const dialog = await openCommandPalette(page);
+    await dialog.getByText(/Load sample digit/i).click();
+    await scrollToId(page, 'classifier');
 
-    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
-    await page
-      .getByRole('dialog', { name: /command palette/i })
-      .getByText(/Load sample digit/i)
-      .click();
-    await expect(page.locator('.predicted-digit')).toBeVisible();
-
-    await saveScreenshot(page, 'mobile-sample-prediction');
+    await expect(page.getByTestId('verdict-digit')).toBeVisible();
+    // Without a configured backend the browser path answers; the badge
+    // must say which browser path did (never "native server").
+    await expect(page.getByLabel(/Prediction source:/i)).toHaveText(/wasm|js demo fallback/i);
+    expect(backendRequests).toEqual([]);
   });
 
-  test('shows the Motion pipeline cards during scroll', async ({ page }) => {
+  test('@visual walks the four numbered chapters', async ({ page }) => {
     await page.goto('/index.html');
-    await page.evaluate(() => {
-      document.getElementById('pipeline')?.scrollIntoView({
-        behavior: 'auto',
-        block: 'center',
-      });
-    });
-    await page.waitForTimeout(600);
+    await scrollToId(page, 'forward-pass');
 
-    await expect(page.getByText('You draw.')).toBeVisible();
-    await expect(page.getByText('C++ classifies.')).toBeVisible();
-    await expect(page.getByText('You see the answer.')).toBeVisible();
+    for (const pattern of [
+      /Three matrices, two sigmoids/i,
+      /Matrix math, forged in intrinsics/i,
+      /Native first\. Portable always/i,
+      /Every number on this page/i,
+    ]) {
+      const heading = page.getByRole('heading', { name: pattern });
+      await heading.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(120);
+      await expect(heading).toBeVisible();
+    }
 
-    await saveScreenshot(page, 'pipeline-section');
+    await expect(page.getByText(/79,510/).first()).toBeVisible();
+    await expect(page.getByText(/matmul 256×256/i).first()).toBeVisible();
+    await expect(page.getByText(/3\.50x/i).first()).toBeVisible();
+    await saveScreenshot(page, 'chapters');
+  });
+
+  test('@perf shows benchmark-backed performance and runtime boundaries', async ({ page }) => {
+    await page.goto('/index.html');
+    await scrollToId(page, 'performance');
+
+    await expect(page.getByText(/4\.835ms/i).first()).toBeVisible();
+    await expect(page.getByText(/1\.380ms/i).first()).toBeVisible();
+    await expect(page.getByText(/978µs/i).first()).toBeVisible();
+    await expect(page.getByText(/502µs/i).first()).toBeVisible();
+    await expect(page.getByText(/81,628 img\/s/i).first()).toBeVisible();
+    await expect(page.getByText(/69,994 img\/s/i).first()).toBeVisible();
+    await expect(
+      page.getByText(/classify is small enough that openmp hurts/i).first(),
+    ).toBeVisible();
+
+    await scrollToId(page, 'runtime');
+    await expect(page.getByText(/The same C\+\+, in your tab/i).first()).toBeVisible();
+    await expect(page.getByText(/43\.6KB/i).first()).toBeVisible();
+    await expect(page.getByText(/318KB raw \/ 299KB gz/i).first()).toBeVisible();
+  });
+
+  test('@perf has no horizontal overflow, clipped visible controls, or a blank draw pad', async ({
+    page,
+  }) => {
+    await page.goto('/index.html');
+
+    const pad = await waitForReadableDrawPad(page);
+    const padBox = await pad.boundingBox();
+    expect(padBox?.width ?? 0).toBeGreaterThan(160);
+    expect(padBox?.height ?? 0).toBeGreaterThan(160);
+
+    for (const id of ['hero', 'classifier', 'forward-pass', 'performance', 'runtime', 'evidence']) {
+      await scrollToId(page, id);
+      const layout = await page.evaluate((targetId) => {
+        const root = document.getElementById(targetId);
+        const overflow =
+          document.documentElement.scrollWidth - document.documentElement.clientWidth;
+        const visible = Array.from(root?.querySelectorAll('h1,h2,h3,button') ?? [])
+          .map((node) => {
+            const rect = node.getBoundingClientRect();
+            const styles = window.getComputedStyle(node);
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            return {
+              text: (node.textContent ?? '').slice(0, 60),
+              left: rect.left,
+              right: rect.right,
+              top: rect.top,
+              bottom: rect.bottom,
+              width: rect.width,
+              height: rect.height,
+              visible:
+                styles.visibility !== 'hidden' &&
+                styles.display !== 'none' &&
+                rect.bottom > 0 &&
+                rect.top < window.innerHeight &&
+                centerX >= 0 &&
+                centerX <= window.innerWidth &&
+                centerY >= 0 &&
+                centerY <= window.innerHeight &&
+                rect.width > 0 &&
+                rect.height > 0,
+            };
+          })
+          .filter((item) => item.visible);
+        return { overflow, visible, width: window.innerWidth, height: window.innerHeight };
+      }, id);
+
+      expect(layout.overflow, `${id} should not overflow horizontally`).toBeLessThanOrEqual(1);
+      for (const item of layout.visible) {
+        expect(item.left, `${id}: ${item.text} should not clip left`).toBeGreaterThanOrEqual(-2);
+        expect(item.right, `${id}: ${item.text} should not clip right`).toBeLessThanOrEqual(
+          layout.width + 2,
+        );
+      }
+    }
+  });
+
+  test('@visual reduced-motion hero remains stable across idle time', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!testInfo.project.name.includes('reduced-motion'), 'reduced-motion projects only');
+
+    await page.goto('/index.html');
+    await expect(page.getByRole('heading', { name: /Handed a neural network/i })).toBeVisible();
+    await page.waitForTimeout(900);
+
+    const first = await getReducedMotionHeroSnapshot(page);
+    await page.waitForTimeout(500);
+    const second = await getReducedMotionHeroSnapshot(page);
+
+    expect(first).toEqual(second);
   });
 });
