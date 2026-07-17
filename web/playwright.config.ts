@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test';
 
 const port = Number(process.env.PLAYWRIGHT_PORT ?? 5173);
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${port}`;
@@ -15,29 +15,41 @@ export default defineConfig({
   outputDir: 'test-results',
   use: {
     baseURL,
-    channel: 'chrome',
+    browserName: 'chromium',
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
     video: 'on',
   },
   webServer: {
-    command: `npm run dev -- --host 127.0.0.1 --port ${port}`,
-    url: `${baseURL}/index.html`,
+    command: `npm run build && npm run preview -- --host 127.0.0.1 --port ${port}`,
+    url: baseURL,
     reuseExistingServer: true,
-    timeout: 30_000,
+    timeout: 60_000,
   },
   projects: [
     {
-      name: 'chromium-desktop',
+      name: 'desktop',
+      use: {
+        viewport: { width: 1440, height: 900 },
+      },
+    },
+    {
+      name: 'desktop-tall',
       use: {
         viewport: { width: 1440, height: 1100 },
       },
     },
     {
-      name: 'chromium-mobile',
+      name: 'wide',
       use: {
-        ...devices['Pixel 7'],
-        channel: 'chrome',
+        viewport: { width: 1920, height: 1080 },
+      },
+    },
+    {
+      name: 'reduced-motion-desktop',
+      use: {
+        viewport: { width: 1440, height: 900 },
+        reducedMotion: 'reduce',
       },
     },
   ],
