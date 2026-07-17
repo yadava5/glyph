@@ -11,16 +11,18 @@
     "preview": "vite preview",
     "prepare": "cd .. && husky web/.husky || true",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\""
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\"",
+    "test:e2e:visual": "playwright test --grep @visual",
+    "test:e2e:perf": "playwright test --grep @perf",
+    "demo:artifacts": "playwright test --grep @artifacts",
+    "bundle:check": "node scripts/check-bundle-budget.mjs"
   },
   "dependencies": {
-    "@paper-design/shaders-react": "^0.0.76",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.0",
     "@tailwindcss/vite": "^4.2.4",
     "@types/three": "^0.184.0",
     "@use-gesture/react": "^10.3.1",
-    "axios": "^1.15.2",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "lucide-react": "^1.11.0",
