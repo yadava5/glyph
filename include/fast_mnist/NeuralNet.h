@@ -59,8 +59,8 @@ class NeuralNet {
     /**
      * Creates a neural network with a given number of layers with a
      * given number of neurons at each layer. For example NeuralNet
-     * net({784, 30, 10}); creates a \c nnet with 3-layers with the
-     * input layer having 784 neurons, hidden layer with 30 neurons,
+     * net({784, 100, 10}); creates a \c nnet with 3-layers with the
+     * input layer having 784 neurons, hidden layer with 100 neurons,
      * and 10 neurons in the output layer.
      *
      * \param[in] layers The layers and number of neurons on each
