@@ -1,0 +1,68 @@
+@theme {
+  --color-bg: var(--page-bg);
+  --color-bg-elev: var(--surface);
+  --color-fg: var(--text);
+  --color-fg-muted: var(--text-muted);
+  --color-accent: var(--violet);
+  --color-accent-2: var(--cyan);
+  --color-border: var(--line);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-instrument-serif);
+}
+
+/*
+ * HAND / MACHINE — monochrome token system.
+ *
+ * Design language borrowed from the Agentic AutoML landing page:
+ * near-black surfaces, a disciplined gray text ramp, hairline borders,
+ * and zero decorative color. The only chromatic ink on the page is
+ * semantic: green = verified/live, amber = fallback/warn.
+ *
+ * The serif (Instrument Serif italic) is the human voice — handwriting,
+ * a headline's emphatic turn. The mono (Geist Mono) is the machine
+ * voice — telemetry, labels, numbers. Geist Sans carries body copy.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --page-bg: #0a0a0b;
+  --surface: #0f1011;
+  --surface-2: #131416;
+  --surface-3: #1a1b1d;
+
+  /* Text ramp */
+  --text: #d6d8db;
+  --text-strong: #f7f8f8;
+  --text-soft: #b4b8bd;
+  --text-muted: #8a8f98;
+  --text-dim: #63666c;
+
+  /* Hairlines */
+  --line: rgb(255 255 255 / 0.09);
+  --line-soft: rgb(255 255 255 / 0.055);
+  --line-strong: rgb(255 255 255 / 0.2);
+
+  /* Semantic ink (used sparingly) */
+  --green: #4ade80;
+  --amber: #f59e0b;
+  --red: #f87171;
+
+  /* Legacy aliases still referenced by shared components (command palette,
+     scroll progress). Both resolve to monochrome so nothing off-palette
+     leaks in. */
+  --cyan: var(--text-strong);
+  --violet: var(--text-muted);
+
+  /* Depth + layout */
+  --shadow-deep: 0 28px 110px rgb(0 0 0 / 0.6);
+  --content-max: 1120px;
+
+  /* Motion (AutoML easing family) */
+  --ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --dur-fast: 0.16s;
+  --dur-med: 0.35s;
+  --dur-slow: 0.6s;
+}
