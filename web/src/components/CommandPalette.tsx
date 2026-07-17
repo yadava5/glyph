@@ -2,10 +2,12 @@ import { Command } from 'cmdk';
 import {
   Brush,
   CornerDownLeft,
+  Cpu,
   GitPullRequest,
-  MoonStar,
+  Gauge,
   RotateCcw,
   Search,
+  Server,
   Sparkles,
   Target,
   Workflow,
@@ -17,7 +19,6 @@ import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import { useTheme } from '../hooks/useTheme';
 
 interface CommandPaletteProps {
   onClearCanvas: () => void;
@@ -48,7 +49,6 @@ export function CommandPalette({
   canClear,
 }: CommandPaletteProps) {
   const [open, setOpen] = useState(false);
-  const { toggleTheme } = useTheme();
   const reduced = useReducedMotion();
 
   useHotkeys('mod+k', (e) => {
@@ -80,11 +80,11 @@ export function CommandPalette({
     },
     {
       id: 'draw',
-      label: 'Go to drawing canvas',
-      detail: 'Jump to the interactive classifier',
+      label: 'Go to classifier',
+      detail: 'Jump to the live workbench',
       icon: Brush,
       keywords: ['draw', 'canvas', 'classify'],
-      run: () => scrollToSection('draw'),
+      run: () => scrollToSection('classifier'),
     },
     {
       id: 'results',
@@ -95,28 +95,44 @@ export function CommandPalette({
       run: () => scrollToSection('results'),
     },
     {
-      id: 'network',
-      label: 'Go to network animation',
-      detail: 'Jump to the 3D neural network',
+      id: 'hero',
+      label: 'Go to hero',
+      detail: 'Jump to the 3D inference cockpit',
       icon: Zap,
       keywords: ['network', 'hero', 'three', 'animation'],
-      run: () => scrollToSection('network'),
+      run: () => scrollToSection('hero'),
     },
     {
-      id: 'pipeline',
-      label: 'Go to pipeline',
+      id: 'forward-pass',
+      label: 'Go to forward pass',
       detail: 'Jump to the scroll sequence',
       icon: Workflow,
-      keywords: ['pipeline', 'scroll', 'steps'],
-      run: () => scrollToSection('pipeline'),
+      keywords: ['pipeline', 'scroll', 'steps', 'simd', 'softmax'],
+      run: () => scrollToSection('forward-pass'),
     },
     {
-      id: 'theme',
-      label: 'Toggle theme',
-      detail: 'Switch dark and light modes',
-      icon: MoonStar,
-      keywords: ['theme', 'dark', 'light'],
-      run: () => toggleTheme(),
+      id: 'performance',
+      label: 'Go to benchmarks',
+      detail: 'Jump to performance evidence',
+      icon: Gauge,
+      keywords: ['benchmark', 'performance', 'openmp', 'simd'],
+      run: () => scrollToSection('performance'),
+    },
+    {
+      id: 'runtime',
+      label: 'Go to runtime paths',
+      detail: 'Jump to native, WASM, and fallback modes',
+      icon: Server,
+      keywords: ['runtime', 'wasm', 'server', 'fallback'],
+      run: () => scrollToSection('runtime'),
+    },
+    {
+      id: 'evidence',
+      label: 'Go to reproducibility',
+      detail: 'Jump to commands and source links',
+      icon: Cpu,
+      keywords: ['evidence', 'reproduce', 'source', 'release'],
+      run: () => scrollToSection('evidence'),
     },
     {
       id: 'clear',
