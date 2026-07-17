@@ -25,6 +25,8 @@
 #define NN_USE_AVX2 1
 #elif defined(__ARM_NEON) || defined(__ARM_NEON__)
 #define NN_USE_NEON 1
+#elif defined(__wasm_simd128__)
+#define NN_USE_WASM_SIMD 1
 #else
 #define NN_USE_SCALAR 1
 #endif
@@ -33,6 +35,8 @@
 #include <immintrin.h>
 #elif NN_USE_NEON
 #include <arm_neon.h>
+#elif NN_USE_WASM_SIMD
+#include <wasm_simd128.h>
 #endif
 
 #if NN_USE_AVX512
@@ -179,6 +183,38 @@ static inline void sgd_update_row_neon(double* __restrict wr,
 }
 #endif
 
+#if NN_USE_WASM_SIMD
+/*
+ * Dot product of one row with a vector using WebAssembly simd128.
+ * Same latency-hiding shape as the AVX-512 kernel above: two
+ * independent f64x2 accumulators (4 doubles per iteration) keep the
+ * multiply-add dependency chain from serializing, which is exactly
+ * what LLVM's autovectorizer declines to do for this loop. wasm
+ * simd128 has no FMA, so this is mul + add per lane pair.
+ */
+static inline double dot_wasm128_rowvec(const double* __restrict row,
+                                        const double* __restrict x,
+                                        std::size_t n) {
+    std::size_t k = 0, n4 = n & ~std::size_t(3);
+    v128_t acc0 = wasm_f64x2_splat(0.0);
+    v128_t acc1 = wasm_f64x2_splat(0.0);
+    for (; k < n4; k += 4) {
+        acc0 = wasm_f64x2_add(
+            acc0, wasm_f64x2_mul(wasm_v128_load(row + k),
+                                 wasm_v128_load(x + k)));
+        acc1 = wasm_f64x2_add(
+            acc1, wasm_f64x2_mul(wasm_v128_load(row + k + 2),
+                                 wasm_v128_load(x + k + 2)));
+    }
+    const v128_t acc = wasm_f64x2_add(acc0, acc1);
+    double sum =
+        wasm_f64x2_extract_lane(acc, 0) + wasm_f64x2_extract_lane(acc, 1);
+    for (; k < n; ++k)
+        sum += row[k] * x[k]; // tail
+    return sum;
+}
+#endif
+
 /*
  * Fused operation: y = sigmoid(W * x + b) where W is a row-major
  * matrix, x is a column vector, and y is the output vector.
@@ -198,6 +234,8 @@ static inline void gemv_rowplusbias_sigmoid(const Matrix& W, const Matrix& b,
         s = dot256_rowvec(row, xp, n);
 #elif NN_USE_NEON
         s = dot_neon_rowvec(row, xp, n);
+#elif NN_USE_WASM_SIMD
+        s = dot_wasm128_rowvec(row, xp, n);
 #else
         for (std::size_t k = 0; k < n; ++k)
             s += row[k] * xp[k];
@@ -450,6 +488,23 @@ static inline void compute_output_delta(const Matrix& a_L,
     }
 }
 
+static void requireColumnVectorShape(const Matrix& matrix,
+                                     std::size_t height,
+                                     const char* name) {
+    if (matrix.height() != height || matrix.width() != 1) {
+        throw std::invalid_argument(
+            std::string("NeuralNet ") + name + " shape mismatch");
+    }
+}
+
+static void requireTwoLayerNetwork(const MatrixVec& weights,
+                                   const MatrixVec& biases) {
+    if (weights.size() != 2 || biases.size() != 2) {
+        throw std::invalid_argument(
+            "NeuralNet classify requires input-hidden-output topology");
+    }
+}
+
 /*
  * The constructor to create a neural network with a given number of
  * layers, with each layer having a given number of neurons.
@@ -511,12 +566,15 @@ void NeuralNet::initBiasAndWeightMatrices(
 void NeuralNet::learn(const Matrix& inputs, const Matrix& expected,
                       const Val eta) {
     const int L = static_cast<int>(layerSizes[0].size()) - 1;
+    if (weights.empty()) {
+        throw std::invalid_argument("NeuralNet has no weight matrices");
+    }
+    requireColumnVectorShape(inputs, weights.front().width(), "input");
+    requireColumnVectorShape(expected, weights.back().height(), "expected");
 
-    // Use static scratch space to avoid repeated allocations
-    static std::vector<Matrix> a;
-    static std::vector<Matrix> delta;
-    if (a.empty())
-        init_learn_buffers(a, delta, weights, L);
+    std::vector<Matrix> a;
+    std::vector<Matrix> delta;
+    init_learn_buffers(a, delta, weights, L);
 
     // Copy input to activation buffer
     std::memcpy(&a[0][0][0], &inputs[0][0], a[0].height() * sizeof(double));
@@ -587,13 +645,13 @@ std::istream& operator>>(std::istream& is, NeuralNet& nnet) {
 }
 
 /*
- * The method to classify/recognize a given input. Uses static buffers
- * to avoid allocations and fused operations for better performance.
+ * The method to classify/recognize a given input.
  */
 Matrix NeuralNet::classify(const Matrix& inputs) const {
-    // Use static buffers to avoid repeated allocations. This assumes
-    // a two-layer network (input, hidden, then output).
-    static Matrix hidden(weights[0].height(), 1, Matrix::NoInit{});
+    requireTwoLayerNetwork(weights, biases);
+    requireColumnVectorShape(inputs, weights[0].width(), "input");
+
+    Matrix hidden(weights[0].height(), 1, Matrix::NoInit{});
 
     // Forward pass through first layer
     gemv_rowplusbias_sigmoid(weights[0], biases[0], inputs, hidden);
