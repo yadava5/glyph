@@ -13,7 +13,7 @@ export interface ActivationPanelsProps {
  * Three-panel activation visualization:
  *   1. Saliency   - 28x28 input_grad overlay (diverging colormap)
  *   2. Hidden     - N-unit post-activation heatmap (violet chroma-up)
- *   3. Softmax    - 10 digit bars with a highlighted winner
+ *   3. Confidence - 10 digit bars with a highlighted winner
  *
  * Each sub-panel falls back to a neutral display when its data is
  * absent (older servers, offline, first render before any prediction),
@@ -30,7 +30,7 @@ export function ActivationPanels({
       <SaliencyPanel inputGrad={inputGrad} />
       <HiddenHeatmap hiddenActivations={hiddenActivations} />
       <div className="activation-panel">
-        <span className="activation-panel-label">Softmax</span>
+        <span className="activation-panel-label">Confidence</span>
         <SoftmaxBars prediction={prediction} confidence={confidence} />
       </div>
     </div>
