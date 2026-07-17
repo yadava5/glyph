@@ -98,8 +98,9 @@ table — OpenMP overhead is pure loss at that scale.
 
 **`-march=native` alone barely moves the needle.** Comparing baseline to
 native, the uplift is typically single-digit percent — the hand-written
-intrinsic kernels already dispatch to the widest SIMD the target supports
-at runtime, so giving the autovectorizer more ISA doesn't help it catch up.
+intrinsic kernels are already selected for the widest SIMD the target
+supports at compile time, so giving the autovectorizer more ISA doesn't
+help it catch up.
 Where `native` does help is in the *non*-kernel code (bounds checks,
 serialization glue), which matters for the end-to-end `learn`/`classify`
 numbers more than for isolated ops.
