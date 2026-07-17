@@ -191,6 +191,6 @@ export function classifyWithJsFallback(pixels: number[]): PredictionResponse {
     optimized_time_ms: t1 - t0,
     hidden_activations: buildHiddenActivations(scores, normalized),
     input_grad: inputGrad,
-    source: 'browser-js',
+    source: 'browser-js-demo',
   };
 }
