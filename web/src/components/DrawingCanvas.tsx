@@ -114,12 +114,12 @@ export function DrawingCanvas({
   // C++ server and App.tsx stay unchanged.
   const extractPixels = useCallback((): number[] => {
     const strokes = presentRef.current;
+    const empty = () => new Array<number>(GRID_SIZE * GRID_SIZE).fill(0);
     if (strokes.length === 0) {
-      return new Array<number>(GRID_SIZE * GRID_SIZE).fill(0);
+      return empty();
     }
 
-    // 1. Draw the strokes white-on-black on a 280x280 backing canvas
-    //    (matches the original raw-canvas buffer), then downsample to 28x28.
+    // 1. Draw the strokes white-on-black on a 280x280 backing canvas.
     const full = document.createElement('canvas');
     full.width = CANVAS_SIZE;
     full.height = CANVAS_SIZE;
@@ -136,13 +136,83 @@ export function DrawingCanvas({
       if (PathCtor) fullCtx.fill(new PathCtor(d));
     }
 
-    // 2. Downsample to 28x28.
+    // 2. MNIST normalization. The training data is not raw pixels: each
+    //    digit is cropped to its ink, scaled to fit a 20x20 box, and then
+    //    centered by center of mass inside 28x28. Skipping this leaves a
+    //    large or off-center drawing out-of-distribution and confidence
+    //    collapses toward uniform. Reproduce that pipeline here so the
+    //    browser input matches what the network was trained on.
+    const fullData = fullCtx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE).data;
+    const INK = 16; // red-channel threshold (~6%) to ignore AA fringing
+    let minX = CANVAS_SIZE;
+    let minY = CANVAS_SIZE;
+    let maxX = -1;
+    let maxY = -1;
+    for (let y = 0; y < CANVAS_SIZE; y += 1) {
+      for (let x = 0; x < CANVAS_SIZE; x += 1) {
+        if (fullData[(y * CANVAS_SIZE + x) * 4] > INK) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX < minX || maxY < minY) return empty();
+
+    const boxW = maxX - minX + 1;
+    const boxH = maxY - minY + 1;
+    const TARGET = 20; // MNIST fits the glyph inside a 20x20 window
+    const scale = TARGET / Math.max(boxW, boxH);
+    const drawW = Math.max(1, Math.round(boxW * scale));
+    const drawH = Math.max(1, Math.round(boxH * scale));
+
+    // 2a. Crop to the ink and draw it scaled + bbox-centered into 28x28.
+    const bbox = document.createElement('canvas');
+    bbox.width = GRID_SIZE;
+    bbox.height = GRID_SIZE;
+    const bctx = bbox.getContext('2d');
+    if (!bctx) return [];
+    bctx.fillStyle = '#000000';
+    bctx.fillRect(0, 0, GRID_SIZE, GRID_SIZE);
+    bctx.drawImage(
+      full,
+      minX,
+      minY,
+      boxW,
+      boxH,
+      (GRID_SIZE - drawW) / 2,
+      (GRID_SIZE - drawH) / 2,
+      drawW,
+      drawH,
+    );
+
+    // 2b. Shift so the center of mass lands on the 28x28 center (13.5, 13.5).
+    const bboxData = bctx.getImageData(0, 0, GRID_SIZE, GRID_SIZE).data;
+    let mass = 0;
+    let sumX = 0;
+    let sumY = 0;
+    for (let y = 0; y < GRID_SIZE; y += 1) {
+      for (let x = 0; x < GRID_SIZE; x += 1) {
+        const v = bboxData[(y * GRID_SIZE + x) * 4];
+        if (v > 0) {
+          mass += v;
+          sumX += v * x;
+          sumY += v * y;
+        }
+      }
+    }
+    const shiftX = mass > 0 ? Math.round((GRID_SIZE - 1) / 2 - sumX / mass) : 0;
+    const shiftY = mass > 0 ? Math.round((GRID_SIZE - 1) / 2 - sumY / mass) : 0;
+
     const small = document.createElement('canvas');
     small.width = GRID_SIZE;
     small.height = GRID_SIZE;
     const smallCtx = small.getContext('2d');
     if (!smallCtx) return [];
-    smallCtx.drawImage(full, 0, 0, GRID_SIZE, GRID_SIZE);
+    smallCtx.fillStyle = '#000000';
+    smallCtx.fillRect(0, 0, GRID_SIZE, GRID_SIZE);
+    smallCtx.drawImage(bbox, shiftX, shiftY);
     const { data } = smallCtx.getImageData(0, 0, GRID_SIZE, GRID_SIZE);
 
     const pixels: number[] = new Array(GRID_SIZE * GRID_SIZE);
@@ -382,9 +452,9 @@ export function DrawingCanvas({
           }
         }}
         style={{
-          background: '#000000',
-          border: '2px solid var(--canvas-border, #444)',
-          borderRadius: '8px',
+          background: '#0c0d0e',
+          border: '1px solid var(--canvas-border, var(--line, #2a2a2c))',
+          borderRadius: '10px',
           cursor: disabled ? 'not-allowed' : 'crosshair',
           touchAction: 'none',
           display: 'block',
@@ -407,7 +477,7 @@ export function DrawingCanvas({
               y1={l.y1}
               x2={l.x2}
               y2={l.y2}
-              stroke="oklch(0.5 0.005 260 / 0.12)"
+              stroke="rgb(255 255 255 / 0.055)"
               strokeWidth={1}
             />
           ))}
