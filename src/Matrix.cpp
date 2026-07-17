@@ -8,6 +8,7 @@
 #include <cstring>
 #include <iostream>
 #include <new>
+#include <stdexcept>
 #if defined(_MSC_VER)
 #include <malloc.h>
 #endif
@@ -366,7 +367,9 @@ static inline void gemmTileBlock(const Val* __restrict A,
  *
  */
 Matrix Matrix::dot(const Matrix& rhs) const {
-    assert(cols_ == rhs.rows_);
+    if (cols_ != rhs.rows_) {
+        throw std::invalid_argument("Matrix::dot shape mismatch");
+    }
     Matrix result(rows_, rhs.cols_, Matrix::NoInit{});
     if (!rows_ || !cols_ || !rhs.cols_)
         return result;
