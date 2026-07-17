@@ -297,6 +297,9 @@ if(EMSCRIPTEN)
     -sSTACK_SIZE=1MB
     -sEXPORT_ES6=1
     -sUSE_ES6_IMPORT_META=1
+    # No eval/new Function in the glue: required for a strict CSP
+    # (script-src without 'unsafe-eval') on the deployed site.
+    -sDYNAMIC_EXECUTION=0
   )
   set_target_properties(fast_mnist_wasm PROPERTIES
     OUTPUT_NAME "fast_mnist"
