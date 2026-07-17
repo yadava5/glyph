@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Loading model from " << modelPath << "...\n";
 
-    NeuralNet net({784, 30, 10});
+    NeuralNet net({784, 100, 10});
     std::ifstream modelFile(modelPath);
     if (!modelFile) {
         std::cerr << "Error: Cannot open model file: " << modelPath << "\n";
