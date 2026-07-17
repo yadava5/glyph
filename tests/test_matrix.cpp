@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <stdexcept>
 #include <sstream>
 #include <utility>
 
@@ -177,6 +178,14 @@ TEST_CASE("Matrix dot multiplies small matrices", "[matrix][basic]") {
     REQUIRE(c[1][1] == Catch::Approx(154.0));
 }
 
+TEST_CASE("Matrix dot rejects mismatched shapes in release builds",
+          "[matrix][dot][contract]") {
+    Matrix left(0, 2, 0.0);
+    Matrix right(3, 1, 0.0);
+
+    REQUIRE_THROWS_AS(left.dot(right), std::invalid_argument);
+}
+
 TEST_CASE("A . I == A and I . A == A", "[matrix][property]") {
     Matrix a(4, 6, 0.0);
     fillSequential(a, 0.125, 0.375);
@@ -300,6 +309,14 @@ TEST_CASE("Operator overloads behave element-wise", "[matrix][ops]") {
         REQUIRE(n[0][0] == Catch::Approx(-1.0));
         REQUIRE(n[1][1] == Catch::Approx(-4.0));
     }
+}
+
+TEST_CASE("Matrix element-wise operations reject mismatched shapes",
+          "[matrix][ops][contract]") {
+    Matrix left(0, 2, 0.0);
+    Matrix right(0, 3, 0.0);
+
+    REQUIRE_THROWS_AS(left + right, std::invalid_argument);
 }
 
 // ---------------------------------------------------------------------------
