@@ -469,7 +469,7 @@ int main(int argc, char* argv[]) {
     imageCache().reserve(trainListSize + testListSize + 1024);
 
     // Create the neural netowrk
-    NeuralNet net({784, 30, 10});
+    NeuralNet net({784, 100, 10});
     // Train it in at most 30 epochs.
     for (int i = 0; (i < epochs); i++) {
         std::cout << "-- Epoch #" << i << " --\n";
