@@ -16,6 +16,7 @@
 
 #include "fast_mnist/Matrix.h"
 #include "fast_mnist/NeuralNet.h"
+#include "fast_mnist/ServerApi.h"
 
 using json = nlohmann::json;
 
@@ -60,22 +61,21 @@ static std::vector<double> baseline_classify(const NeuralNet& net,
 // Model file path
 static std::string g_modelPath = "model.weights";
 
-// Load a trained network from file
-static NeuralNet loadNetwork(const std::string& path) {
-    NeuralNet net({784, 30, 10});
-    std::ifstream file(path);
-    if (file) {
-        file >> net;
-        std::cout << "   ✓ Loaded model from " << path << "\n";
-    } else {
-        std::cout << "   ⚠ No model file found at " << path << "\n";
-        std::cout << "     Run: ./fast_mnist_trainer data 10000 5 model.weights\n";
-    }
-    return net;
-}
-
 // Global networks for comparison
-static NeuralNet g_network({784, 30, 10});
+static NeuralNet g_network(mnistTopology());
+
+static void setError(httplib::Response& res, int status,
+                     const std::string& code,
+                     const std::string& message) {
+    res.status = status;
+    json body = {
+        {"error", {
+            {"code", code},
+            {"message", message},
+        }},
+    };
+    res.set_content(body.dump(), "application/json");
+}
 
 /**
  * Classify an image using the neural network and return timing info.
@@ -101,14 +101,18 @@ json classifyWithTiming(NeuralNet& net, const Matrix& input) {
         }
     }
     
-    // Normalize confidence to sum to 1 (softmax-like)
+    // L1-normalize so confidence sums to 1. The output layer is sigmoid,
+    // so each score is already in [0, 1]; applying exp/softmax here would
+    // squash a near-certain prediction toward uniform (~0.23 peak). Divide
+    // by the sum instead to preserve the model's actual confidence.
     double sum = 0.0;
     for (int i = 0; i < 10; ++i) {
-        confidence[i] = std::exp(confidence[i]);
         sum += confidence[i];
     }
-    for (int i = 0; i < 10; ++i) {
-        confidence[i] /= sum;
+    if (sum > 0.0) {
+        for (int i = 0; i < 10; ++i) {
+            confidence[i] /= sum;
+        }
     }
     
     return {
@@ -132,8 +136,17 @@ int main(int argc, char* argv[]) {
     std::cout << "🧠 Fast MNIST API Server\n";
     std::cout << "   Loading model...\n";
     
-    // Load the trained model
-    g_network = loadNetwork(modelPath);
+    // Load the trained model. A missing or stale model is a startup
+    // error; serving random weights is misleading for the portfolio
+    // demo and for API consumers.
+    try {
+        g_network = loadRequiredModel(modelPath);
+        std::cout << "   ✓ Loaded model from " << modelPath << "\n";
+    } catch (const std::exception& e) {
+        std::cerr << "   ✗ " << e.what() << "\n";
+        std::cerr << "     Train or export a 784 -> 100 -> 10 model first.\n";
+        return 1;
+    }
     
     httplib::Server svr;
     
@@ -150,10 +163,15 @@ int main(int argc, char* argv[]) {
     });
     
     // Health check endpoint
-    svr.Get("/health", [](const httplib::Request&, httplib::Response& res) {
+    svr.Get("/health", [modelPath](const httplib::Request&,
+                                   httplib::Response& res) {
         json response = {
             {"status", "ok"},
-            {"version", "1.0.0"}
+            {"ready", true},
+            {"model_loaded", true},
+            {"model_path", modelPath},
+            {"topology", mnistTopology()},
+            {"version", "1.0.0"},
         };
         res.set_content(response.dump(), "application/json");
     });
@@ -164,19 +182,14 @@ int main(int argc, char* argv[]) {
             auto body = json::parse(req.body);
             
             if (!body.contains("pixels") || !body["pixels"].is_array()) {
-                res.status = 400;
-                res.set_content(R"({"error": "Missing or invalid 'pixels' array"})", 
-                               "application/json");
+                setError(res, 400, "invalid_pixels",
+                         "Missing or invalid 'pixels' array.");
                 return;
             }
             
             auto pixels = body["pixels"].get<std::vector<double>>();
-            
-            if (pixels.size() != 784) {
-                res.status = 400;
-                std::string error = R"({"error": "Expected 784 pixels, got )" + 
-                                   std::to_string(pixels.size()) + "\"}";
-                res.set_content(error, "application/json");
+            if (const auto validation = validatePredictionPixels(pixels)) {
+                setError(res, 400, validation->code, validation->message);
                 return;
             }
             
@@ -188,20 +201,23 @@ int main(int argc, char* argv[]) {
                 inputVec[i] = pixels[i];
             }
             
-            // Run multiple iterations for accurate timing
-            const int iterations = 100;
-            
-            // Baseline classification (scalar, no SIMD)
-            auto baselineStart = std::chrono::high_resolution_clock::now();
-            std::vector<double> baselineResult;
-            for (int iter = 0; iter < iterations; ++iter) {
-                baselineResult = baseline_classify(g_network, inputVec);
+            const bool includeBenchmarks =
+                req.has_param("benchmark") &&
+                req.get_param_value("benchmark") == "1";
+            const int iterations = includeBenchmarks ? 100 : 1;
+            double baselineTime = 0.0;
+
+            if (includeBenchmarks) {
+                auto baselineStart = std::chrono::high_resolution_clock::now();
+                std::vector<double> baselineResult;
+                for (int iter = 0; iter < iterations; ++iter) {
+                    baselineResult = baseline_classify(g_network, inputVec);
+                }
+                auto baselineEnd = std::chrono::high_resolution_clock::now();
+                baselineTime = std::chrono::duration<double, std::milli>(
+                    baselineEnd - baselineStart).count() / iterations;
             }
-            auto baselineEnd = std::chrono::high_resolution_clock::now();
-            auto baselineTime = std::chrono::duration<double, std::milli>(
-                baselineEnd - baselineStart).count() / iterations;
-            
-            // Optimized classification (SIMD-accelerated)
+
             auto optimizedStart = std::chrono::high_resolution_clock::now();
             Matrix result;
             for (int iter = 0; iter < iterations; ++iter) {
@@ -224,14 +240,17 @@ int main(int argc, char* argv[]) {
                 }
             }
             
-            // Softmax normalization
+            // L1-normalize the sigmoid outputs (see classifyWithTiming):
+            // exp/softmax over saturated sigmoids would squash a confident
+            // prediction toward uniform. Divide by the sum instead.
             double sum = 0.0;
             for (int i = 0; i < 10; ++i) {
-                confidence[i] = std::exp(confidence[i]);
                 sum += confidence[i];
             }
-            for (int i = 0; i < 10; ++i) {
-                confidence[i] /= sum;
+            if (sum > 0.0) {
+                for (int i = 0; i < 10; ++i) {
+                    confidence[i] /= sum;
+                }
             }
 
             // Per-request interpretability: hidden activations +
@@ -255,14 +274,15 @@ int main(int argc, char* argv[]) {
 
             res.set_content(response.dump(), "application/json");
             
-        } catch (const json::parse_error& e) {
-            res.status = 400;
-            json error = {{"error", "Invalid JSON: " + std::string(e.what())}};
-            res.set_content(error.dump(), "application/json");
+        } catch (const json::parse_error&) {
+            setError(res, 400, "invalid_json", "Request body must be JSON.");
+        } catch (const json::type_error&) {
+            setError(res, 400, "invalid_pixels",
+                     "The 'pixels' field must be an array of numbers.");
         } catch (const std::exception& e) {
-            res.status = 500;
-            json error = {{"error", std::string(e.what())}};
-            res.set_content(error.dump(), "application/json");
+            std::cerr << "Prediction failed: " << e.what() << "\n";
+            setError(res, 500, "internal_error",
+                     "Prediction failed inside the server.");
         }
     });
     
