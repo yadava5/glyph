@@ -46,7 +46,8 @@ web/node_modules/
 web/dist/
 web/playwright-report/
 web/test-results/
-web/public/wasm/
+# web/public/wasm is COMMITTED: git-driven Vercel builds must ship the
+# real simd128 artifacts, not the JS fallback.
 
 # Compiled binaries
 test_model
