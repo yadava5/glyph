@@ -10,6 +10,7 @@
 #include <cassert>
 #include <cstddef>
 #include <iosfwd>
+#include <stdexcept>
 #include <vector>
 
 /** Shortcut for the value of each element in the matrix */
@@ -169,7 +170,9 @@ class Matrix {
      */
     template <typename BinaryOp>
     Matrix apply(const Matrix& other, const BinaryOp& operation) const {
-        assert(height() == other.height() && width() == other.width());
+        if (height() != other.height() || width() != other.width()) {
+            throw std::invalid_argument("Matrix::apply shape mismatch");
+        }
         if (empty()) {
             return *this;
         }
