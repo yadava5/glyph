@@ -12,6 +12,13 @@ installConsoleFilters();
 document.documentElement.classList.add(GeistSans.className);
 document.documentElement.style.setProperty(GeistMono.variable, 'var(--font-geist-mono)');
 
+// Opt into the scroll-reveal enhancement. The matching CSS keeps every
+// [data-reveal] block visible by default and only hides-then-animates when
+// this class is present AND (prefers-reduced-motion: no-preference). Setting
+// it here — before React commits and paints — means no-JS, crawlers, and
+// reduced-motion users always render the content visible, with no flash.
+document.documentElement.classList.add('js-reveal');
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
