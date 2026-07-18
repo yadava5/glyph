@@ -431,17 +431,24 @@
   scroll-margin-top: 96px;
 }
 
-.chapter[data-reveal] {
-  opacity: 0;
-  transform: translateY(22px);
-  transition:
-    opacity 0.7s var(--ease-out-quart),
-    transform 0.7s var(--ease-out-quart);
-}
+/*
+ * Reveal-on-scroll is a progressive enhancement, not a prerequisite for
+ * reading the page. Chapters are visible by DEFAULT — no-JS, crawlers,
+ * and reduced-motion users get everything immediately. The hide-then-
+ * animate state applies only when JS has opted in (html.js-reveal, set
+ * in main.tsx) AND motion is allowed. data-inview is toggled on scroll.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  :global(html.js-reveal) .chapter[data-reveal] {
+    transition:
+      opacity 0.7s var(--ease-out-quart),
+      transform 0.7s var(--ease-out-quart);
+  }
 
-.chapter[data-inview='true'] {
-  opacity: 1;
-  transform: none;
+  :global(html.js-reveal) .chapter[data-reveal]:not([data-inview='true']) {
+    opacity: 0;
+    transform: translateY(22px);
+  }
 }
 
 .chapterCount {
@@ -750,15 +757,18 @@
   background: var(--text-strong);
 }
 
-.chapter[data-reveal] .benchFillBase,
-.chapter[data-reveal] .benchFillOpt {
-  transform: scaleX(0);
-  transition: transform 0.9s var(--ease-out-expo) 0.15s;
-}
+/* Bars fill from zero only under the reveal enhancement; by default they
+   render at their measured width (inline style) so no-JS/crawlers see them. */
+@media (prefers-reduced-motion: no-preference) {
+  :global(html.js-reveal) .chapter[data-reveal] .benchFillBase,
+  :global(html.js-reveal) .chapter[data-reveal] .benchFillOpt {
+    transition: transform 0.9s var(--ease-out-expo) 0.15s;
+  }
 
-.chapter[data-inview='true'] .benchFillBase,
-.chapter[data-inview='true'] .benchFillOpt {
-  transform: scaleX(1);
+  :global(html.js-reveal) .chapter[data-reveal]:not([data-inview='true']) .benchFillBase,
+  :global(html.js-reveal) .chapter[data-reveal]:not([data-inview='true']) .benchFillOpt {
+    transform: scaleX(0);
+  }
 }
 
 .benchGflops {
@@ -1164,26 +1174,28 @@
   fill: var(--text-strong);
 }
 
-/* Cells scatter in only once the footer enters view. */
-.footer[data-reveal] .pixelLit {
-  opacity: 0;
-  transform: scale(0.55);
-  transform-origin: center;
-  transform-box: fill-box;
-}
+/* The lit pixels render solid by default (no-JS/crawlers/reduced-motion see
+   the full "FAST" sign). Under the reveal enhancement they scatter in once
+   the footer enters view, then a sparse subset keeps breathing. */
+@media (prefers-reduced-motion: no-preference) {
+  :global(html.js-reveal) .footer[data-reveal] .pixelLit {
+    opacity: 0;
+    transform: scale(0.55);
+    transform-origin: center;
+    transform-box: fill-box;
+  }
 
-.footer[data-inview='true'] .pixelLit {
-  animation: pixelIn 0.45s var(--ease-out-expo) forwards;
-  animation-delay: var(--pixel-delay, 0s);
-}
+  :global(html.js-reveal) .footer[data-inview='true'] .pixelLit {
+    animation: pixelIn 0.45s var(--ease-out-expo) forwards;
+    animation-delay: var(--pixel-delay, 0s);
+  }
 
-/* After the reveal, a sparse subset keeps breathing — the machine
-   idling. Runs only for lit shimmer cells, post-reveal. */
-.footer[data-inview='true'] .pixelShimmer {
-  animation:
-    pixelIn 0.45s var(--ease-out-expo) forwards,
-    pixelIdle 3.6s ease-in-out infinite;
-  animation-delay: var(--pixel-delay, 0s), calc(1.2s + var(--shimmer-delay, 0s));
+  :global(html.js-reveal) .footer[data-inview='true'] .pixelShimmer {
+    animation:
+      pixelIn 0.45s var(--ease-out-expo) forwards,
+      pixelIdle 3.6s ease-in-out infinite;
+    animation-delay: var(--pixel-delay, 0s), calc(1.2s + var(--shimmer-delay, 0s));
+  }
 }
 
 @keyframes pixelIn {
