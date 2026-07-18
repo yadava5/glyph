@@ -254,8 +254,8 @@ function Hero() {
         transition={{ duration: 0.7, delay: 1.5 }}
       >
         <div>
-          <dt>kernel speedup</dt>
-          <dd className="tabular">3.50× matmul 256 (M2)</dd>
+          <dt>matmul 256 · M2</dt>
+          <dd className="tabular">3.50× omp+native vs 1-thread</dd>
         </div>
         <div>
           <dt>native classify</dt>
@@ -434,7 +434,11 @@ function KernelsChapter() {
             Two independent accumulators keep the multiply-add dependency chain from serializing —
             the same shape as the AVX-512 kernel's dual <code>_mm512_fmadd_pd</code> streams.
           </li>
-          <li>LLVM's autovectorizer declines this loop. Writing it by hand buys ~3.7×.</li>
+          <li>
+            LLVM's autovectorizer declines this loop — so the hand-written kernel is exactly what
+            the live bench above times against the same math with vector lanes off, on your machine
+            (median shown in the titlebar).
+          </li>
           <li>AVX-512, AVX2, and NEON siblings live beside it, selected at compile time.</li>
         </ul>
       </div>
