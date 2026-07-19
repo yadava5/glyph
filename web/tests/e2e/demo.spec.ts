@@ -108,7 +108,7 @@ test.describe('Fast MNIST landing experience', () => {
     expect(instrumentedPage.__requestFailures ?? []).toEqual([]);
   });
 
-  test('@visual @artifacts renders the monochrome hero with verified metrics and no WebGL', async ({
+  test('@visual @artifacts renders the hero with verified metrics and no WebGL', async ({
     page,
   }) => {
     await page.goto('/index.html');
@@ -185,15 +185,15 @@ test.describe('Fast MNIST landing experience', () => {
     expect(backendRequests).toEqual([]);
   });
 
-  test('@visual walks the four numbered chapters', async ({ page }) => {
+  test('@visual walks the narrative acts', async ({ page }) => {
     await page.goto('/index.html');
-    await scrollToId(page, 'forward-pass');
+    await scrollToId(page, 'problem');
 
     for (const pattern of [
-      /Three matrices, two sigmoids/i,
-      /Matrix math, forged in intrinsics/i,
-      /Native first\. Portable always/i,
-      /Every number on this page/i,
+      /Seven eighths of the/i,
+      /Write the lanes/i,
+      /four instruction sets/i,
+      /Measured, not promised/i,
     ]) {
       const heading = page.getByRole('heading', { name: pattern });
       await heading.scrollIntoViewIfNeeded();
@@ -209,7 +209,7 @@ test.describe('Fast MNIST landing experience', () => {
 
   test('@perf shows benchmark-backed performance and runtime boundaries', async ({ page }) => {
     await page.goto('/index.html');
-    await scrollToId(page, 'performance');
+    await scrollToId(page, 'proof');
 
     await expect(page.getByText(/4\.835ms/i).first()).toBeVisible();
     await expect(page.getByText(/1\.380ms/i).first()).toBeVisible();
@@ -221,8 +221,8 @@ test.describe('Fast MNIST landing experience', () => {
       page.getByText(/classify is small enough that openmp hurts/i).first(),
     ).toBeVisible();
 
-    await scrollToId(page, 'runtime');
-    await expect(page.getByText(/The same C\+\+, in your tab/i).first()).toBeVisible();
+    await scrollToId(page, 'build');
+    await expect(page.getByRole('heading', { name: /four instruction sets/i })).toBeVisible();
     await expect(page.getByText(/43\.6KB/i).first()).toBeVisible();
     await expect(page.getByText(/318KB raw \/ 299KB gz/i).first()).toBeVisible();
   });
@@ -237,7 +237,7 @@ test.describe('Fast MNIST landing experience', () => {
     expect(padBox?.width ?? 0).toBeGreaterThan(160);
     expect(padBox?.height ?? 0).toBeGreaterThan(160);
 
-    for (const id of ['hero', 'classifier', 'forward-pass', 'performance', 'runtime', 'evidence']) {
+    for (const id of ['hero', 'classifier', 'problem', 'solution', 'build', 'proof', 'try']) {
       await scrollToId(page, id);
       const layout = await page.evaluate((targetId) => {
         const root = document.getElementById(targetId);
