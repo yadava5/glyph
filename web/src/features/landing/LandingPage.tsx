@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
-import { ArrowDown, ArrowUpRight, Command, Menu, X } from 'lucide-react';
+import { ArrowDown, ArrowUpRight, BookOpen, Command, Menu, X } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
 import {
   benchMethodology,
   classifyThroughput,
   crossoverLosses,
   crossoverPragma,
+  isaLadder,
   kernelBenchmarks,
+  kernelSource,
   reproduceBenchmarkCommand,
-  wasmKernelSource,
+  scalarIdle,
   wasmRuntimeFacts,
 } from '../performance/benchmarkData';
 import type { MnistDemoController } from '../mnist/useMnistDemoController';
@@ -18,17 +20,25 @@ import { Workbench } from './Workbench';
 import styles from './LandingPage.module.css';
 
 const REPO_URL = 'https://github.com/yadava5/fast-mnist-nn';
+const SYSTEM_CARD_URL = '/system-card';
+const KERNEL_URL = `${REPO_URL}/blob/main/src/NeuralNet.cpp`;
 
-const CHAPTERS = [
-  { id: 'performance', index: '1.0', label: 'kernels' },
-  { id: 'forward-pass', index: '2.0', label: 'network' },
-  { id: 'runtime', index: '3.0', label: 'runtime' },
-  { id: 'evidence', index: '4.0', label: 'proof' },
+/* The five acts of the scroll. The live bench sits at the hinge between
+ * implementation and proof — it is the implementation, running. */
+const ACTS = [
+  { id: 'problem', n: '01', label: 'problem' },
+  { id: 'solution', n: '02', label: 'solution' },
+  { id: 'build', n: '03', label: 'build' },
+  { id: 'classifier', n: '··', label: 'live bench' },
+  { id: 'proof', n: '04', label: 'proof' },
 ] as const;
 
 const NAV_LINKS = [
+  { id: 'problem', label: 'problem' },
+  { id: 'solution', label: 'solution' },
+  { id: 'build', label: 'build' },
   { id: 'classifier', label: 'live bench' },
-  ...CHAPTERS.map((c) => ({ id: c.id, label: c.label })),
+  { id: 'proof', label: 'proof' },
 ] as const;
 
 function scrollToSection(id: string) {
@@ -38,7 +48,7 @@ function scrollToSection(id: string) {
   });
 }
 
-/** Scroll-spy over the chapter sections for the sticky rail + nav. */
+/** Scroll-spy over the act sections for the rails + nav. */
 function useActiveSection(ids: readonly string[]): string | null {
   const [active, setActive] = useState<string | null>(null);
 
@@ -64,7 +74,7 @@ function useActiveSection(ids: readonly string[]): string | null {
   return active;
 }
 
-/** Adds data-inview to chapter shells as they enter, for CSS reveals. */
+/** Adds data-inview to act shells as they enter, for CSS reveals. */
 function useRevealObserver() {
   useEffect(() => {
     const nodes = Array.from(document.querySelectorAll('[data-reveal]'));
@@ -138,6 +148,10 @@ function Nav({ active }: { active: string | null }) {
         <span className={styles.navHint} aria-hidden>
           <Command size={13} strokeWidth={2} />K
         </span>
+        <a className={styles.navCard} href={SYSTEM_CARD_URL}>
+          <BookOpen size={14} strokeWidth={2} aria-hidden />
+          System Card
+        </a>
         <a className={styles.navCta} href={REPO_URL} target="_blank" rel="noreferrer">
           GitHub
           <ArrowUpRight size={15} strokeWidth={2} aria-hidden />
@@ -159,6 +173,9 @@ function Nav({ active }: { active: string | null }) {
               {link.label}
             </button>
           ))}
+          <a href={SYSTEM_CARD_URL}>
+            Read the System Card <ArrowUpRight size={14} strokeWidth={2} aria-hidden />
+          </a>
           <a href={REPO_URL} target="_blank" rel="noreferrer">
             GitHub <ArrowUpRight size={14} strokeWidth={2} aria-hidden />
           </a>
@@ -168,10 +185,30 @@ function Nav({ active }: { active: string | null }) {
   );
 }
 
+/** Fixed vertical act index — a systems-doc TOC. Wide screens only. */
+function ActRail({ active }: { active: string | null }) {
+  return (
+    <aside className={styles.actRail} aria-label="Chapters">
+      {ACTS.map((a) => (
+        <button
+          key={a.id}
+          type="button"
+          data-active={active === a.id}
+          onClick={() => scrollToSection(a.id)}
+        >
+          <span className="tabular">{a.n}</span>
+          <em>{a.label}</em>
+          <i aria-hidden />
+        </button>
+      ))}
+    </aside>
+  );
+}
+
 function Hero() {
   const reduced = useReducedMotion();
   const subhead =
-    'The classifier arrived as coursework — a from-scratch C++ MLP we did not write. Ours is everything beneath it: AVX-512, AVX2, and NEON kernels forged by hand, OpenMP thresholds tuned against measurement — never intuition — and a wasm simd128 port racing scalar, live, on the machine you are holding.';
+    'The classifier came as coursework — a from-scratch C++ MLP we did not write. The speed is ours: the hot dot-product hand-written in SIMD across four instruction sets — AVX-512, AVX2, NEON, and a wasm-simd128 port that races scalar, live, on the machine you are holding. Every number here is measured — including the case where it loses.';
   const words = subhead.split(' ');
 
   return (
@@ -213,7 +250,7 @@ function Hero() {
           <span
             key={`${word}-${i}`}
             className={styles.heroWord}
-            style={reduced ? undefined : { animationDelay: `${700 + i * 24}ms` }}
+            style={reduced ? undefined : { animationDelay: `${700 + i * 22}ms` }}
             data-static={reduced || undefined}
           >
             {word}{' '}
@@ -235,14 +272,9 @@ function Hero() {
           Fire the live bench
           <ArrowDown size={16} strokeWidth={2} aria-hidden />
         </button>
-        <a
-          className={styles.ctaGhost}
-          href={`${REPO_URL}/blob/main/src/NeuralNet.cpp`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Read the kernels
-          <ArrowUpRight size={16} strokeWidth={2} aria-hidden />
+        <a className={styles.ctaGhost} href={SYSTEM_CARD_URL}>
+          <BookOpen size={16} strokeWidth={2} aria-hidden />
+          Read the System Card
         </a>
       </motion.div>
 
@@ -274,44 +306,291 @@ function Hero() {
   );
 }
 
-interface ChapterShellProps {
+interface ActShellProps {
   id: string;
-  index: string;
+  n: string;
   eyebrow: string;
   bright: string;
   muted: string;
+  lede: React.ReactNode;
+  accent?: 'steel' | 'amber' | 'sky' | 'green';
   children: React.ReactNode;
 }
 
-function ChapterShell({ id, index, eyebrow, bright, muted, children }: ChapterShellProps) {
+function ActShell({ id, n, eyebrow, bright, muted, lede, accent, children }: ActShellProps) {
   return (
-    <section id={id} className={styles.chapter} data-reveal aria-labelledby={`${id}-title`}>
-      <span className={styles.chapterCount}>{index.split('.')[0].padStart(2, '0')} / 04</span>
-      <h2 id={`${id}-title`} className={styles.chapterTitle}>
-        <span>{bright}</span>
-        <span>{muted}</span>
-      </h2>
-      <p className={styles.chapterEyebrow}>{eyebrow}</p>
-      <div className={styles.chapterBody}>{children}</div>
+    <section
+      id={id}
+      className={styles.act}
+      data-accent={accent}
+      data-reveal
+      aria-labelledby={`${id}-title`}
+    >
+      <div className={styles.actInner}>
+        <header className={styles.actHead}>
+          <span className={styles.actCount}>
+            <b className="tabular">{n}</b> / 04 <em>{eyebrow}</em>
+          </span>
+          <h2 id={`${id}-title`} className={styles.actTitle}>
+            <span>{bright}</span>
+            <span>{muted}</span>
+          </h2>
+          <p className={styles.actLede}>{lede}</p>
+        </header>
+        <div className={styles.actBody}>{children}</div>
+      </div>
     </section>
   );
 }
 
-function ChapterRail({ active }: { active: string | null }) {
+/** A 64-bit-per-cell vector register: `lit` of `lanes` lanes carrying work. */
+function LaneRegister({ lanes, lit, tone }: { lanes: number; lit: number; tone: 'idle' | 'full' }) {
+  const cells = Array.from({ length: lanes }, (_, i) => i < lit);
   return (
-    <aside className={styles.rail} aria-label="Chapters">
-      {CHAPTERS.map((c) => (
-        <button
-          key={c.id}
-          type="button"
-          data-active={active === c.id}
-          onClick={() => scrollToSection(c.id)}
-        >
-          <span className="tabular">{c.index}</span> {c.label}
-        </button>
+    <div className={styles.laneReg} data-tone={tone} role="img" aria-hidden>
+      {cells.map((on, i) => (
+        <i key={i} data-on={on || undefined} style={{ '--i': i } as React.CSSProperties} />
       ))}
-      <i className={styles.railLine} aria-hidden />
-    </aside>
+    </div>
+  );
+}
+
+function ProblemAct() {
+  return (
+    <ActShell
+      id="problem"
+      n="01"
+      eyebrow="problem"
+      accent="amber"
+      bright="Seven eighths of the"
+      muted="silicon, asleep."
+      lede={
+        <>
+          The starter classifier was correct and completely scalar. Every dot product walks the
+          weights one <span className={styles.serifTurn}>double</span> at a time — and the widest
+          math unit on the machine watches almost all of it happen in the dark.
+        </>
+      }
+    >
+      <div className={styles.problemGrid}>
+        <div className={styles.laneCard}>
+          <span className={styles.miniLabel}>a 512-bit register · eight f64 lanes</span>
+          <div className={styles.laneRows}>
+            <div className={styles.laneRow}>
+              <span>scalar loop</span>
+              <LaneRegister lanes={8} lit={1} tone="idle" />
+              <b className="tabular">1 / 8</b>
+            </div>
+            <div className={styles.laneRow}>
+              <span>simd kernel</span>
+              <LaneRegister lanes={8} lit={8} tone="full" />
+              <b className="tabular">8 / 8</b>
+            </div>
+          </div>
+          <p className={styles.laneCaption}>
+            <b className="tabular">{scalarIdle.headline}</b> — {scalarIdle.caption}. The lanes exist
+            in the hardware; the scalar loop simply never fills them.
+          </p>
+        </div>
+
+        <div className={styles.problemProse}>
+          <p>
+            A <code>double</code> is 64 bits. An AVX-512 vector register is 512 — room for eight of
+            them, side by side, multiplied and added in a single instruction. A scalar loop issues
+            that instruction eight times instead, one lane lit, seven idle.
+          </p>
+          <p>
+            And the compiler will not rescue it: LLVM&apos;s autovectorizer declines this reduction
+            loop, so{' '}
+            <span className={styles.serifTurn}>the width is right there, and nothing uses it.</span>{' '}
+            The speed was never missing. It was left on the floor.
+          </p>
+          <ul className={styles.starterFacts} aria-label="The starter network">
+            <li>
+              <span>the starter</span>
+              <b className="tabular">784 → 100 → 10</b>
+            </li>
+            <li>
+              <span>parameters</span>
+              <b className="tabular">79,510</b>
+            </li>
+            <li>
+              <span>weights (float32)</span>
+              <b className="tabular">318 KB</b>
+            </li>
+            <li>
+              <span>who wrote it</span>
+              <b>coursework, not us</b>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </ActShell>
+  );
+}
+
+function SolutionAct() {
+  return (
+    <ActShell
+      id="solution"
+      n="02"
+      eyebrow="solution"
+      accent="steel"
+      bright="Write the lanes"
+      muted="by hand."
+      lede={
+        <>
+          Not a bigger compiler flag — the kernel itself. Hand-write the hot dot-product in SIMD
+          intrinsics so every lane carries weight, and run{' '}
+          <span className={styles.serifTurn}>two accumulators</span> so the multiply-add chain never
+          waits on itself.
+        </>
+      }
+    >
+      <div className={styles.solutionGrid}>
+        <div className={styles.kernelPeek}>
+          <header>
+            <h3>The AVX-512 kernel</h3>
+            <span>dual accumulators · src/NeuralNet.cpp</span>
+          </header>
+          <pre className={styles.codeblock}>
+            <code>{kernelSource}</code>
+          </pre>
+        </div>
+        <div className={styles.solutionNotes}>
+          <ul className={styles.kernelNotes}>
+            <li>
+              Two independent streams — <code>acc0</code>, <code>acc1</code> — so the fused
+              multiply-add on one does not stall waiting for the other to retire. The dependency
+              chain is split, not shortened.
+            </li>
+            <li>
+              <code>_mm512_fmadd_pd</code> is one instruction doing eight multiplies and eight adds.
+              The tail loop mops up the last <code>n &amp; 15</code> elements scalar.
+            </li>
+          </ul>
+          <div className={styles.decisionCard}>
+            <span className={styles.miniLabel}>the decision · ADR-0001</span>
+            <p>
+              Hand-roll the kernels instead of linking OpenBLAS or Eigen. OpenBLAS would likely win
+              large <code>matmul</code> by another <b className="tabular">2–3×</b> — we trade that
+              for reproducibility, a tiny binary, and the ability to read every optimization in{' '}
+              <code>src/</code>.
+            </p>
+            <a className={styles.inlineLink} href={KERNEL_URL} target="_blank" rel="noreferrer">
+              Read the kernels <ArrowUpRight size={14} strokeWidth={2} aria-hidden />
+            </a>
+          </div>
+        </div>
+      </div>
+    </ActShell>
+  );
+}
+
+function ImplementationAct({ controller }: { controller: MnistDemoController }) {
+  const tiers = [
+    {
+      id: 'wasm',
+      name: 'browser wasm',
+      body: 'The same core, compiled with Emscripten. The hand-written f64x2 simd128 kernel — the one being timed on this page right now.',
+      state: controller.predictionSource === 'browser-wasm' ? 'active' : 'ready',
+    },
+    {
+      id: 'server',
+      name: 'native server',
+      body: 'C++17 + cpp-httplib. AVX-512 / AVX2 / NEON selected at compile time, OpenMP above tuned thresholds.',
+      state:
+        controller.serverStatus === 'online'
+          ? controller.predictionSource === 'server'
+            ? 'active'
+            : 'ready'
+          : 'offline',
+    },
+    {
+      id: 'js',
+      name: 'js demo fallback',
+      body: 'A labeled template matcher that keeps the page interactive if WASM is unavailable. Never used for accuracy or timing claims.',
+      state: controller.predictionSource === 'browser-js-demo' ? 'active' : 'standby',
+    },
+  ] as const;
+
+  return (
+    <ActShell
+      id="build"
+      n="03"
+      eyebrow="implementation"
+      accent="sky"
+      bright="One kernel,"
+      muted="four instruction sets."
+      lede={
+        <>
+          The same dual-accumulator shape, ported four ways; a compile-time target picks the widest
+          rung the machine supports. The fourth ISA is the trick —{' '}
+          <span className={styles.serifTurn}>it runs in your browser.</span>
+        </>
+      }
+    >
+      <ol className={styles.isaLadder} aria-label="Instruction-set ladder">
+        {isaLadder.map((rung) => (
+          <li key={rung.id} className={styles.isaRung} data-hot={rung.id === 'wasm' || undefined}>
+            <div className={styles.isaHead}>
+              <b>{rung.isa}</b>
+              <span className={styles.isaWidth}>{rung.width}</span>
+            </div>
+            <div className={styles.isaLanes} role="img" aria-label={`${rung.lanes} f64 lanes`}>
+              {Array.from({ length: rung.lanes }, (_, i) => (
+                <i key={i} style={{ '--i': i } as React.CSSProperties} />
+              ))}
+            </div>
+            <code className={styles.isaIntrinsic}>{rung.intrinsic}</code>
+            <span className={styles.isaWhere}>{rung.where}</span>
+            <p>{rung.note}</p>
+          </li>
+        ))}
+      </ol>
+      <p className={styles.actNote}>
+        The wasm-simd128 rung compiles the exact same kernel with Emscripten — which is what lets
+        the instrument below time it against scalar, on your own machine.
+      </p>
+
+      <div className={styles.tierGrid}>
+        {tiers.map((t, i) => (
+          <article key={t.id} className={styles.tierCard} data-state={t.state}>
+            <span className="tabular">0{i + 1}</span>
+            <h3>{t.name}</h3>
+            <p>{t.body}</p>
+            <b data-state={t.state}>{t.state}</b>
+          </article>
+        ))}
+      </div>
+      <dl className={styles.wasmFacts} aria-label="Measured WASM artifact facts">
+        {wasmRuntimeFacts.map((f) => (
+          <div key={f.label}>
+            <dt>{f.label}</dt>
+            <dd className="tabular">{f.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </ActShell>
+  );
+}
+
+/** The bench hinge — one line of framing above the live instrument. */
+function BenchIntro() {
+  return (
+    <div className={styles.benchIntro} data-reveal>
+      <div className={styles.actInner}>
+        <span className={styles.benchIntroEyebrow}>·· the fourth ISA, running</span>
+        <h2 className={styles.benchIntroTitle}>
+          Proof you can run. <em>Scalar versus simd128, on your machine.</em>
+        </h2>
+        <p>
+          The workbench below is the real classifier compiled to wasm. Each stroke times the
+          hand-written simd128 kernel against the same math with vector lanes switched off —
+          measured in C++, in your tab. The median is in the titlebar.
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -352,14 +631,22 @@ function BenchBars({
   );
 }
 
-function KernelsChapter() {
+function ProofAct({ controller }: { controller: MnistDemoController }) {
   return (
-    <ChapterShell
-      id="performance"
-      index="1.0"
-      eyebrow="1.0 kernels — google benchmark, 3 release configs, committed run 20251226-154121"
-      bright="Matrix math, forged in intrinsics."
-      muted="Measured, including where it loses."
+    <ActShell
+      id="proof"
+      n="04"
+      eyebrow="proof"
+      accent="green"
+      bright="Measured, not promised."
+      muted="Including where it loses."
+      lede={
+        <>
+          Every figure is scoped to exactly what it measures, and pulled from one committed Google
+          Benchmark run. The honest rows — where threading{' '}
+          <span className={styles.serifTurn}>costs</span> more than it buys — stay on the page.
+        </>
+      }
     >
       <div className={styles.benchGrid}>
         {kernelBenchmarks.map((k) => (
@@ -384,27 +671,25 @@ function KernelsChapter() {
       <p className={styles.benchFootnote}>
         Hand-written SIMD is active in <b>all</b> configs above (NEON on the M2 that produced this
         run) — these bars measure threading and native codegen on top of it. The SIMD-vs-scalar
-        comparison runs live in the workbench, on your machine.
+        comparison is the live one in the workbench, on your machine.
       </p>
 
       <div className={styles.crossover}>
-        <div>
-          <h3>The crossover — where OpenMP loses on purpose</h3>
-          <p>
-            Below a per-op size threshold, thread startup costs more than the work. The committed
-            run keeps the losses:{' '}
-            {crossoverLosses.map((c, i) => (
-              <span key={c.op}>
-                <b className="tabular">{c.op}</b> goes {c.single} → {c.omp} ({c.factor})
-                {i < crossoverLosses.length - 1 ? '; ' : '.'}
-              </span>
-            ))}{' '}
-            The threshold is in the code, not on a slide:
-          </p>
-          <pre className={styles.codeline}>
-            <code>{crossoverPragma}</code>
-          </pre>
-        </div>
+        <h3>The crossover — where OpenMP loses on purpose</h3>
+        <p>
+          Below a per-op size threshold, thread startup costs more than the work. The committed run
+          keeps the losses:{' '}
+          {crossoverLosses.map((c, i) => (
+            <span key={c.op}>
+              <b className="tabular">{c.op}</b> goes {c.single} → {c.omp} ({c.factor})
+              {i < crossoverLosses.length - 1 ? '; ' : '.'}
+            </span>
+          ))}{' '}
+          The threshold is in the code, not on a slide:
+        </p>
+        <pre className={styles.codeline}>
+          <code>{crossoverPragma}</code>
+        </pre>
       </div>
 
       <div className={styles.benchHonesty}>
@@ -421,138 +706,35 @@ function KernelsChapter() {
         </pre>
       </div>
 
-      <div className={styles.kernelPeek}>
-        <header>
-          <h3>The kernel running in this page</h3>
-          <span>wasm/f64x2 · dual accumulators · src/NeuralNet.cpp</span>
-        </header>
-        <pre className={styles.codeblock}>
-          <code>{wasmKernelSource}</code>
-        </pre>
-        <ul className={styles.kernelNotes}>
-          <li>
-            Two independent accumulators keep the multiply-add dependency chain from serializing —
-            the same shape as the AVX-512 kernel's dual <code>_mm512_fmadd_pd</code> streams.
-          </li>
-          <li>
-            LLVM's autovectorizer declines this loop — so the hand-written kernel is exactly what
-            the live bench above times against the same math with vector lanes off, on your machine
-            (median shown in the titlebar).
-          </li>
-          <li>AVX-512, AVX2, and NEON siblings live beside it, selected at compile time.</li>
-        </ul>
-      </div>
-
-      <p className={styles.methodology}>{benchMethodology}</p>
-    </ChapterShell>
-  );
-}
-
-function NetworkChapter({ controller }: { controller: MnistDemoController }) {
-  return (
-    <ChapterShell
-      id="forward-pass"
-      index="2.0"
-      eyebrow="2.0 network — the starter: course-provided, framework-free"
-      bright="Three matrices, two sigmoids."
-      muted="The part we did not write."
-    >
-      <div className={styles.netLayout}>
-        <NetworkDiagram controller={controller} />
-        <div className={styles.netFacts}>
+      <div className={styles.liveAnatomy}>
+        <div className={styles.liveAnatomyHead}>
+          <h3>The whole pipeline, live</h3>
           <p>
-            The starter arrived from coursework as clean, framework-free C++: two fused
-            matrix-vector passes, <code>sigmoid(W·x + b)</code> into 100 hidden units, then again
-            into 10 class scores, trained by the course's from-scratch backprop. Every inference
-            funnels through that one gemv — the exact surface the real work targets: the kernels it
-            dispatches to.
+            Not an illustration — the real 28×28 raster, all 100 hidden activations, and the ten
+            output confidences from the ink you gave the bench above.
           </p>
-          <ul className={styles.factList}>
-            <li>
-              <b className="tabular">79,510</b> parameters
-            </li>
-            <li>
-              <b className="tabular">318KB</b> float32 binary weights
-            </li>
-            <li>
-              <b>sigmoid</b> activations, both layers
-            </li>
-            <li>
-              <b>argmax</b> over L1-normalized outputs
-            </li>
-          </ul>
         </div>
+        <NetworkDiagram controller={controller} />
       </div>
-    </ChapterShell>
-  );
-}
 
-function RuntimeChapter({ controller }: { controller: MnistDemoController }) {
-  const tiers = [
-    {
-      id: 'wasm',
-      name: 'browser wasm',
-      body: 'The same core, compiled with Emscripten. Hand-written f64x2 simd128 kernel — the one being timed on this page right now.',
-      state: controller.predictionSource === 'browser-wasm' ? 'active' : 'ready',
-    },
-    {
-      id: 'server',
-      name: 'native server',
-      body: 'C++17 + cpp-httplib. AVX-512 / AVX2 / NEON selected at compile time, OpenMP above tuned thresholds.',
-      state:
-        controller.serverStatus === 'online'
-          ? controller.predictionSource === 'server'
-            ? 'active'
-            : 'ready'
-          : 'offline',
-    },
-    {
-      id: 'js',
-      name: 'js demo fallback',
-      body: 'A labeled template matcher that keeps the page interactive if WASM is unavailable. Never used for accuracy or timing claims.',
-      state: controller.predictionSource === 'browser-js-demo' ? 'active' : 'standby',
-    },
-  ] as const;
-
-  return (
-    <ChapterShell
-      id="runtime"
-      index="3.0"
-      eyebrow="3.0 runtime — one core, three places to run"
-      bright="Native first. Portable always."
-      muted="The same C++, in your tab."
-    >
-      <div className={styles.tierGrid}>
-        {tiers.map((t, i) => (
-          <article key={t.id} className={styles.tierCard} data-state={t.state}>
-            <span className="tabular">0{i + 1}</span>
-            <h3>{t.name}</h3>
-            <p>{t.body}</p>
-            <b data-state={t.state}>{t.state}</b>
-          </article>
-        ))}
-      </div>
-      <dl className={styles.wasmFacts} aria-label="Measured WASM artifact facts">
-        {wasmRuntimeFacts.map((f) => (
-          <div key={f.label}>
-            <dt>{f.label}</dt>
-            <dd className="tabular">{f.value}</dd>
-          </div>
-        ))}
+      <dl className={styles.proofStats} aria-label="Correctness evidence">
+        <div>
+          <dt>test accuracy</dt>
+          <dd className="tabular">97.01%</dd>
+          <span>9,701 of 10,000 held-out digits</span>
+        </div>
+        <div>
+          <dt>C++ tests</dt>
+          <dd className="tabular">41</dd>
+          <span>Catch2 · 469 assertions · RapidCheck properties</span>
+        </div>
+        <div>
+          <dt>end-to-end</dt>
+          <dd className="tabular">29</dd>
+          <span>8 Playwright specs × 4 projects − 3 skips</span>
+        </div>
       </dl>
-    </ChapterShell>
-  );
-}
 
-function ProofChapter() {
-  return (
-    <ChapterShell
-      id="evidence"
-      index="4.0"
-      eyebrow="4.0 proof — measured, not promised"
-      bright="Every number on this page"
-      muted="is reproducible from the repo."
-    >
       <div className={styles.proofGrid}>
         <article>
           <h3>Reproduce the accuracy</h3>
@@ -568,7 +750,7 @@ cmake --build build -j
           </pre>
         </article>
         <article>
-          <h3>Reproduce this page's runtime</h3>
+          <h3>Reproduce this page&apos;s runtime</h3>
           <pre className={styles.codeblock}>
             <code>{`source "$EMSDK/emsdk_env.sh"
 
@@ -580,18 +762,45 @@ VITE_ENABLE_WASM=true npm run build`}</code>
           </pre>
         </article>
       </div>
-      <div className={styles.proofLinks}>
-        <a href={REPO_URL} target="_blank" rel="noreferrer">
-          Repository <ArrowUpRight size={14} strokeWidth={2} aria-hidden />
-        </a>
-        <a href={`${REPO_URL}/releases`} target="_blank" rel="noreferrer">
-          Releases <ArrowUpRight size={14} strokeWidth={2} aria-hidden />
-        </a>
-        <a href={`${REPO_URL}/blob/main/BENCHMARKS.md`} target="_blank" rel="noreferrer">
-          Benchmark methodology <ArrowUpRight size={14} strokeWidth={2} aria-hidden />
-        </a>
+      <p className={styles.methodology}>{benchMethodology}</p>
+    </ActShell>
+  );
+}
+
+/** Closing CTA band — try it, then read the whole story. */
+function TryItBand() {
+  return (
+    <section className={styles.tryBand} id="try" data-reveal aria-labelledby="try-title">
+      <div className={styles.actInner}>
+        <span className={styles.tryEyebrow}>try it</span>
+        <h2 id="try-title" className={styles.tryTitle}>
+          Draw a digit. Watch a hand-written kernel <em>beat scalar on your own silicon.</em>
+        </h2>
+        <p className={styles.tryLede}>
+          Then read the System Card — the same story in full: every kernel, every benchmark cell,
+          the crossover math, and the reconciled test counts.
+        </p>
+        <div className={styles.tryCtas}>
+          <button
+            type="button"
+            className={styles.ctaPrimary}
+            onClick={() => scrollToSection('classifier')}
+          >
+            <ArrowUpRight size={16} strokeWidth={2} aria-hidden />
+            Fire the live bench
+          </button>
+          <a className={styles.ctaSystemCard} href={SYSTEM_CARD_URL}>
+            <BookOpen size={16} strokeWidth={2} aria-hidden />
+            Read the System Card
+            <ArrowUpRight size={15} strokeWidth={2} aria-hidden />
+          </a>
+          <a className={styles.ctaGhost} href={REPO_URL} target="_blank" rel="noreferrer">
+            Source on GitHub
+            <ArrowUpRight size={16} strokeWidth={2} aria-hidden />
+          </a>
+        </div>
       </div>
-    </ChapterShell>
+    </section>
   );
 }
 
@@ -603,6 +812,15 @@ function Footer() {
         <span>
           Fast MNIST — a course-provided network, hand-optimized. Optimization by Ayush Yadav;
           contributor: Shree Chaturvedi.
+        </span>
+        <span className={styles.footerLinks}>
+          <a href={SYSTEM_CARD_URL}>System Card</a>
+          <a href={REPO_URL} target="_blank" rel="noreferrer">
+            Repository
+          </a>
+          <a href={`${REPO_URL}/blob/main/BENCHMARKS.md`} target="_blank" rel="noreferrer">
+            Benchmarks
+          </a>
         </span>
         <span className={styles.footerLegal}>
           MIT license · benchmarks from committed M2 run 20251226-154121
@@ -619,17 +837,15 @@ export function LandingPage({ controller }: { controller: MnistDemoController })
   return (
     <main className={styles.page}>
       <Nav active={active} />
+      <ActRail active={active} />
       <Hero />
+      <ProblemAct />
+      <SolutionAct />
+      <ImplementationAct controller={controller} />
+      <BenchIntro />
       <Workbench controller={controller} />
-      <div className={styles.chapters}>
-        <ChapterRail active={active} />
-        <div className={styles.chapterFlow}>
-          <KernelsChapter />
-          <NetworkChapter controller={controller} />
-          <RuntimeChapter controller={controller} />
-          <ProofChapter />
-        </div>
-      </div>
+      <ProofAct controller={controller} />
+      <TryItBand />
       <Footer />
     </main>
   );
