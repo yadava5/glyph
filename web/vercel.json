@@ -1,11 +1,15 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "npm ci",
-  "buildCommand": "npm run build",
+  "buildCommand": "VITE_ENABLE_WASM=true npm run build",
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/system-card",
+      "destination": "/system-card/index.html"
+    },
+    {
+      "source": "/((?!system-card).*)",
       "destination": "/"
     }
   ],
