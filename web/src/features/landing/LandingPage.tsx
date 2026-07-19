@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { ArrowDown, ArrowUpRight, BookOpen, Command, Menu, X } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
 import {
@@ -15,8 +15,17 @@ import {
 } from '../performance/benchmarkData';
 import type { MnistDemoController } from '../mnist/useMnistDemoController';
 import { NetworkDiagram } from './NetworkDiagram';
-import { PixelSign } from './PixelSign';
 import { Workbench } from './Workbench';
+import { LaneField } from './LaneField';
+import { FlowMark } from './FlowMark';
+import {
+  AccuracyWaffle,
+  CrossoverChart,
+  GflopsSlope,
+  LaneScale,
+  ThroughputGauge,
+} from './PerfVizLazy';
+import { Decode, MagneticButton, RollingNumber, Spotlight, Tilt } from './interactions';
 import styles from './LandingPage.module.css';
 
 const REPO_URL = 'https://github.com/yadava5/fast-mnist-nn';
@@ -205,6 +214,28 @@ function ActRail({ active }: { active: string | null }) {
   );
 }
 
+/**
+ * Word spans for the hero title, so a sky "read-head" can sweep on hover.
+ * The inter-word spaces are rendered as text nodes BETWEEN the inline-block
+ * spans (an inline-block trims its own trailing whitespace), which keeps both
+ * the visible spacing and the accessible heading text intact.
+ */
+function TitleWords({ text, offset = 0 }: { text: string; offset?: number }) {
+  const words = text.split(' ');
+  return (
+    <>
+      {words.map((word, i) => (
+        <Fragment key={`${word}-${i}`}>
+          <span className={styles.titleWord} style={{ '--i': i + offset } as React.CSSProperties}>
+            {word}
+          </span>
+          {i < words.length - 1 ? ' ' : ''}
+        </Fragment>
+      ))}
+    </>
+  );
+}
+
 function Hero() {
   const reduced = useReducedMotion();
   const subhead =
@@ -212,7 +243,13 @@ function Hero() {
   const words = subhead.split(' ');
 
   return (
-    <section className={styles.hero} id="hero" aria-labelledby="hero-title">
+    <Spotlight
+      as="section"
+      className={styles.hero}
+      id="hero"
+      aria-labelledby="hero-title"
+      glow="56 189 248"
+    >
       <motion.a
         className={styles.heroPill}
         href="#classifier"
@@ -239,9 +276,12 @@ function Hero() {
         animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.19, 1, 0.22, 1] }}
       >
-        <span className={styles.heroTitleBright}>Handed a neural network.</span>
+        <span className={styles.heroTitleBright}>
+          <TitleWords text="Handed a neural network." />
+        </span>
         <span className={styles.heroTitleMuted}>
-          Handed back a <em>fast</em> one.
+          <TitleWords text="Handed back a" /> <em className={styles.shimmerWord}>fast</em>{' '}
+          <TitleWords text="one." offset={4} />
         </span>
       </motion.h1>
 
@@ -264,45 +304,43 @@ function Hero() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 1.15, ease: [0.19, 1, 0.22, 1] }}
       >
-        <button
-          type="button"
-          className={styles.ctaPrimary}
-          onClick={() => scrollToSection('classifier')}
-        >
+        <MagneticButton className={styles.ctaPrimary} onClick={() => scrollToSection('classifier')}>
           Fire the live bench
           <ArrowDown size={16} strokeWidth={2} aria-hidden />
-        </button>
+        </MagneticButton>
         <a className={styles.ctaGhost} href={SYSTEM_CARD_URL}>
           <BookOpen size={16} strokeWidth={2} aria-hidden />
           Read the System Card
         </a>
       </motion.div>
 
-      <motion.dl
-        className={styles.heroMetrics}
-        aria-label="Verified numbers from the committed benchmark run"
-        initial={reduced ? false : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.7, delay: 1.5 }}
-      >
-        <div>
-          <dt>matmul 256 · M2</dt>
-          <dd className="tabular">3.50× omp+native vs 1-thread</dd>
-        </div>
-        <div>
-          <dt>native classify</dt>
-          <dd className="tabular">81,628 img/s (M2)</dd>
-        </div>
-        <div>
-          <dt>isa ladder</dt>
-          <dd className="tabular">AVX-512 · AVX2 · NEON · simd128</dd>
-        </div>
-        <div>
-          <dt>test accuracy</dt>
-          <dd className="tabular">97.01% / 10,000</dd>
-        </div>
-      </motion.dl>
-    </section>
+      <Tilt className={styles.heroMetricsTilt} max={4}>
+        <motion.dl
+          className={styles.heroMetrics}
+          aria-label="Verified numbers from the committed benchmark run"
+          initial={reduced ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.7, delay: 1.5 }}
+        >
+          <div>
+            <dt>matmul 256 · M2</dt>
+            <dd className="tabular">3.50× omp+native vs 1-thread</dd>
+          </div>
+          <div>
+            <dt>native classify</dt>
+            <dd className="tabular">81,628 img/s (M2)</dd>
+          </div>
+          <div>
+            <dt>isa ladder</dt>
+            <dd className="tabular">AVX-512 · AVX2 · NEON · simd128</dd>
+          </div>
+          <div>
+            <dt>test accuracy</dt>
+            <dd className="tabular">97.01% / 10,000</dd>
+          </div>
+        </motion.dl>
+      </Tilt>
+    </Spotlight>
   );
 }
 
@@ -553,6 +591,8 @@ function ImplementationAct({ controller }: { controller: MnistDemoController }) 
         the instrument below time it against scalar, on your own machine.
       </p>
 
+      <LaneScale />
+
       <div className={styles.tierGrid}>
         {tiers.map((t, i) => (
           <article key={t.id} className={styles.tierCard} data-state={t.state}>
@@ -582,7 +622,7 @@ function BenchIntro() {
       <div className={styles.actInner}>
         <span className={styles.benchIntroEyebrow}>·· the fourth ISA, running</span>
         <h2 className={styles.benchIntroTitle}>
-          Proof you can run. <em>Scalar versus simd128, on your machine.</em>
+          <Decode text="Proof you can run." /> <em>Scalar versus simd128, on your machine.</em>
         </h2>
         <p>
           The workbench below is the real classifier compiled to wasm. Each stroke times the
@@ -648,6 +688,19 @@ function ProofAct({ controller }: { controller: MnistDemoController }) {
         </>
       }
     >
+      <div className={styles.liveInstrument}>
+        <ThroughputGauge controller={controller} />
+        <div className={styles.liveInstrumentNote}>
+          <span className={styles.miniLabel}>the one live number</span>
+          <p>
+            Everything else on this page is a <b>committed</b> M2 run you can reproduce. This dial
+            is the exception — it is <em>your</em> machine, timing the wasm simd128 kernel against
+            scalar as you draw in the bench above. The committed bars below measure threading and
+            native codegen; the dial measures SIMD itself.
+          </p>
+        </div>
+      </div>
+
       <div className={styles.benchGrid}>
         {kernelBenchmarks.map((k) => (
           <article key={k.id} className={styles.benchCard}>
@@ -673,6 +726,11 @@ function ProofAct({ controller }: { controller: MnistDemoController }) {
         run) — these bars measure threading and native codegen on top of it. The SIMD-vs-scalar
         comparison is the live one in the workbench, on your machine.
       </p>
+
+      <div className={styles.chartsRow}>
+        <CrossoverChart />
+        <GflopsSlope />
+      </div>
 
       <div className={styles.crossover}>
         <h3>The crossover — where OpenMP loses on purpose</h3>
@@ -717,20 +775,21 @@ function ProofAct({ controller }: { controller: MnistDemoController }) {
         <NetworkDiagram controller={controller} />
       </div>
 
-      <dl className={styles.proofStats} aria-label="Correctness evidence">
-        <div>
-          <dt>test accuracy</dt>
-          <dd className="tabular">97.01%</dd>
-          <span>9,701 of 10,000 held-out digits</span>
-        </div>
+      <AccuracyWaffle />
+
+      <dl className={styles.proofStats} data-cols="2" aria-label="Testing evidence">
         <div>
           <dt>C++ tests</dt>
-          <dd className="tabular">41</dd>
+          <dd className="tabular">
+            <RollingNumber value={41} rerollOnHover />
+          </dd>
           <span>Catch2 · 469 assertions · RapidCheck properties</span>
         </div>
         <div>
           <dt>end-to-end</dt>
-          <dd className="tabular">29</dd>
+          <dd className="tabular">
+            <RollingNumber value={29} rerollOnHover />
+          </dd>
           <span>8 Playwright specs × 4 projects − 3 skips</span>
         </div>
       </dl>
@@ -781,14 +840,13 @@ function TryItBand() {
           the crossover math, and the reconciled test counts.
         </p>
         <div className={styles.tryCtas}>
-          <button
-            type="button"
+          <MagneticButton
             className={styles.ctaPrimary}
             onClick={() => scrollToSection('classifier')}
           >
             <ArrowUpRight size={16} strokeWidth={2} aria-hidden />
             Fire the live bench
-          </button>
+          </MagneticButton>
           <a className={styles.ctaSystemCard} href={SYSTEM_CARD_URL}>
             <BookOpen size={16} strokeWidth={2} aria-hidden />
             Read the System Card
@@ -807,7 +865,7 @@ function TryItBand() {
 function Footer() {
   return (
     <footer className={styles.footer} data-reveal>
-      <PixelSign word="FAST" />
+      <FlowMark />
       <div className={styles.footerMeta}>
         <span>
           Fast MNIST — a course-provided network, hand-optimized. Optimization by Ayush Yadav;
@@ -836,17 +894,20 @@ export function LandingPage({ controller }: { controller: MnistDemoController })
 
   return (
     <main className={styles.page}>
-      <Nav active={active} />
-      <ActRail active={active} />
-      <Hero />
-      <ProblemAct />
-      <SolutionAct />
-      <ImplementationAct controller={controller} />
-      <BenchIntro />
-      <Workbench controller={controller} />
-      <ProofAct controller={controller} />
-      <TryItBand />
-      <Footer />
+      <LaneField />
+      <div className={styles.pageContent}>
+        <Nav active={active} />
+        <ActRail active={active} />
+        <Hero />
+        <ProblemAct />
+        <SolutionAct />
+        <ImplementationAct controller={controller} />
+        <BenchIntro />
+        <Workbench controller={controller} />
+        <ProofAct controller={controller} />
+        <TryItBand />
+        <Footer />
+      </div>
     </main>
   );
 }
