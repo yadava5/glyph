@@ -4,7 +4,8 @@ import { COLORS, FONTS, SECTION, SECTION_INK } from "../theme";
 import { INSIDE } from "../content";
 import { StatBig } from "../primitives/StatBig";
 import { SourceNote } from "../primitives/SourceNote";
-import { BenchGaugeSignature, NetworkAnatomySignature } from "../visuals/IsaSignatures";
+import { NetworkAnatomySignature } from "../visuals/IsaSignatures";
+import { RadialGauge } from "../visuals/Charts";
 import { Prose, HangingNote, FactGrid, CodePanel } from "./kit";
 
 type PageProps = { parity: "recto" | "verso"; pageNumber: number; totalPages: number };
@@ -69,12 +70,25 @@ export const InsideBenchPage: React.FC<PageProps> = (p) => {
             <span style={{ color: COLORS.ON_DARK_SUBTLE }}>p50 · n</span>
           </div>
         </div>
-        <BenchGaugeSignature />
+        <RadialGauge value={1.7} min={1} max={2.5} bandLo={1.5} bandHi={1.9} accent={SKY_INK} source="useMnistDemoController.ts:163" />
       </div>
-      <HangingNote label="Honest by design" accent={SKY} accentInk={SKY_INK} style={{ marginTop: 18 }}>
+      <HangingNote label="Honest by design" accent={SKY} accentInk={SKY_INK} style={{ marginTop: 16 }}>
         {d.honest}
       </HangingNote>
-      <SourceNote style={{ marginTop: 16 }}>{d.source}</SourceNote>
+      {/* method strip — how the badge number is earned (fills the page rhythm) */}
+      <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+        {[
+          { k: "forward pass only", v: "the classify hot loop, nothing else timed" },
+          { k: "many iterations", v: "both kernels timed in C++, warm, back to back" },
+          { k: "session p50", v: "the median of the run — the defensible middle" },
+        ].map((m) => (
+          <div key={m.k} style={{ border: `0.5pt solid ${COLORS.HAIRLINE}`, borderLeft: `2.5px solid ${SKY}`, borderRadius: 4, padding: "9px 11px" }}>
+            <div style={{ fontFamily: FONTS.MONO, fontSize: 8.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: SKY_INK }}>{m.k}</div>
+            <div style={{ fontFamily: FONTS.SANS, fontSize: 10, lineHeight: 1.35, color: COLORS.INK_MUTED, marginTop: 3 }}>{m.v}</div>
+          </div>
+        ))}
+      </div>
+      <SourceNote style={{ marginTop: 14 }}>{d.source}</SourceNote>
     </BodyPage>
   );
 };
