@@ -21,10 +21,13 @@ export default defineConfig({
     video: 'on',
   },
   webServer: {
-    command: `npm run build && npm run preview -- --host 127.0.0.1 --port ${port}`,
+    // Build with the WASM classifier enabled so e2e exercises the real
+    // in-browser simd128 benchmark path (what production ships), not the
+    // JS demo fallback. The wasm artifacts live in public/wasm/.
+    command: `VITE_ENABLE_WASM=true npm run build && npm run preview -- --host 127.0.0.1 --port ${port}`,
     url: baseURL,
     reuseExistingServer: true,
-    timeout: 60_000,
+    timeout: 120_000,
   },
   projects: [
     {
