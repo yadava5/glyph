@@ -540,6 +540,12 @@
 
 .actBody {
   display: grid;
+  /* Pin the single implicit column to the container (min 0) so wide,
+     non-wrapping children — the <pre> code blocks, the live gauge row —
+     stay inside their own overflow-x:auto box instead of stretching the
+     whole track to their max-content width. Without this the track
+     ballooned to ~640px and clipped content on narrow (mobile) viewports. */
+  grid-template-columns: minmax(0, 1fr);
   gap: clamp(1.4rem, 2.5vw, 2rem);
 }
 
