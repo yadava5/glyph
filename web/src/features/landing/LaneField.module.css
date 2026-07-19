@@ -1,0 +1,112 @@
+/* The living SIMD-lane background. Fixed, behind all content, non-interactive. */
+
+.field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  --px: 50%;
+  --py: 40%;
+  --pon: 0;
+  /* fade the field toward the top so the nav/hero copy stays clean */
+  mask-image: linear-gradient(180deg, transparent, black 12%, black 92%, transparent);
+}
+
+/* Static vector lanes — thin vertical rules every ~54px. */
+.lanes {
+  position: absolute;
+  inset: -2px;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 53px,
+    rgb(125 211 252 / 0.045) 53px,
+    rgb(125 211 252 / 0.045) 54px
+  );
+}
+
+/* The same lanes, brighter, revealed only in a soft disc around the cursor —
+   the grid "notices" the pointer. Driven entirely by --px/--py/--pon. */
+.lanesLit {
+  position: absolute;
+  inset: -2px;
+  opacity: var(--pon);
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 53px,
+    rgb(125 211 252 / 0.28) 53px,
+    rgb(125 211 252 / 0.28) 54px
+  );
+  -webkit-mask-image: radial-gradient(220px circle at var(--px) var(--py), black, transparent 70%);
+  mask-image: radial-gradient(220px circle at var(--px) var(--py), black, transparent 70%);
+  transition: opacity 0.4s var(--ease-out-quart);
+}
+
+/* soft cool glow trailing the cursor */
+.cursorGlow {
+  position: absolute;
+  inset: 0;
+  opacity: calc(var(--pon) * 0.6);
+  background: radial-gradient(
+    340px circle at var(--px) var(--py),
+    rgb(56 189 248 / 0.05),
+    transparent 62%
+  );
+  transition: opacity 0.5s var(--ease-out-quart);
+}
+
+.carriers {
+  position: absolute;
+  inset: 0;
+}
+
+/* A carrier: a thin vertical light streak that streams down its lane. */
+.carrier {
+  position: absolute;
+  top: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, transparent, currentColor 45%, transparent);
+  color: rgb(125 211 252);
+  will-change: transform;
+  animation-name: laneStream;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.carrier[data-hue='amber'] {
+  color: rgb(245 158 11);
+}
+.carrier[data-hue='steel'] {
+  color: rgb(148 163 184);
+}
+
+@keyframes laneStream {
+  0% {
+    transform: translateY(-40vh);
+  }
+  100% {
+    transform: translateY(140vh);
+  }
+}
+
+/* Reduced motion: freeze the stream to a still, faint field. The cursor glow
+   is user-driven (not autonomous), but we quiet it too for calm. */
+.field[data-reduced] .carrier {
+  animation: none;
+  transform: translateY(60vh);
+  opacity: 0.05 !important;
+}
+
+.field[data-reduced] .lanesLit,
+.field[data-reduced] .cursorGlow {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carrier {
+    animation: none;
+    transform: translateY(60vh);
+  }
+}
