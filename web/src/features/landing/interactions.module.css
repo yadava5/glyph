@@ -1,0 +1,72 @@
+/* Micro-interaction primitives — cool-steel, restrained. */
+
+/* Cursor-follow spotlight. The glow layer is a pseudo-element so it never
+   intercepts pointer events and never repaints the content beneath it. */
+.spotlight {
+  position: relative;
+  --mx: 50%;
+  --my: 50%;
+  --spot: 0;
+}
+
+.spotlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: var(--spot);
+  background: radial-gradient(
+    280px circle at var(--mx) var(--my),
+    rgb(var(--glow) / 0.13),
+    transparent 60%
+  );
+  transition: opacity 0.3s var(--ease-out-quart);
+}
+
+/* keep authored children above the glow */
+.spotlight > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spotlight::after {
+    display: none;
+  }
+}
+
+/* Tilt + magnetic — the transform is written per-frame in JS; the CSS
+   transition does the smoothing and the ease-back on leave. */
+.tilt {
+  transform-style: preserve-3d;
+  transition: transform 0.28s var(--ease-out-quart);
+  will-change: transform;
+}
+
+.magnetic {
+  transition:
+    transform 0.35s var(--ease-out-expo),
+    box-shadow 0.16s var(--ease-out-quart);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tilt,
+  .magnetic {
+    transition: none;
+  }
+}
+
+/* Rolling stat — a hair of blur + lift while the digits are in motion,
+   snapping crisp when settled. Reduced-motion never sets data-rolling. */
+.rolling {
+  display: inline-block;
+  transition:
+    filter 0.2s var(--ease-out-quart),
+    transform 0.2s var(--ease-out-quart);
+}
+
+.rolling[data-rolling] {
+  filter: blur(0.35px);
+}
