@@ -196,6 +196,126 @@ export const isaLadder = [
   },
 ] as const;
 
+/*
+ * FULL CROSSOVER SERIES — every committed matmul / transpose / axpy size,
+ * expressed as single-thread ÷ openmp+native speedup. Values are computed
+ * directly from the two committed runs:
+ *   docs/benchmarks/runs/bench-20251226-154121-baseline.json      (single thread)
+ *   docs/benchmarks/runs/bench-20251226-154121-openmp-native.json (openmp+native)
+ * speedup = single_ns / omp_ns. A value BELOW 1.0 means OpenMP actively
+ * LOSES at that size — the honest crossover the page keeps on the record.
+ * This is the source for the crossover scatter/line on the landing.
+ */
+export const crossoverSeries = [
+  {
+    id: 'matmul',
+    label: 'matmul N×N',
+    unit: 'N',
+    accent: 'sky',
+    points: [
+      { size: 32, singleNs: 6164.7, ompNs: 6286.8, speedup: 0.98 },
+      { size: 64, singleNs: 65252.1, ompNs: 89130.1, speedup: 0.73 },
+      { size: 128, singleNs: 575280.7, ompNs: 374400.2, speedup: 1.54 },
+      { size: 256, singleNs: 4835359.6, ompNs: 1379834.7, speedup: 3.5 },
+    ],
+  },
+  {
+    id: 'transpose',
+    label: 'transpose',
+    unit: 'rows',
+    accent: 'amber',
+    points: [
+      { size: 128, singleNs: 5440.9, ompNs: 23661.8, speedup: 0.23 },
+      { size: 256, singleNs: 23097.5, ompNs: 31108.0, speedup: 0.74 },
+      { size: 512, singleNs: 198735.4, ompNs: 87913.6, speedup: 2.26 },
+      { size: 1024, singleNs: 978383.0, ompNs: 502426.0, speedup: 1.95 },
+    ],
+  },
+  {
+    id: 'axpy',
+    label: 'axpy',
+    unit: 'len',
+    accent: 'steel',
+    points: [
+      { size: 128, singleNs: 3486.0, ompNs: 23916.7, speedup: 0.15 },
+      { size: 256, singleNs: 13886.0, ompNs: 26335.3, speedup: 0.53 },
+      { size: 512, singleNs: 55847.8, ompNs: 35845.5, speedup: 1.56 },
+      { size: 1024, singleNs: 230626.4, ompNs: 114909.6, speedup: 2.01 },
+    ],
+  },
+] as const;
+
+/*
+ * GFLOP/s SLOPE for the matmul kernel. A matmul of N×N is 2·N³ FLOPs, so
+ * GFLOP/s = 2·N³ / real_time_ns (FLOPs per ns == GFLOP/s). single = baseline
+ * run, omp = openmp+native run, both from the committed JSONs above. The
+ * story: single-thread throughput is flat/cache-bound (~7–10), while
+ * openmp+native climbs to 24.3 GFLOP/s once the matrix is large enough to
+ * amortize thread startup. Same run as the 3.50× matmul card.
+ */
+export const gflopsSeries = {
+  op: 'matmul N×N',
+  flops: '2·N³ FLOPs',
+  peak: '24.3 GFLOP/s',
+  points: [
+    { size: 32, single: 10.63, omp: 10.42 },
+    { size: 64, single: 8.03, omp: 5.88 },
+    { size: 128, single: 7.29, omp: 11.2 },
+    { size: 256, single: 6.94, omp: 24.32 },
+  ],
+} as const;
+
+/*
+ * PER-ISA LANE SCALE — the same dual-accumulator dot product, and how many
+ * f64 lanes each target lights per instruction. scalar = 1 (the problem);
+ * the four hand-written SIMD rungs carry 2/2/4/8. Widths + lane counts are
+ * verified against src/NeuralNet.cpp (see isaLadder). The "×" is literal:
+ * lanes = f64 multiply-adds retired per vector instruction. Drives the
+ * sequential lane-scale comparison on the landing.
+ */
+export const laneScale = [
+  {
+    id: 'scalar',
+    name: 'scalar loop',
+    lanes: 1,
+    width: '64-bit',
+    tone: 'idle',
+    where: 'the starting point',
+  },
+  {
+    id: 'wasm',
+    name: 'wasm-simd128',
+    lanes: 2,
+    width: '128-bit',
+    tone: 'live',
+    where: 'your browser',
+  },
+  { id: 'neon', name: 'NEON', lanes: 2, width: '128-bit', tone: 'simd', where: 'arm64 · this run' },
+  { id: 'avx2', name: 'AVX2', lanes: 4, width: '256-bit', tone: 'simd', where: 'x86-64' },
+  {
+    id: 'avx512',
+    name: 'AVX-512',
+    lanes: 8,
+    width: '512-bit',
+    tone: 'simd',
+    where: 'x86-64 server',
+  },
+] as const;
+
+/*
+ * ACCURACY WAFFLE — the 97.01% test result drawn honestly as ten thousand
+ * held-out digits: 9,701 classified correctly, 299 missed. Not a confusion
+ * matrix (the repo commits no per-class breakdown, so the page invents
+ * none) — just the one verified figure, made countable.
+ */
+export const accuracyWaffle = {
+  total: 10000,
+  correct: 9701,
+  errors: 299,
+  pct: '97.01%',
+  note: '9,701 of 10,000 held-out test digits classified correctly',
+} as const;
+
 export const wasmKernelSource = `static inline double
 dot_wasm128_rowvec(const double* __restrict row, const double* __restrict x,
                    std::size_t n) {
