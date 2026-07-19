@@ -136,6 +136,66 @@ dot512_rowvec(const double* __restrict row, const double* __restrict x,
     return sum;
 }`;
 
+/*
+ * The scalar problem, stated in lanes. A double is 64 bits; the widest
+ * vector register on the x86 server (AVX-512) is 512 bits — eight f64
+ * lanes. A scalar loop lights exactly one of them per instruction, so on
+ * AVX-512 seven of eight lanes sit idle. Widths verified against the
+ * kernels in src/NeuralNet.cpp (n16/n8/n4/n2 strides → 8/4/2 f64 lanes).
+ */
+export const scalarIdle = {
+  widestLanes: 8, // AVX-512, 512-bit / 64-bit f64
+  usedByScalar: 1,
+  headline: '1 of 8',
+  caption: 'f64 lanes a scalar loop uses on AVX-512 — seven sit idle',
+} as const;
+
+/*
+ * The ISA ladder — the SAME dual-accumulator dot product, hand-written for
+ * four instruction sets. `lanes` = f64 lanes per vector register; every
+ * kernel runs two independent accumulators to keep the FMA chain from
+ * serializing. Intrinsics + lane strides are verbatim from
+ * src/NeuralNet.cpp (dot512/dot256/dotNeon/dot_wasm128 rowvec kernels).
+ */
+export const isaLadder = [
+  {
+    id: 'avx512',
+    isa: 'AVX-512',
+    width: '512-bit',
+    lanes: 8,
+    intrinsic: '_mm512_fmadd_pd',
+    where: 'server · x86-64',
+    note: 'Eight doubles per register, fused multiply-add. The widest rung.',
+  },
+  {
+    id: 'avx2',
+    isa: 'AVX2',
+    width: '256-bit',
+    lanes: 4,
+    intrinsic: '_mm256_fmadd_pd',
+    where: 'server · x86-64',
+    note: 'Four doubles per register, FMA — the ubiquitous x86 fallback.',
+  },
+  {
+    id: 'neon',
+    isa: 'NEON',
+    width: '128-bit',
+    lanes: 2,
+    intrinsic: 'vfmaq_f64',
+    where: 'server · arm64 (M-series)',
+    note: 'Two doubles per register. This is the rung the M2 run used.',
+  },
+  {
+    id: 'wasm',
+    isa: 'wasm-simd128',
+    width: '128-bit',
+    lanes: 2,
+    intrinsic: 'wasm_f64x2_add',
+    where: 'browser · Emscripten',
+    note: 'The fourth ISA — carries the same optimization into your tab.',
+  },
+] as const;
+
 export const wasmKernelSource = `static inline double
 dot_wasm128_rowvec(const double* __restrict row, const double* __restrict x,
                    std::size_t n) {
