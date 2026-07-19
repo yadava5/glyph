@@ -1,4 +1,6 @@
 node_modules/
 dist/
+dist-web/
+scripts/shoot.mjs
 *.log
 .DS_Store
