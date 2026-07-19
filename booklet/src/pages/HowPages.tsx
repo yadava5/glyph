@@ -6,6 +6,7 @@ import { StatBig } from "../primitives/StatBig";
 import { PullQuote } from "../primitives/PullQuote";
 import { SourceNote } from "../primitives/SourceNote";
 import { IsaLaneSignature } from "../visuals/IsaSignatures";
+import { PerIterUnits, AccumPipeline, ScatterQuadrant, type ScatterPt } from "../visuals/Charts";
 import { Prose, HangingNote, CodePanel, BandRows } from "./kit";
 
 type PageProps = { parity: "recto" | "verso"; pageNumber: number; totalPages: number };
@@ -99,10 +100,12 @@ export const HowAvxPage: React.FC<PageProps> = (p) => {
         </div>
         <CodePanel caption="src/NeuralNet.cpp · dot512_rowvec (condensed)" code={AVX512_SRC} accent={AMBER_INK} />
       </div>
-      <div style={{ display: "flex", gap: 40, marginTop: 24, paddingTop: 16, borderTop: `1pt solid ${AMBER}` }}>
-        <StatBig value={d.stat.value} label={d.stat.label} tier="metricMedium" color={AMBER_INK} />
-        <StatBig value={d.stat2.value} label={d.stat2.label} tier="metricMedium" color={COLORS.INK} />
-        <div style={{ flex: 1 }} />
+      <div style={{ display: "grid", gridTemplateColumns: "0.82fr 1.18fr", columnGap: 30, alignItems: "center", marginTop: 22, paddingTop: 16, borderTop: `1pt solid ${AMBER}` }}>
+        <div style={{ display: "flex", gap: 30 }}>
+          <StatBig value={d.stat.value} label={d.stat.label} tier="metricMedium" color={AMBER_INK} />
+          <StatBig value={d.stat2.value} label={d.stat2.label} tier="metricMedium" color={COLORS.INK} />
+        </div>
+        <PerIterUnits accent={AMBER_INK} />
       </div>
       <SourceNote style={{ marginTop: 16 }}>source · src/NeuralNet.cpp:49-74 (AVX-512) · :95-124 (AVX2)</SourceNote>
     </BodyPage>
@@ -141,12 +144,14 @@ export const HowNeonPage: React.FC<PageProps> = (p) => {
       <HangingNote label="On the record" accent={AMBER} accentInk={AMBER_INK} style={{ marginTop: 16 }}>
         {d.note}
       </HangingNote>
-      <div style={{ display: "flex", gap: 40, marginTop: 22, paddingTop: 16, borderTop: `1pt solid ${AMBER}` }}>
-        <StatBig value={d.stat.value} label={d.stat.label} tier="metricSmall" color={AMBER_INK} />
-        <StatBig value={d.stat2.value} label={d.stat2.label} tier="metricSmall" color={COLORS.INK} />
-        <div style={{ flex: 1 }} />
+      <div style={{ display: "grid", gridTemplateColumns: "0.72fr 1.28fr", columnGap: 30, alignItems: "center", marginTop: 20, paddingTop: 16, borderTop: `1pt solid ${AMBER}` }}>
+        <div style={{ display: "flex", gap: 28 }}>
+          <StatBig value={d.stat.value} label={d.stat.label} tier="metricSmall" color={AMBER_INK} />
+          <StatBig value={d.stat2.value} label={d.stat2.label} tier="metricSmall" color={COLORS.INK} />
+        </div>
+        <NeonSharedShape />
       </div>
-      <SourceNote style={{ marginTop: 16 }}>source · src/NeuralNet.cpp:146-165 (dot_neon_rowvec) · benchmarkData.ts:1-6</SourceNote>
+      <SourceNote style={{ marginTop: 14 }}>source · src/NeuralNet.cpp:146-165 (dot_neon_rowvec) · benchmarkData.ts:1-6</SourceNote>
     </BodyPage>
   );
 };
@@ -165,10 +170,12 @@ export const HowWasmPage: React.FC<PageProps> = (p) => {
         </div>
         <CodePanel caption="src/NeuralNet.cpp · dot_wasm128_rowvec (condensed)" code={WASM_SRC} accent={AMBER_INK} />
       </div>
-      <div style={{ display: "flex", gap: 40, marginTop: 24, paddingTop: 16, borderTop: `1pt solid ${AMBER}` }}>
-        <StatBig value={d.stat.value} label={d.stat.label} tier="metricMedium" color={AMBER_INK} />
-        <StatBig value={d.stat2.value} label={d.stat2.label} tier="metricMedium" color={COLORS.INK} />
-        <div style={{ flex: 1 }} />
+      <div style={{ display: "grid", gridTemplateColumns: "0.8fr 1.2fr", columnGap: 30, alignItems: "center", marginTop: 22, paddingTop: 16, borderTop: `1pt solid ${AMBER}` }}>
+        <div style={{ display: "flex", gap: 30 }}>
+          <StatBig value={d.stat.value} label={d.stat.label} tier="metricMedium" color={AMBER_INK} />
+          <StatBig value={d.stat2.value} label={d.stat2.label} tier="metricMedium" color={COLORS.INK} />
+        </div>
+        <AccumPipeline accent={AMBER_INK} />
       </div>
       <SourceNote style={{ marginTop: 16 }}>source · src/NeuralNet.cpp:195-215 · CMakeLists.txt:281 (-msimd128)</SourceNote>
     </BodyPage>
@@ -187,12 +194,67 @@ export const HowThreadsPage: React.FC<PageProps> = (p) => {
         <Prose items={[d.body]} />
       </div>
       <BandRows bands={d.bands} />
-      <div style={{ marginTop: 18, borderLeft: `2.5px solid ${AMBER}`, paddingLeft: 16 }}>
-        <PullQuote size="small" color={COLORS.INK} style={{ maxWidth: "6.2in" }}>
-          {d.loopNote}
-        </PullQuote>
+      {/* the crossover, plotted: speedup vs how costly the op is single-threaded */}
+      <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "1fr 1.05fr", columnGap: 26, alignItems: "center" }}>
+        <div style={{ borderLeft: `2.5px solid ${AMBER}`, paddingLeft: 16 }}>
+          <PullQuote size="small" color={COLORS.INK} style={{ maxWidth: "3.2in" }}>
+            {d.loopNote}
+          </PullQuote>
+        </div>
+        <ScatterQuadrant pts={THREAD_PTS} accent={AMBER_INK} source="benchmarkData.ts:26-90" />
       </div>
-      <SourceNote style={{ marginTop: 16 }}>{d.source}</SourceNote>
+      <SourceNote style={{ marginTop: 14 }}>{d.source}</SourceNote>
     </BodyPage>
+  );
+};
+
+// Each op: 1-thread baseline cost (x, µs log) vs its omp+native speedup (y, log).
+const THREAD_PTS: ScatterPt[] = [
+  { op: "matmul 256²", base: 4835, factor: 3.5, win: true, dx: -9, dy: -7 },
+  { op: "transpose 1024", base: 978, factor: 1.95, win: true, dx: 9, dy: -6 },
+  { op: "axpy 1024", base: 231, factor: 2.01, win: true, dx: 9, dy: 13 },
+  { op: "transpose 128", base: 5.4, factor: 0.23, win: false, dx: 9, dy: -6 },
+  { op: "axpy 256", base: 13.9, factor: 0.53, win: false, dx: 9, dy: 13 },
+];
+
+// p11 · the shared kernel shape across the four ISAs — NEON is the M2's.
+const NeonSharedShape: React.FC = () => {
+  const rows = [
+    { label: "AVX-512", lanes: "8-wide", note: "x86 servers" },
+    { label: "AVX2", lanes: "4-wide", note: "x86 laptops" },
+    { label: "NEON", lanes: "2-wide", note: "the M2 · this run", live: true },
+    { label: "wasm128", lanes: "2-wide", note: "the browser" },
+  ];
+  return (
+    <div style={{ border: `0.5pt solid ${COLORS.HAIRLINE}`, borderRadius: 6, background: COLORS.PAPER_ELEVATED, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 7 }}>
+      <div style={{ fontFamily: FONTS.MONO, fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: AMBER_INK }}>
+        one shape · four ISAs
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+        {rows.map((r) => (
+          <div
+            key={r.label}
+            style={{
+              border: `0.5pt solid ${COLORS.HAIRLINE}`,
+              borderLeft: `2.5px solid ${r.live ? COLORS.SIMD_AMBER : COLORS.STEEL}`,
+              borderRadius: 4,
+              background: r.live ? COLORS.AMBER_TINT : COLORS.PAPER,
+              padding: "6px 9px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 1,
+            }}
+          >
+            <span style={{ fontFamily: FONTS.MONO, fontSize: 9.5, fontWeight: 700, color: r.live ? COLORS.AMBER_DEEP : COLORS.INK }}>
+              {r.label} <span style={{ color: COLORS.INK_SUBTLE, fontWeight: 500 }}>· {r.lanes}</span>
+            </span>
+            <span style={{ fontFamily: FONTS.MONO, fontSize: 7.5, color: COLORS.INK_MUTED }}>{r.note}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontFamily: FONTS.SERIF, fontStyle: "italic", fontSize: 10.5, lineHeight: 1.3, color: COLORS.INK_MUTED }}>
+        Narrower lanes, one dual-accumulator shape — NEON produced this card's committed run.
+      </div>
+    </div>
   );
 };
