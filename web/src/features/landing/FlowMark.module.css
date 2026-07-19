@@ -1,0 +1,152 @@
+/* The signature flow-mark: a handwritten digit resolving into SIMD lanes. */
+
+.mark {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+.mark:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 6px;
+  border-radius: 12px;
+}
+
+.svg {
+  width: clamp(96px, 20vw, 132px);
+  height: auto;
+  overflow: visible;
+}
+
+/* ── the digit stroke ── */
+.stroke {
+  fill: none;
+  stroke: var(--text-strong);
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* default / reduced-motion / no-JS: a calm dim outline, fully drawn */
+.stroke:not([data-play]) {
+  stroke: rgb(247 248 248 / 0.32);
+}
+
+/* animated: draw the ink, then dissolve it as the lanes take over */
+.stroke[data-play] {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation:
+    fmDraw 1.05s var(--ease-out-quart) forwards,
+    fmDissolve 0.7s var(--ease-out-quart) 1.35s forwards;
+}
+
+@keyframes fmDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fmDissolve {
+  to {
+    stroke: rgb(247 248 248 / 0.22);
+    stroke-width: 4;
+  }
+}
+
+/* ── the lanes ── */
+.lane {
+  fill: var(--steel);
+  opacity: 0.16;
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+.lane[data-hot] {
+  fill: var(--sky);
+}
+
+/* default / reduced-motion: lanes present, softly lit (final resolved state) */
+.lanes:not([data-play]) .lane {
+  opacity: 0.14;
+  transform: scaleY(0.62);
+}
+
+.lanes:not([data-play]) .lane[data-hot] {
+  opacity: 0.5;
+  transform: scaleY(1);
+  filter: drop-shadow(0 0 6px rgb(56 189 248 / 0.4));
+}
+
+/* animated: lanes rise from the baseline as the digit dissolves */
+.lanes[data-play] .lane {
+  opacity: 0;
+  transform: scaleY(0.05);
+  animation: fmRise 0.7s var(--ease-out-expo) forwards;
+  animation-delay: var(--d);
+}
+
+.lanes[data-play] .lane[data-hot] {
+  animation:
+    fmRise 0.7s var(--ease-out-expo) forwards,
+    fmGlow 3.6s ease-in-out 2s infinite;
+  animation-delay: var(--d), var(--d);
+}
+
+@keyframes fmRise {
+  to {
+    opacity: 0.32;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes fmGlow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 4px rgb(56 189 248 / 0.3));
+    opacity: 0.5;
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgb(56 189 248 / 0.55));
+    opacity: 0.7;
+  }
+}
+
+/* ── caption ── */
+.caption {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+}
+
+.caption b {
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.caption em {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-style: normal;
+  letter-spacing: 0.02em;
+}
+
+.mark:hover .caption em {
+  color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stroke[data-play],
+  .lanes[data-play] .lane {
+    animation: none;
+  }
+}
