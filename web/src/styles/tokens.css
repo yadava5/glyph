@@ -26,11 +26,13 @@
 :root {
   color-scheme: dark;
 
-  /* Surfaces */
-  --page-bg: #0a0a0b;
-  --surface: #0f1011;
-  --surface-2: #131416;
-  --surface-3: #1a1b1d;
+  /* Surfaces — a deep blue-black systems ground (the workbench at night).
+     Cool undertone shared with the System Card booklet so the site and the
+     printed card read as one instrument. */
+  --page-bg: #06070d;
+  --surface: #0b0d15;
+  --surface-2: #10121b;
+  --surface-3: #171a24;
 
   /* Text ramp */
   --text: #d6d8db;
@@ -48,6 +50,18 @@
   --green: #4ade80;
   --amber: #f59e0b;
   --red: #f87171;
+
+  /* Systems / ISA accents — fast-mnist's OWN register (mirrored in the
+     booklet's theme.ts). The page stays mostly monochrome; these only ever
+     *signal*: steel = the scalar baseline, amber = the SIMD lanes, sky =
+     the wasm128 kernel + the live in-browser bench, green = verified/live,
+     violet = the toolchain. */
+  --steel: #94a3b8;
+  --amber-soft: #fbbf24;
+  --sky: #38bdf8;
+  --sky-soft: #7dd3fc;
+  --sky-deep: #0369a1;
+  --violet-sig: #a78bfa;
 
   /* Legacy aliases still referenced by shared components (command palette,
      scroll progress). Both resolve to monochrome so nothing off-palette
