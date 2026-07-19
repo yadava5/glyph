@@ -1760,6 +1760,126 @@
   }
 }
 
+/* ───────── living background + micro-interaction layer ───────── */
+
+/* All content rides above the fixed LaneField background (z-index 0). */
+.pageContent {
+  position: relative;
+  z-index: 1;
+}
+
+/* Hero title: a sky "read-head" sweeps the words on hover — the network
+   reading left to right. Words carry --i for the stagger. */
+.titleWord {
+  display: inline-block;
+  transition:
+    color 0.25s var(--ease-out-quart),
+    transform 0.25s var(--ease-out-quart);
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .heroTitle:hover .titleWord {
+    animation: readHead 0.55s var(--ease-out-quart);
+    animation-delay: calc(var(--i) * 42ms);
+  }
+}
+
+@keyframes readHead {
+  30% {
+    color: var(--sky-soft);
+    transform: translateY(-3px);
+  }
+}
+
+/* the one shimmering headline word — a slow sheen across "fast" */
+.shimmerWord {
+  font-family: var(--font-instrument-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  background: linear-gradient(
+    100deg,
+    var(--sky-soft) 12%,
+    var(--text-strong) 50%,
+    var(--sky-soft) 88%
+  );
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--sky-soft);
+  animation: shimmer 5.5s linear infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: 220% center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmerWord {
+    animation: none;
+    background: none;
+    -webkit-text-fill-color: var(--sky-soft);
+  }
+}
+
+.heroMetricsTilt {
+  width: min(100%, 880px);
+}
+
+/* proof — live instrument row */
+.liveInstrument {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+}
+
+.liveInstrumentNote {
+  display: grid;
+  gap: 0.6rem;
+  align-content: center;
+}
+
+.liveInstrumentNote p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.98rem;
+  line-height: 1.7;
+}
+
+.liveInstrumentNote p b {
+  color: var(--text-strong);
+}
+
+.liveInstrumentNote p em {
+  font-family: var(--font-instrument-serif);
+  font-style: italic;
+  font-size: 1.12em;
+  color: var(--sky-soft);
+}
+
+/* proof — the two committed charts, side by side */
+.chartsRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.proofStats[data-cols='2'] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 1000px) {
+  .liveInstrument,
+  .chartsRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* ─────────────────────── responsive ─────────────────────── */
 
 @media (max-width: 1000px) {
