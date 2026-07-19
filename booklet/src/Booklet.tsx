@@ -13,7 +13,7 @@ import { WhyScalarPage, WhyFloorPage, WhyHotloopPage } from "./pages/WhyPages";
 import { HowDispatchPage, HowAvxPage, HowNeonPage, HowWasmPage, HowThreadsPage } from "./pages/HowPages";
 import { InsideWasmPage, InsideBenchPage, InsideAnatomyPage } from "./pages/InsidePages";
 import { ProofSpeedupsPage, ProofAccuracyPage, ProofTablePage, ProofTestsPage } from "./pages/ProofPages";
-import { BuildStackPage, BuildClosingPage } from "./pages/BuildPages";
+import { BuildStackPage, TryItPage } from "./pages/BuildPages";
 
 /**
  * Top-level composer. Iterates `manifest.PAGES` in order and dispatches each
@@ -50,7 +50,7 @@ const BODY_COMPONENTS: Record<
   "proof-table": ProofTablePage,
   "proof-tests": ProofTestsPage,
   "build-stack": BuildStackPage,
-  "build-closing": BuildClosingPage,
+  "build-closing": TryItPage,
 };
 
 const PageSwitch: React.FC<{ spec: PageSpec; totalPages: number }> = ({ spec, totalPages }) => {

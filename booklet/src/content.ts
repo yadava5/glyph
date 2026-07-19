@@ -531,28 +531,65 @@ export const BUILD = {
   },
 
   closing: {
-    eyebrow: "END",
-    headline: "Run the bench.",
-    tagline: "Race the hand-written wasm128 kernel against scalar, live, on your own machine.",
-    liveLabel: "LIVE WEB APP",
     liveUrl: "fast-mnist.vercel.app",
-    spaceLabel: "THE HOT LOOP",
     spaceUrl: "dot_wasm128_rowvec · f64x2",
-    leftArrowLabel: "open it",
-    rightArrowLabel: "benchmark",
-    microNote: "one dot product · four ISAs · timed on your silicon",
   },
 } as const;
 
 // ---------------------------------------------------------------------------
-// Back cover
+// Try-It page (page 27, recto) — where the reader is sent to the product: the
+// QR on its paper card, the live URL, and what the bench does. Folds in the
+// former "Run the bench" build-closing so the last leaf can be a pure closing.
+// ---------------------------------------------------------------------------
+
+export const TRY_IT = {
+  eyebrow: "TRY IT · THE LIVE APP",
+  headline: "Run the bench.",
+  tagline:
+    "Race the hand-written wasm128 kernel against scalar, live, on your own machine — the whole card, made executable.",
+  qrTarget: "https://fast-mnist.vercel.app",
+  qrCaption: "scan to open the live app",
+  liveUrl: "fast-mnist.vercel.app",
+  hotLoop: "dot_wasm128_rowvec · f64x2",
+  steps: [
+    { n: "1", k: "open the demo", v: "the wasm128 model loads and warms in-page." },
+    { n: "2", k: "it times two kernels", v: "hand-written simd128 vs the same math, lanes off." },
+    { n: "3", k: "read the p50", v: "the badge reports your session median — live, per visitor." },
+  ],
+  readout: {
+    scalarLabel: "scalar · lanes off",
+    simdLabel: "simd128 · hand-written",
+    ratio: "~1.7×",
+    tail: "p50 · n",
+  },
+  isaEcho: [
+    { label: "AVX-512", detail: "x86 · 8-wide" },
+    { label: "AVX2", detail: "x86 · 4-wide" },
+    { label: "NEON", detail: "ARM · 2-wide" },
+    { label: "wasm128", detail: "browser · runs here" },
+  ],
+  alsoLabel: "also waiting in the app",
+  alsoCards: [
+    { k: "the four kernels", v: "AVX-512 · AVX2 · NEON · wasm128, side by side" },
+    { k: "the 97.01% receipt", v: "9,701 / 10,000 held-out test digits" },
+    { k: "the full table", v: "every op — wins and losses — re-runnable" },
+  ],
+  microNote: "one dot product · four ISAs · timed on your silicon",
+} as const;
+
+// ---------------------------------------------------------------------------
+// Back cover (page 28) — a PURE closing that mirrors the front cover: the same
+// full-bleed digit-lanes field (reseeded to a "7" as a wraparound), a quiet
+// closing line, and the colophon. No QR, no CTA — the reader was already sent
+// to the product on page 27. A clean bookend to the opening.
 // ---------------------------------------------------------------------------
 
 export const BACK_COVER = {
-  qrTarget: "https://fast-mnist.vercel.app",
-  qrCaption: "scan to run the live benchmark",
-  spaceNote:
-    "The hand-written wasm-simd128 kernel races scalar (vector lanes off) on your own machine — the p50 is the number you read.",
-  colophon: ["fast-mnist", "System Card · Vol. 01", "Ayush Yadav · 2026 · with Shree Chaturvedi"],
-  closingLine: "— The speed was always in the silicon.",
+  masthead: "fast-mnist · System Card",
+  volume: "Vol. 01",
+  wordmark: "fast-mnist",
+  closingLine: "The speed was always in the silicon.",
+  signature: "Ayush Yadav · 2026 · with Shree Chaturvedi",
+  edgeNote: "one dot product · four ISAs",
+  colophon: ["hand-written SIMD · AVX-512 / AVX2 / NEON / wasm128", "C++ → Emscripten → React · benchmarked live"],
 } as const;
