@@ -7,9 +7,10 @@ import { COLORS, FONTS } from "../theme";
  *
  *   IsaLaneSignature      — the ISA-lane diagram: scalar's single lane vs the
  *                           4 SIMD kernels' widths (doubles per register).
- *   BenchGaugeSignature   — the live in-browser gauge: scalar vs simd128
- *                           timing bars + the p50 ratio, measured on-machine.
  *   NetworkAnatomySignature — the 784 → 100 → 10 MLP sketch.
+ *
+ * (The live-bench visual moved to a radial gauge — see visuals/Charts.tsx
+ * RadialGauge — so this file no longer carries a bar-chart signature.)
  */
 
 const CARD: React.CSSProperties = {
@@ -104,39 +105,6 @@ export const IsaLaneSignature: React.FC = () => (
     </div>
   </div>
 );
-
-// ── Live bench gauge — scalar vs simd128 timing + p50 ratio ─────────────────
-
-export const BenchGaugeSignature: React.FC = () => {
-  const scalarW = 190; // full-width reference (lanes off)
-  const simdW = 112; // ~scalar / 1.7 (illustrative median)
-  return (
-    <div style={CARD}>
-      <CardHead label="live · your machine" accent={COLORS.SKY_DEEP} source="p50 · wasm128 vs scalar" />
-      <svg viewBox="0 0 210 118" width="100%" style={{ display: "block" }}>
-        {/* scalar bar (lanes off) */}
-        <text x={0} y={16} fontFamily="ui-monospace, monospace" fontSize={8} fill={COLORS.STEEL_DEEP}>scalar · lanes off</text>
-        <rect x={0} y={22} width={scalarW} height={18} rx={3} fill={COLORS.STEEL} fillOpacity={0.55} />
-        <text x={scalarW - 6} y={35} textAnchor="end" fontFamily="ui-monospace, monospace" fontSize={9} fontWeight={700} fill={COLORS.PAPER}>1.00×</text>
-
-        {/* simd bar (hand-written) */}
-        <text x={0} y={62} fontFamily="ui-monospace, monospace" fontSize={8} fill={COLORS.GREEN_DEEP}>simd128 · hand-written</text>
-        <rect x={0} y={68} width={simdW} height={18} rx={3} fill={COLORS.WIN_GREEN} fillOpacity={0.9} />
-        <text x={simdW + 6} y={82} fontFamily="ui-monospace, monospace" fontSize={11} fontWeight={700} fill={COLORS.GREEN_DEEP}>~1.7×</text>
-
-        {/* readout line */}
-        <line x1={0} y1={100} x2={210} y2={100} stroke={COLORS.HAIRLINE} strokeWidth={0.6} />
-        <text x={0} y={113} fontFamily="ui-monospace, monospace" fontSize={7.5} fill={COLORS.INK_MUTED}>
-          scalar → simd  p50 · n=… (computed live)
-        </text>
-      </svg>
-      <div style={{ fontFamily: FONTS.SERIF, fontStyle: "italic", fontSize: 10.5, color: COLORS.INK_MUTED }}>
-        The badge shows the session median, so the number a visitor reads is
-        defensible — ~1.7× is a typical run, not a fixed claim.
-      </div>
-    </div>
-  );
-};
 
 // ── Network anatomy — 784 → 100 → 10 ───────────────────────────────────────
 
