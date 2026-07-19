@@ -144,7 +144,7 @@ export function NetworkDiagram({ controller }: NetworkDiagramProps) {
             100 hidden · sigmoid
           </text>
           <text x={hidX} y={hidY + hidSize + 43} className={styles.netSub}>
-            {live ? 'live activations' : '78,500 weights + 100 biases in'}
+            {live ? 'live activations' : '78,400 weights + 100 biases in'}
           </text>
         </g>
 
