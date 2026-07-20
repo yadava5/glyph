@@ -174,10 +174,43 @@ export const ProofTestsPage: React.FC<PageProps> = (p) => {
           </div>
         ))}
       </div>
-      <HangingNote label="Reconciled" accent={GREEN} accentInk={GREEN_INK} style={{ marginTop: 16 }}>
+      {/* the 41, by suite — a stacked composition of the C++ cases */}
+      <div style={{ marginTop: 16, borderTop: `1pt solid ${GREEN}`, paddingTop: 12 }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 8 }}>
+          <span style={{ fontFamily: FONTS.MONO, fontSize: 8.5, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: GREEN_INK }}>41 C++ cases, by suite</span>
+          <span style={{ fontFamily: FONTS.MONO, fontSize: 7.5, color: COLORS.INK_SUBTLE }}>Catch2 + RapidCheck · tests/*.cpp</span>
+        </div>
+        <div style={{ display: "flex", gap: 3, height: 22 }}>
+          {[
+            { n: "matrix", c: 20, col: COLORS.GREEN_DEEP },
+            { n: "neural_net", c: 13, col: COLORS.SKY_DEEP },
+            { n: "properties", c: 5, col: COLORS.VIOLET_DEEP },
+            { n: "server_api", c: 3, col: COLORS.AMBER_DEEP },
+          ].map((s) => (
+            <div key={s.n} style={{ flex: s.c, background: `${s.col}22`, borderTop: `2.5px solid ${s.col}`, borderRadius: 2, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+              <span style={{ fontFamily: FONTS.MONO, fontSize: 8, fontWeight: 700, color: s.col, whiteSpace: "nowrap" }}>{s.c}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 7 }}>
+          {[
+            { n: "test_matrix · 20", col: COLORS.GREEN_DEEP },
+            { n: "test_neural_net · 13", col: COLORS.SKY_DEEP },
+            { n: "properties · 5", col: COLORS.VIOLET_DEEP },
+            { n: "server_api · 3", col: COLORS.AMBER_DEEP },
+          ].map((l) => (
+            <span key={l.n} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: FONTS.MONO, fontSize: 8, color: COLORS.INK_MUTED }}>
+              <span style={{ width: 8, height: 8, borderRadius: 2, background: l.col }} /> {l.n}
+            </span>
+          ))}
+          <span style={{ fontFamily: FONTS.MONO, fontSize: 8, color: COLORS.INK_SUBTLE }}>· + 29 Playwright e2e</span>
+        </div>
+      </div>
+
+      <HangingNote label="Reconciled" accent={GREEN} accentInk={GREEN_INK} style={{ marginTop: 14 }}>
         {d.honest}
       </HangingNote>
-      <PullQuote size="small" color={COLORS.INK} style={{ marginTop: 16, maxWidth: "6.2in" }}>
+      <PullQuote size="small" color={COLORS.INK} style={{ marginTop: 14, maxWidth: "6.2in" }}>
         {d.handoffQuote}
       </PullQuote>
       <SourceNote style={{ marginTop: 14 }}>{d.source}</SourceNote>
