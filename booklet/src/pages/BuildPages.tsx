@@ -40,7 +40,34 @@ export const BuildStackPage: React.FC<PageProps> = (p) => {
           </div>
         ))}
       </div>
-      <SourceNote style={{ marginTop: 18 }}>{d.source}</SourceNote>
+
+      {/* three toolchains, one dot product — the shape the journey walks through */}
+      <div style={{ marginTop: 20, borderTop: `1pt solid ${COLORS.INK}`, paddingTop: 14 }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 10 }}>
+          <span style={{ fontFamily: FONTS.MONO, fontSize: 8.5, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: VIOLET_INK }}>three toolchains, one dot product</span>
+          <span style={{ fontFamily: FONTS.SERIF, fontStyle: "italic", fontSize: 11, color: COLORS.INK_SUBTLE }}>the journey · pp. 24–25 →</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 20px 1fr 20px 1fr", alignItems: "center", columnGap: 6 }}>
+          {[
+            { k: "C++17 core", v: "the 4 kernels", c: COLORS.AMBER_DEEP },
+            { k: "Emscripten", v: "→ WebAssembly", c: COLORS.SKY_DEEP },
+            { k: "React 19", v: "renders the bench", c: COLORS.VIOLET_DEEP },
+          ].map((x, i) => (
+            <React.Fragment key={x.k}>
+              <div style={{ border: `0.5pt solid ${COLORS.HAIRLINE}`, borderLeft: `2.5px solid ${x.c}`, borderRadius: 6, background: COLORS.PAPER_ELEVATED, padding: "10px 12px" }}>
+                <div style={{ fontFamily: FONTS.MONO, fontSize: 11, fontWeight: 700, color: COLORS.INK }}>{x.k}</div>
+                <div style={{ fontFamily: FONTS.MONO, fontSize: 8, color: COLORS.INK_MUTED, marginTop: 2 }}>{x.v}</div>
+              </div>
+              {i < 2 && <span style={{ textAlign: "center", color: COLORS.HAIRLINE_STRONG, fontSize: 14 }}>→</span>}
+            </React.Fragment>
+          ))}
+        </div>
+        <div style={{ fontFamily: FONTS.SERIF, fontStyle: "italic", fontSize: 10.5, color: COLORS.INK_MUTED, marginTop: 10 }}>
+          One C++ hot loop, compiled three ways — native SIMD, WebAssembly, and the React instrument that times it in front of you.
+        </div>
+      </div>
+
+      <SourceNote style={{ marginTop: 16 }}>{d.source}</SourceNote>
     </BodyPage>
   );
 };
@@ -175,6 +202,27 @@ export const TryItPage: React.FC<PageProps> = (p) => {
             <div key={c.k} style={{ border: `0.5pt solid ${COLORS.HAIRLINE}`, borderLeft: `2.5px solid ${VIOLET_INK}`, borderRadius: 5, background: COLORS.PAPER_ELEVATED, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 3 }}>
               <span style={{ fontFamily: FONTS.SANS, fontSize: 11.5, fontWeight: 700, color: COLORS.INK }}>{c.k}</span>
               <span style={{ fontFamily: FONTS.SERIF, fontStyle: "italic", fontSize: 11, lineHeight: 1.3, color: COLORS.INK_MUTED }}>{c.v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* reading the badge — decode the live readout the demo prints */}
+      <div style={{ marginTop: 18, borderTop: `1pt solid ${COLORS.INK}`, paddingTop: 12 }}>
+        <div style={{ fontFamily: FONTS.MONO, fontSize: 8.5, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: VIOLET_INK, marginBottom: 10 }}>
+          reading the badge
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 0, borderTop: `0.5pt solid ${COLORS.HAIRLINE}`, borderBottom: `0.5pt solid ${COLORS.HAIRLINE}` }}>
+          {[
+            { v: "scalar", k: "lanes off", n: "the same math, vectorization disabled", c: COLORS.STEEL_DEEP },
+            { v: "simd128", k: "hand-written", n: "the f64x2 kernel this card describes", c: COLORS.SKY_DEEP },
+            { v: "~1.7×", k: "the ratio", n: "this run's simd-over-scalar speedup", c: COLORS.GREEN_DEEP },
+            { v: "p50 · n", k: "the median", n: "over n timed iterations, per visitor", c: COLORS.VIOLET_DEEP },
+          ].map((x, i) => (
+            <div key={x.v} style={{ padding: "10px 12px", borderLeft: i === 0 ? "none" : `0.5pt solid ${COLORS.HAIRLINE}`, display: "flex", flexDirection: "column", gap: 3 }}>
+              <span style={{ fontFamily: FONTS.MONO, fontSize: 12, fontWeight: 700, color: x.c, letterSpacing: "-0.01em" }}>{x.v}</span>
+              <span style={{ fontFamily: FONTS.MONO, fontSize: 7.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: COLORS.INK_MUTED }}>{x.k}</span>
+              <span style={{ fontFamily: FONTS.SERIF, fontStyle: "italic", fontSize: 9, lineHeight: 1.25, color: COLORS.INK_SUBTLE }}>{x.n}</span>
             </div>
           ))}
         </div>
