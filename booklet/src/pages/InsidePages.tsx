@@ -32,7 +32,35 @@ export const InsideWasmPage: React.FC<PageProps> = (p) => {
         <CodePanel caption={d.codeCaption} code={WASM_SRC} accent={SKY_INK} />
         <FactGrid facts={d.facts} accent={SKY} />
       </div>
-      <SourceNote style={{ marginTop: 18 }}>{d.source}</SourceNote>
+
+      {/* the loop's shape — two accumulators, one reduction, a scalar tail */}
+      <div style={{ marginTop: 20, borderTop: `1pt solid ${COLORS.INK}`, paddingTop: 12 }}>
+        <div style={{ fontFamily: FONTS.MONO, fontSize: 8.5, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: SKY_INK, marginBottom: 10 }}>
+          the shape · two accumulators, one reduce
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ border: `0.5pt solid ${COLORS.HAIRLINE}`, borderLeft: `2.5px solid ${SKY_INK}`, borderRadius: 6, background: COLORS.PAPER_ELEVATED, padding: "10px 12px", textAlign: "center", flexShrink: 0 }}>
+            <div style={{ fontFamily: FONTS.MONO, fontSize: 10.5, fontWeight: 700, color: COLORS.INK }}>row · x</div>
+            <div style={{ fontFamily: FONTS.MONO, fontSize: 7, color: COLORS.INK_MUTED, marginTop: 2 }}>4 doubles / iter</div>
+          </div>
+          <span style={{ color: COLORS.HAIRLINE_STRONG, fontSize: 14 }}>→</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1 }}>
+            {["acc0 · f64x2", "acc1 · f64x2"].map((a) => (
+              <div key={a} style={{ border: `0.5pt solid ${COLORS.HAIRLINE}`, borderRadius: 5, background: COLORS.SKY_TINT, padding: "6px 11px", fontFamily: FONTS.MONO, fontSize: 9, fontWeight: 700, color: COLORS.SKY_DEEP }}>{a} <span style={{ fontWeight: 400, color: COLORS.INK_MUTED }}>· wasm_f64x2_mul + add</span></div>
+            ))}
+          </div>
+          <span style={{ color: COLORS.HAIRLINE_STRONG, fontSize: 14 }}>→</span>
+          <div style={{ border: `0.5pt solid ${COLORS.HAIRLINE}`, borderLeft: `2.5px solid ${COLORS.WIN_GREEN}`, borderRadius: 6, background: COLORS.PAPER_ELEVATED, padding: "10px 12px", textAlign: "center", flexShrink: 0 }}>
+            <div style={{ fontFamily: FONTS.MONO, fontSize: 9.5, fontWeight: 700, color: COLORS.GREEN_DEEP }}>extract 0,1</div>
+            <div style={{ fontFamily: FONTS.MONO, fontSize: 7, color: COLORS.INK_MUTED, marginTop: 2 }}>+ scalar tail</div>
+          </div>
+        </div>
+        <div style={{ fontFamily: FONTS.SERIF, fontStyle: "italic", fontSize: 10.5, color: COLORS.INK_MUTED, marginTop: 9 }}>
+          Two independent accumulators hide add latency; a two-lane horizontal reduce and a scalar tail finish the row — no threads, pure f64x2.
+        </div>
+      </div>
+
+      <SourceNote style={{ marginTop: 16 }}>{d.source}</SourceNote>
     </BodyPage>
   );
 };
