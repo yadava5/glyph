@@ -41,8 +41,8 @@
     <rect x="96" y="96" width="18" height="18" rx="3" fill="#60a5fa"/>
   </g>
 
-  <text x="170" y="92" class="title">Fast MNIST NN</text>
+  <text x="170" y="92" class="title">Glyph</text>
   <text x="170" y="120" class="subtitle">
-    High-performance C++ neural network for MNIST
+    A course MNIST network, hand-optimized across four SIMD ISAs
   </text>
 </svg>
