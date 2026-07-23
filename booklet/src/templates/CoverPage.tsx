@@ -36,7 +36,7 @@ export const CoverPage: React.FC = () => (
         color: COLORS.ON_DARK_MUTED,
       }}
     >
-      fast-mnist · System Card
+      Glyph · System Card
     </div>
 
     {/* Legend — top-right, seeds the scalar/vectorized/measured color language.
@@ -132,7 +132,7 @@ export const CoverPage: React.FC = () => (
           color: COLORS.ON_DARK,
         }}
       >
-        fast<span style={{ color: COLORS.SKY_SOFT }}>-mnist</span>
+        Glyph
       </div>
       <div
         style={{
