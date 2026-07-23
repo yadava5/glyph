@@ -1,8 +1,8 @@
 <p align="center">
   <img src="docs/branding/readme-light.svg#gh-light-mode-only" width="700"
-       alt="Fast MNIST NN">
+       alt="Glyph">
   <img src="docs/branding/readme-dark.svg#gh-dark-mode-only" width="700"
-       alt="Fast MNIST NN">
+       alt="Glyph">
 </p>
 
 ---
@@ -36,7 +36,7 @@ pipeline. See [`web/README.md`](web/README.md) for the deploy/run commands.
 ## Demo preview
 
 <img src="web/public/hero-poster.svg" width="760"
-     alt="Fast MNIST NN animated web demo preview">
+     alt="Glyph animated web demo preview">
 
 Draw a digit, load the sample through the command palette, inspect real
 softmax and saliency output, and scroll through the animated 784 -> 100 -> 10
