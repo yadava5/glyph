@@ -111,17 +111,17 @@ export const IsaLaneSignature: React.FC = () => (
 export const NetworkAnatomySignature: React.FC = () => {
   const hidden = Array.from({ length: 9 });
   const out = Array.from({ length: 10 });
-  const inX = 30;
+  const inX = 38; // raster center
   const hidX = 108;
-  const outX = 180;
+  const outX = 178;
   const colTop = 22;
-  const colBot = 150;
+  const colBot = 138;
   const hidY = (i: number) => colTop + (i * (colBot - colTop)) / (hidden.length - 1);
   const outY = (i: number) => colTop + (i * (colBot - colTop)) / (out.length - 1);
   return (
     <div style={CARD}>
-      <CardHead label="784 → 100 → 10" accent={COLORS.SKY_DEEP} source="benchmarkData.ts:9-15" />
-      <svg viewBox="0 0 210 168" width="100%" style={{ display: "block" }}>
+      <CardHead label="the anatomy" accent={COLORS.SKY_DEEP} source="benchmarkData.ts:9-15" />
+      <svg viewBox="0 0 210 176" width="100%" style={{ display: "block" }}>
         {/* edges: input block → hidden → output (representative) */}
         {hidden.map((_, h) =>
           out.map((_, o) => (
@@ -129,14 +129,15 @@ export const NetworkAnatomySignature: React.FC = () => {
           )),
         )}
         {hidden.map((_, h) => (
-          <line key={`ih${h}`} x1={inX + 20} y1={86} x2={hidX} y2={hidY(h)} stroke={COLORS.SKY} strokeWidth={0.3} strokeOpacity={0.35} />
+          <line key={`ih${h}`} x1={inX + 20} y1={80} x2={hidX} y2={hidY(h)} stroke={COLORS.SKY} strokeWidth={0.3} strokeOpacity={0.35} />
         ))}
 
-        {/* input raster block (28×28, abstracted) */}
-        <rect x={inX - 12} y={58} width={40} height={56} rx={3} fill={COLORS.SKY_TINT} stroke={COLORS.SKY_DEEP} strokeWidth={0.8} />
-        {Array.from({ length: 6 }).map((_, r) =>
+        {/* input raster block (28×28, abstracted) — spans the column height so
+            all three layers share one caption baseline below */}
+        <rect x={inX - 20} y={colTop} width={40} height={colBot - colTop} rx={3} fill={COLORS.SKY_TINT} stroke={COLORS.SKY_DEEP} strokeWidth={0.8} />
+        {Array.from({ length: 13 }).map((_, r) =>
           Array.from({ length: 5 }).map((_, c) => (
-            <rect key={`px${r}-${c}`} x={inX - 8 + c * 6.4} y={62 + r * 8.2} width={5} height={6.4} rx={0.8} fill={COLORS.SKY} fillOpacity={(r + c) % 3 === 0 ? 0.75 : 0.18} />
+            <rect key={`px${r}-${c}`} x={inX - 16 + c * 6.4} y={colTop + 4 + r * 8.4} width={5} height={6.6} rx={0.8} fill={COLORS.SKY} fillOpacity={(r + c) % 3 === 0 ? 0.75 : 0.18} />
           )),
         )}
 
@@ -149,10 +150,14 @@ export const NetworkAnatomySignature: React.FC = () => {
           <circle key={`o${o}`} cx={outX} cy={outY(o)} r={3.2} fill={COLORS.WIN_GREEN} fillOpacity={0.85} stroke={COLORS.GREEN_DEEP} strokeWidth={0.8} />
         ))}
 
-        {/* column labels */}
-        <text x={inX + 8} y={130} textAnchor="middle" fontFamily="ui-monospace, monospace" fontSize={8} fontWeight={700} fill={COLORS.SKY_DEEP}>784</text>
-        <text x={hidX} y={164} textAnchor="middle" fontFamily="ui-monospace, monospace" fontSize={8} fontWeight={700} fill={COLORS.INK}>100 · sigmoid</text>
-        <text x={outX} y={164} textAnchor="middle" fontFamily="ui-monospace, monospace" fontSize={8} fontWeight={700} fill={COLORS.GREEN_DEEP}>10 · arg-max</text>
+        {/* layer captions — one shared baseline directly under each column:
+            the unit count, then the role beneath it */}
+        <text x={inX} y={156} textAnchor="middle" fontFamily="ui-monospace, monospace" fontSize={9} fontWeight={700} fill={COLORS.SKY_DEEP}>784</text>
+        <text x={inX} y={166} textAnchor="middle" fontFamily="ui-monospace, monospace" fontSize={6} fill={COLORS.INK_MUTED}>28×28 input</text>
+        <text x={hidX} y={156} textAnchor="middle" fontFamily="ui-monospace, monospace" fontSize={9} fontWeight={700} fill={COLORS.INK}>100</text>
+        <text x={hidX} y={166} textAnchor="middle" fontFamily="ui-monospace, monospace" fontSize={6} fill={COLORS.INK_MUTED}>sigmoid</text>
+        <text x={outX} y={156} textAnchor="middle" fontFamily="ui-monospace, monospace" fontSize={9} fontWeight={700} fill={COLORS.GREEN_DEEP}>10</text>
+        <text x={outX} y={166} textAnchor="middle" fontFamily="ui-monospace, monospace" fontSize={6} fill={COLORS.INK_MUTED}>arg-max</text>
       </svg>
       <div style={{ fontFamily: FONTS.SERIF, fontStyle: "italic", fontSize: 10.5, color: COLORS.INK_MUTED }}>
         79,510 parameters, two sigmoid layers, trained by the course's own
