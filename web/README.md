@@ -1,6 +1,6 @@
-# Fast MNIST Web Demo
+# Glyph Web Demo
 
-React 19 + Vite frontend for the Fast MNIST classifier — a monochrome,
+React 19 + Vite frontend for the Glyph classifier — a monochrome,
 WebGL-free landing page ("HAND / MACHINE") with the live classifier as the
 fold visual: draw pad, the exact 28x28 input raster the network receives,
 a serif verdict, per-class confidence, saliency, and hidden activations.
