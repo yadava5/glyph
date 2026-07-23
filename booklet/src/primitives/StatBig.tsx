@@ -34,6 +34,7 @@ export const StatBig: React.FC<{
           lineHeight: t.lh,
           color,
           fontVariantNumeric: "tabular-nums",
+          whiteSpace: "nowrap",
         }}
       >
         {value}
