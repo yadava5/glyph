@@ -1,5 +1,5 @@
 /**
- * fast-mnist System Card — copy + verified data (self-contained).
+ * Glyph System Card — copy + verified data (self-contained).
  *
  * Every number here is verified against the fast-mnist-nn repo
  * (branch yadava5/fix-hero-media-validation) and carries a SOURCE note with a
@@ -27,7 +27,7 @@ import type { SectionKey } from "./theme";
 // ---------------------------------------------------------------------------
 
 export const BRAND = {
-  name: "fast-mnist",
+  name: "Glyph",
   subtitle:
     "A course C++ digit classifier, hand-vectorized across four instruction sets — and benchmarked live in your browser.",
   author: "Ayush Yadav",
@@ -55,7 +55,7 @@ export const MASTHEAD = {
 export const ABSTRACT = {
   greeting: "Welcome.",
   body:
-    "fast-mnist starts where the coursework ended: a from-scratch C++ MLP that classifies handwritten digits — running scalar, one multiply at a time. The dot-product hot loop is the whole cost, and the compiler declines to vectorize it. So the kernel is hand-written four times — AVX-512, AVX2, NEON, and a wasm128 port that executes in this page. It hits 97.01% on 10,000 test digits, and it benchmarks itself live, on your machine.",
+    "Glyph starts where the coursework ended: a from-scratch C++ MLP that classifies handwritten digits — running scalar, one multiply at a time. The dot-product hot loop is the whole cost, and the compiler declines to vectorize it. So the kernel is hand-written four times — AVX-512, AVX2, NEON, and a wasm128 port that executes in this page. It hits 97.01% on 10,000 test digits, and it benchmarks itself live, on your machine.",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -110,7 +110,7 @@ export const TOC = {
   ],
   colophon: [
     "© 2026 · Ayush Yadav",
-    "fast-mnist · System Card Vol. 01",
+    "Glyph · System Card Vol. 01",
     "contributor · Shree Chaturvedi",
   ],
   teaser:
@@ -203,7 +203,7 @@ export const WHY = {
     pullQuote:
       "A from-scratch C++ MLP we did not write — correct, framework-free, and running one multiply at a time.",
     body: [
-      "fast-mnist did not begin as a performance project. It began as a course assignment: a C++ multilayer perceptron that learns to read handwritten digits by backpropagation.",
+      "Glyph did not begin as a performance project. It began as a course assignment: a C++ multilayer perceptron that learns to read handwritten digits by backpropagation.",
       "The forward pass is a stack of matrix-times-vector products. In the starter, each output is a plain loop that multiplies one weight by one activation, adds, and moves on — one lane of the CPU doing arithmetic while the rest sit idle.",
     ],
     coda:
@@ -585,9 +585,9 @@ export const TRY_IT = {
 // ---------------------------------------------------------------------------
 
 export const BACK_COVER = {
-  masthead: "fast-mnist · System Card",
+  masthead: "Glyph · System Card",
   volume: "Vol. 01",
-  wordmark: "fast-mnist",
+  wordmark: "Glyph",
   closingLine: "The speed was always in the silicon.",
   signature: "Ayush Yadav · 2026 · with Shree Chaturvedi",
   edgeNote: "one dot product · four ISAs",
