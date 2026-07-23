@@ -157,11 +157,12 @@ export const SpreadPage: React.FC<SpreadPageProps> = ({
         )}
       </div>
 
-      {/* gutter continuity marker */}
+      {/* gutter continuity marker — sits above the page-number footer rail
+          (bottom 0.5in) so the two never overlap */}
       <div
         style={{
           position: "absolute",
-          bottom: "0.55in",
+          bottom: "0.82in",
           [half === "left" ? "right" : "left"]: "0.75in",
           fontFamily: FONTS.MONO,
           fontSize: 8,
