@@ -77,7 +77,7 @@ async function waitForReadableDrawPad(page: Page) {
   return pad;
 }
 
-test.describe('Fast MNIST landing experience', () => {
+test.describe('Glyph landing experience', () => {
   test.beforeEach(async ({ page }) => {
     const instrumentedPage = page as InstrumentedPage;
     instrumentedPage.__consoleIssues = [];
