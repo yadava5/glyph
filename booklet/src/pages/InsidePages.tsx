@@ -122,6 +122,38 @@ export const InsideBenchPage: React.FC<PageProps> = (p) => {
 };
 
 // ── p17 · inside-anatomy — 784 → 100 → 10 ──────────────────────────────────
+
+/** Where the 79,510 parameters live — pure arithmetic on the layer sizes
+ *  already on this page: 784×100 weights + 100 biases, then 100×10 + 10. */
+const ParamsBreakdown: React.FC = () => {
+  const rows = [
+    { layer: "input → hidden", math: "784 × 100 + 100", count: 78500, share: 78500 / 79510 },
+    { layer: "hidden → output", math: "100 × 10 + 10", count: 1010, share: 1010 / 79510 },
+  ];
+  return (
+    <div style={{ marginTop: 18, borderTop: `1pt solid ${COLORS.INK}`, paddingTop: 12 }}>
+      <div style={{ fontFamily: FONTS.MONO, fontSize: 8.5, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: SKY_INK, marginBottom: 10 }}>
+        where the 79,510 parameters live · weights + biases
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+        {rows.map((r) => (
+          <div key={r.layer} style={{ display: "grid", gridTemplateColumns: "1.15in 1.25in 1fr 0.62in", alignItems: "center", columnGap: 12 }}>
+            <span style={{ fontFamily: FONTS.MONO, fontSize: 8.5, fontWeight: 700, color: SKY_INK }}>{r.layer}</span>
+            <span style={{ fontFamily: FONTS.MONO, fontSize: 8.5, color: COLORS.INK_MUTED }}>{r.math}</span>
+            <span style={{ display: "block", height: 13, borderRadius: 2, background: COLORS.SKY_TINT, position: "relative", overflow: "hidden" }}>
+              <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${Math.max(r.share * 100, 1.6)}%`, background: COLORS.SKY_DEEP, borderRadius: 2 }} />
+            </span>
+            <span style={{ fontFamily: FONTS.MONO, fontSize: 9.5, fontWeight: 700, color: COLORS.INK, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{r.count.toLocaleString("en-US")}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontFamily: FONTS.SERIF, fontStyle: "italic", fontSize: 10.5, color: COLORS.INK_MUTED, marginTop: 9 }}>
+        98.7% of the parameters — and of the forward-pass work — sit in the first layer's 784-wide rows: the exact loop the kernels vectorize.
+      </div>
+    </div>
+  );
+};
+
 export const InsideAnatomyPage: React.FC<PageProps> = (p) => {
   const d = INSIDE.anatomy;
   return (
@@ -141,7 +173,8 @@ export const InsideAnatomyPage: React.FC<PageProps> = (p) => {
         </div>
         <NetworkAnatomySignature />
       </div>
-      <div style={{ display: "flex", gap: 40, marginTop: 22, paddingTop: 16, borderTop: `1pt solid ${SKY}` }}>
+      <ParamsBreakdown />
+      <div style={{ display: "flex", gap: 40, marginTop: 20, paddingTop: 16, borderTop: `1pt solid ${SKY}` }}>
         <StatBig value={d.stat.value} label={d.stat.label} tier="metricMedium" color={SKY_INK} />
         <StatBig value={d.stat2.value} label={d.stat2.label} tier="metricSmall" color={COLORS.INK} />
         <div style={{ flex: 1 }} />
