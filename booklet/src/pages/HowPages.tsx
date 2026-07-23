@@ -171,9 +171,11 @@ export const HowWasmPage: React.FC<PageProps> = (p) => {
         <CodePanel caption="src/NeuralNet.cpp · dot_wasm128_rowvec (condensed)" code={WASM_SRC} accent={AMBER_INK} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "0.8fr 1.2fr", columnGap: 30, alignItems: "center", marginTop: 22, paddingTop: 16, borderTop: `1pt solid ${AMBER}` }}>
-        <div style={{ display: "flex", gap: 30 }}>
+        {/* stacked so the long `-msimd128` token never wraps its leading dash
+            onto its own line inside the narrow column */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <StatBig value={d.stat.value} label={d.stat.label} tier="metricMedium" color={AMBER_INK} />
-          <StatBig value={d.stat2.value} label={d.stat2.label} tier="metricMedium" color={COLORS.INK} />
+          <StatBig value={d.stat2.value} label={d.stat2.label} tier="metricSmall" color={COLORS.INK} />
         </div>
         <AccumPipeline accent={AMBER_INK} />
       </div>
