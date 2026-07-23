@@ -54,8 +54,8 @@ function HeroSection({ controller }: ExperiencePageProps) {
   return (
     <section id="hero" ref={sectionRef} className={styles.hero} aria-labelledby="hero-title">
       <div className={styles.topbar}>
-        <a className={styles.brand} href="#hero" aria-label="Fast MNIST home">
-          <span>Fast MNIST</span>
+        <a className={styles.brand} href="#hero" aria-label="Glyph home">
+          <span>Glyph</span>
           <small>C++ inference cockpit</small>
         </a>
         <div className={styles.topActions}>
