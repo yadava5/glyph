@@ -289,7 +289,7 @@ export const HOW = {
       "On x86-64 the widest kernel is `dot512_rowvec`: two `__m512d` accumulators, each holding eight doubles, folded with fused multiply-add (`_mm512_fmadd_pd`). Sixteen doubles are multiplied and accumulated per loop iteration, then reduced once at the end.",
       "Not every x86 chip has AVX-512, so `dot256_rowvec` is the fallback: the identical shape on 256-bit `__m256d` registers, four doubles wide, still FMA-fused. Both keep two accumulators so the add chains overlap instead of stalling.",
     ],
-    stat: { value: "16", label: "doubles / iteration · AVX-512" },
+    stat: { value: "16", label: "AVX-512 · doubles / iteration" },
     stat2: { value: "2×", label: "accumulators · adds overlap" },
     note: "FMA folds a multiply and an add into one instruction with a single rounding — twice the arithmetic, once the latency.",
   },
