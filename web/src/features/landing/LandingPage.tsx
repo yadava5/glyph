@@ -295,7 +295,9 @@ function Hero() {
           <span
             key={`${word}-${i}`}
             className={styles.heroWord}
-            style={reduced ? undefined : { animationDelay: `${700 + i * 22}ms` }}
+            // FM-4 · tight, capped cascade so the subhead settles to full text
+            // in ~1.4s and never reads as truncated mid-reveal (was ~2.45s).
+            style={reduced ? undefined : { animationDelay: `${450 + Math.min(i * 12, 480)}ms` }}
             data-static={reduced || undefined}
           >
             {word}{' '}
