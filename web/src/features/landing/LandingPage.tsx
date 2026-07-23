@@ -157,11 +157,16 @@ function Nav({ active }: { active: string | null }) {
         <span className={styles.navHint} aria-hidden>
           <Command size={13} strokeWidth={2} />K
         </span>
-        <a className={styles.navCard} href={SYSTEM_CARD_URL}>
+        <a
+          className={styles.navCard}
+          href={SYSTEM_CARD_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <BookOpen size={14} strokeWidth={2} aria-hidden />
           System Card
         </a>
-        <a className={styles.navCta} href={REPO_URL} target="_blank" rel="noreferrer">
+        <a className={styles.navCta} href={REPO_URL} target="_blank" rel="noopener noreferrer">
           GitHub
           <ArrowUpRight size={15} strokeWidth={2} aria-hidden />
         </a>
@@ -182,10 +187,10 @@ function Nav({ active }: { active: string | null }) {
               {link.label}
             </button>
           ))}
-          <a href={SYSTEM_CARD_URL}>
+          <a href={SYSTEM_CARD_URL} target="_blank" rel="noopener noreferrer">
             Read the System Card <ArrowUpRight size={14} strokeWidth={2} aria-hidden />
           </a>
-          <a href={REPO_URL} target="_blank" rel="noreferrer">
+          <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
             GitHub <ArrowUpRight size={14} strokeWidth={2} aria-hidden />
           </a>
         </nav>
@@ -308,7 +313,12 @@ function Hero() {
           Fire the live bench
           <ArrowDown size={16} strokeWidth={2} aria-hidden />
         </MagneticButton>
-        <a className={styles.ctaGhost} href={SYSTEM_CARD_URL}>
+        <a
+          className={styles.ctaGhost}
+          href={SYSTEM_CARD_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <BookOpen size={16} strokeWidth={2} aria-hidden />
           Read the System Card
         </a>
@@ -515,7 +525,12 @@ function SolutionAct() {
               for reproducibility, a tiny binary, and the ability to read every optimization in{' '}
               <code>src/</code>.
             </p>
-            <a className={styles.inlineLink} href={KERNEL_URL} target="_blank" rel="noreferrer">
+            <a
+              className={styles.inlineLink}
+              href={KERNEL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Read the kernels <ArrowUpRight size={14} strokeWidth={2} aria-hidden />
             </a>
           </div>
@@ -847,12 +862,17 @@ function TryItBand() {
             <ArrowUpRight size={16} strokeWidth={2} aria-hidden />
             Fire the live bench
           </MagneticButton>
-          <a className={styles.ctaSystemCard} href={SYSTEM_CARD_URL}>
+          <a
+            className={styles.ctaSystemCard}
+            href={SYSTEM_CARD_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <BookOpen size={16} strokeWidth={2} aria-hidden />
             Read the System Card
             <ArrowUpRight size={15} strokeWidth={2} aria-hidden />
           </a>
-          <a className={styles.ctaGhost} href={REPO_URL} target="_blank" rel="noreferrer">
+          <a className={styles.ctaGhost} href={REPO_URL} target="_blank" rel="noopener noreferrer">
             Source on GitHub
             <ArrowUpRight size={16} strokeWidth={2} aria-hidden />
           </a>
@@ -872,11 +892,13 @@ function Footer() {
           contributor: Shree Chaturvedi.
         </span>
         <span className={styles.footerLinks}>
-          <a href={SYSTEM_CARD_URL}>System Card</a>
-          <a href={REPO_URL} target="_blank" rel="noreferrer">
+          <a href={SYSTEM_CARD_URL} target="_blank" rel="noopener noreferrer">
+            System Card
+          </a>
+          <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
             Repository
           </a>
-          <a href={`${REPO_URL}/blob/main/BENCHMARKS.md`} target="_blank" rel="noreferrer">
+          <a href={`${REPO_URL}/blob/main/BENCHMARKS.md`} target="_blank" rel="noopener noreferrer">
             Benchmarks
           </a>
         </span>
