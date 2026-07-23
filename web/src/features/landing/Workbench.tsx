@@ -123,7 +123,7 @@ export function Workbench({ controller }: WorkbenchProps) {
       <div className={styles.frame}>
         <header className={styles.titlebar}>
           <span className={styles.titlebarName} id="workbench-title">
-            fast_mnist <em>/</em> live_bench
+            glyph <em>/</em> live_bench
           </span>
           <div className={styles.titlebarRight}>
             <TimingReadout controller={controller} />
