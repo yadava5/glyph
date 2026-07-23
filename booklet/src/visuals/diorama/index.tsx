@@ -65,9 +65,10 @@ const WhyScalarTreadmill: React.FC = () => {
         one add, repeat
       </text>
 
-      {/* the seven idle lanes lying on the floor */}
+      {/* the seven idle lanes lying on the floor — label right-aligned above
+          the floor line, clear of the data-queue column at x=30-42 */}
       <line x1={24} y1={224} x2={192} y2={224} stroke="currentColor" strokeWidth={0.7} opacity={0.4} />
-      <text x={24} y={216} {...mono({ fontSize: 6, letterSpacing: "1", fill: STEEL, opacity: 0.85 })}>
+      <text x={192} y={217} textAnchor="end" {...mono({ fontSize: 6, letterSpacing: "1", fill: STEEL, opacity: 0.85 })}>
         7 idle lanes
       </text>
       {Array.from({ length: 7 }).map((_, i) => (
@@ -142,15 +143,34 @@ const InsideEngineWasm: React.FC = () => {
       <rect x={40} y={194} width={78} height={12} rx={2} fill={COLORS.WIN_GREEN} fillOpacity={0.85} />
       <text x={122} y={204} {...mono({ fontSize: 7, fontWeight: 700, fill: COLORS.WIN_GREEN })}>~1.7×</text>
 
-      {/* network glyph */}
-      {[0, 1, 2].map((col) => {
-        const n = col === 0 ? 4 : col === 1 ? 6 : 3;
-        const x = 46 + col * 44;
-        return Array.from({ length: n }).map((_, i) => (
-          <circle key={`${col}-${i}`} cx={x} cy={230 + i * 12} r={2.4} fill={col === 2 ? COLORS.WIN_GREEN : "none"} fillOpacity={0.8} stroke={SKY} strokeWidth={0.8} />
-        ));
-      })}
-      <text x={92} y={262} textAnchor="middle" {...mono({ fontSize: 5.5, fill: "currentColor", opacity: 0.7 })}>784 → 100 → 10</text>
+      {/* network glyph — heading above, node columns kept inside the viewBox */}
+      <text x={40} y={222} {...mono({ fontSize: 6, letterSpacing: "1", fill: SKY, opacity: 0.85 })}>784 → 100 → 10</text>
+      {(() => {
+        const cIn = { x: 46, n: 4, top: 236 };
+        const cHid = { x: 90, n: 5, top: 231 };
+        const cOut = { x: 134, n: 3, top: 241 };
+        const cy = (c: { top: number }, i: number) => c.top + i * 10;
+        return (
+          <g>
+            {/* representative edges, drawn under the nodes */}
+            {Array.from({ length: cIn.n }).map((_, a) =>
+              Array.from({ length: cHid.n }).map((_, b) => (
+                <line key={`e0-${a}-${b}`} x1={cIn.x} y1={cy(cIn, a)} x2={cHid.x} y2={cy(cHid, b)} stroke={SKY} strokeWidth={0.3} strokeOpacity={0.22} />
+              )),
+            )}
+            {Array.from({ length: cHid.n }).map((_, a) =>
+              Array.from({ length: cOut.n }).map((_, b) => (
+                <line key={`e1-${a}-${b}`} x1={cHid.x} y1={cy(cHid, a)} x2={cOut.x} y2={cy(cOut, b)} stroke={SKY} strokeWidth={0.3} strokeOpacity={0.22} />
+              )),
+            )}
+            {[cIn, cHid, cOut].map((c, ci) =>
+              Array.from({ length: c.n }).map((_, i) => (
+                <circle key={`n${ci}-${i}`} cx={c.x} cy={cy(c, i)} r={2.4} fill={ci === 2 ? COLORS.WIN_GREEN : COLORS.GROUND} fillOpacity={ci === 2 ? 0.8 : 1} stroke={SKY} strokeWidth={0.8} />
+              )),
+            )}
+          </g>
+        );
+      })()}
     </SceneFrame>
   );
 };
