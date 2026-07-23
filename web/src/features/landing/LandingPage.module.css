@@ -182,7 +182,13 @@
   position: fixed;
   z-index: 30;
   top: 50%;
-  right: max(1rem, calc(50vw - 720px));
+  /* Sit in the right gutter, clear of the content column. The rail is
+     ~140px wide; content caps at 1200px (half = 600), so anchor its right
+     edge ~160px past the content edge (600 + 140 + 20 gap = 760) and keep
+     a 1.25rem minimum inset from the viewport. Paired with the 1560px
+     reveal breakpoint below, this guarantees the rail never lands on the
+     SIGNALS panel / act content (see FM-1). */
+  right: max(1.25rem, calc(50vw - 760px));
   display: none;
   flex-direction: column;
   gap: 0.15rem;
@@ -245,7 +251,10 @@
   background: var(--sky);
 }
 
-@media (min-width: 1240px) {
+/* Only reveal the rail once the gutter is genuinely wide enough to hold it
+   beside the 1200px content column. Below this it collided with the SIGNALS
+   confidence panel; the top nav carries section navigation in that range. */
+@media (min-width: 1560px) {
   .actRail {
     display: flex;
   }
@@ -1941,6 +1950,28 @@
 
   .menuButton {
     display: inline-grid;
+  }
+
+  /* FM-3 · ≥44px touch targets for the always-visible nav + hero links. */
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .navCta {
+    min-height: 44px;
+  }
+
+  .heroPill {
+    min-height: 44px;
+  }
+
+  /* FM-2 · single-line snippets wrap instead of forcing a horizontal
+     scroll off the viewport; multi-line source (.codeblock) still scrolls. */
+  .codeline {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
 
   .pillLong {
