@@ -18,6 +18,7 @@ import { NetworkDiagram } from './NetworkDiagram';
 import { Workbench } from './Workbench';
 import { LaneField } from './LaneField';
 import { FlowMark } from './FlowMark';
+import { GlyphMark } from './GlyphMark';
 import {
   AccuracyWaffle,
   CrossoverChart,
@@ -125,10 +126,8 @@ function Nav({ active }: { active: string | null }) {
       aria-label="Site"
       style={{ backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}
     >
-      <a
-        className={styles.brand}
-        href="#hero"
-        onClick={(e) => {
+      <GlyphMark
+        onHome={(e) => {
           e.preventDefault();
           setMenuOpen(false);
           window.scrollTo({
@@ -138,9 +137,7 @@ function Nav({ active }: { active: string | null }) {
               : 'smooth',
           });
         }}
-      >
-        fast<em>_</em>mnist
-      </a>
+      />
       <nav className={styles.navLinks} aria-label="Sections">
         {NAV_LINKS.map((link) => (
           <button
@@ -890,7 +887,7 @@ function Footer() {
       <FlowMark />
       <div className={styles.footerMeta}>
         <span>
-          Fast MNIST — a course-provided network, hand-optimized. Optimization by Ayush Yadav;
+          Glyph — a course-provided network, hand-optimized. Optimization by Ayush Yadav;
           contributor: Shree Chaturvedi.
         </span>
         <span className={styles.footerLinks}>
