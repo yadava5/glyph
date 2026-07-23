@@ -76,13 +76,16 @@ export const InsideBenchPage: React.FC<PageProps> = (p) => {
             {d.lede}
           </p>
           <Prose items={[d.body]} />
-          {/* the on-page readout, as the app renders it */}
+          {/* the on-page readout, as the app renders it — tokens never break
+              mid-word: the strip wraps BETWEEN tokens (flexWrap + nowrap) */}
           <div
             style={{
               marginTop: 12,
               display: "inline-flex",
+              flexWrap: "wrap",
               alignItems: "center",
               gap: 10,
+              rowGap: 5,
               background: COLORS.GROUND,
               borderRadius: 6,
               border: `0.5pt solid ${COLORS.HAIRLINE_STRONG}`,
@@ -91,11 +94,11 @@ export const InsideBenchPage: React.FC<PageProps> = (p) => {
               fontSize: 10,
             }}
           >
-            <span style={{ color: COLORS.STEEL }}>{d.readout.scalarLabel}</span>
+            <span style={{ color: COLORS.STEEL, whiteSpace: "nowrap" }}>{d.readout.scalarLabel}</span>
             <span style={{ color: COLORS.ON_DARK_SUBTLE }}>→</span>
-            <span style={{ color: COLORS.SKY_SOFT }}>{d.readout.simdLabel}</span>
-            <span style={{ color: COLORS.WIN_GREEN, fontWeight: 700 }}>{d.readout.ratio}</span>
-            <span style={{ color: COLORS.ON_DARK_SUBTLE }}>p50 · n</span>
+            <span style={{ color: COLORS.SKY_SOFT, whiteSpace: "nowrap" }}>{d.readout.simdLabel}</span>
+            <span style={{ color: COLORS.WIN_GREEN, fontWeight: 700, whiteSpace: "nowrap" }}>{d.readout.ratio}</span>
+            <span style={{ color: COLORS.ON_DARK_SUBTLE, whiteSpace: "nowrap" }}>p50 · n</span>
           </div>
         </div>
         <RadialGauge value={1.7} min={1} max={2.5} bandLo={1.5} bandHi={1.9} accent={SKY_INK} source="useMnistDemoController.ts:163" />
