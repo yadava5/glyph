@@ -3,7 +3,7 @@ import { useReducedMotion } from 'motion/react';
 import styles from './FlowMark.module.css';
 
 /*
- * The signature flow-mark — fast-mnist's own ending, not a borrowed wordmark.
+ * The signature flow-mark — Glyph's own ending, not a borrowed wordmark.
  * A handwritten digit draws itself stroke-first, then RESOLVES INTO SIMD LANES:
  * the ink dissolves as eight vector lanes rise through it, the sky rung (wasm,
  * the one live on this page) glowing brightest. It is the whole thesis in one
@@ -72,7 +72,7 @@ export function FlowMark() {
       type="button"
       className={styles.mark}
       onClick={replay}
-      aria-label="fast_mnist signature: a handwritten digit resolving into SIMD lanes. Activate to redraw the next digit."
+      aria-label="Glyph signature: a handwritten digit resolving into SIMD lanes. Activate to redraw the next digit."
     >
       <svg viewBox="0 0 120 200" className={styles.svg} role="img" aria-hidden>
         {/* the lanes the digit resolves into */}
@@ -107,7 +107,7 @@ export function FlowMark() {
         />
       </svg>
       <span className={styles.caption}>
-        <b>fast_mnist</b>
+        <b>glyph</b>
         <em>a handwritten digit → the lanes that classify it</em>
       </span>
     </button>
