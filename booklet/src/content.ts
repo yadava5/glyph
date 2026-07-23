@@ -203,7 +203,7 @@ export const WHY = {
     pullQuote:
       "A from-scratch C++ MLP we did not write — correct, framework-free, and running one multiply at a time.",
     body: [
-      "fast-mnist did not begin as a performance project. It began as a course assignment: a from-scratch, framework-free C++ multilayer perceptron that learns to read handwritten digits by backpropagation. It is correct and it is small — and it is scalar.",
+      "fast-mnist did not begin as a performance project. It began as a course assignment: a C++ multilayer perceptron that learns to read handwritten digits by backpropagation.",
       "The forward pass is a stack of matrix-times-vector products. In the starter, each output is a plain loop that multiplies one weight by one activation, adds, and moves on — one lane of the CPU doing arithmetic while the rest sit idle.",
     ],
     coda:
@@ -370,7 +370,7 @@ export const INSIDE = {
       ratioNote: "typical median — your run may differ",
     },
     honest:
-      "There is no fixed in-browser number committed to the repo: the figure is computed live per visitor and the badge shows the p50, so any single value — the ~1.7× above included — is a representative median, not a benchmark constant.",
+      "No in-browser number is committed to the repo — the figure is computed live, per visitor. The ~1.7× above is a representative median.",
     source: "source · wasm/wasm_bindings.cpp:96-109 (novec scalar) · useMnistDemoController.ts:163 (p50)",
   },
 
