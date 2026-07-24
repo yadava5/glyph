@@ -3,14 +3,18 @@ import { useReducedMotion } from 'motion/react';
 import styles from './FlowMark.module.css';
 
 /*
- * The signature flow-mark — Glyph's own ending, not a borrowed wordmark.
- * A handwritten digit draws itself stroke-first, then RESOLVES INTO SIMD LANES:
- * the ink dissolves as eight vector lanes rise through it, the sky rung (wasm,
- * the one live on this page) glowing brightest. It is the whole thesis in one
- * gesture — a handwritten digit becoming the lanes that classify it.
+ * The signature flow-mark — Glyph's own ending, redesigned as a full-bleed
+ * register band anchored at the very bottom of the page (the AutoML-landing
+ * treatment, in Glyph's language).
  *
- * Click (or Enter/Space) to redraw the next digit — a small, on-brand easter
- * egg. Reduced-motion renders the resolved final state, static.
+ * A row of handwritten digits draws itself edge-to-edge across the whole
+ * viewport, then RESOLVES INTO A LANE FIELD: the ink dims as a full-width
+ * rank of vector lanes rises from the bottom edge, sky pairs glowing on the
+ * register rhythm while a sheen sweeps the width. The whole thesis in one
+ * band — handwriting in, lanes out.
+ *
+ * Click (or Enter/Space) anywhere on the band to redraw with new numbers.
+ * Reduced-motion renders the resolved final state, static.
  */
 
 // Single-stroke "handwritten" digit paths in a 120×160 box. Imperfect on
@@ -28,12 +32,20 @@ const DIGITS: string[] = [
   'M88 74 C86 40 54 26 40 50 C26 74 44 100 66 96 C80 94 88 82 88 74 C88 118 78 146 44 150', // 9
 ];
 
-const LANES = 8;
+/** Full-width rank of lanes — a register file, not a single register. */
+const LANES = 64;
+
+/** First render spells π — the easter egg before the dice take over. */
+const SEED: number[] = [3, 1, 4, 1, 5, 9, 2, 6];
+
+function rollDigits(): number[] {
+  return SEED.map(() => Math.floor(Math.random() * 10));
+}
 
 export function FlowMark() {
   const reduced = useReducedMotion();
   const ref = useRef<HTMLButtonElement>(null);
-  const [digit, setDigit] = useState(5);
+  const [digits, setDigits] = useState<number[]>(SEED);
   const [cycle, setCycle] = useState(0);
   const [played, setPlayed] = useState(false);
 
@@ -52,14 +64,14 @@ export function FlowMark() {
           obs.disconnect();
         }
       },
-      { threshold: 0.4 },
+      { threshold: 0.3 },
     );
     obs.observe(node);
     return () => obs.disconnect();
   }, [reduced]);
 
   const replay = () => {
-    setDigit((d) => (d + 1) % 10);
+    setDigits(rollDigits());
     setCycle((c) => c + 1);
     setPlayed(true);
   };
@@ -72,43 +84,56 @@ export function FlowMark() {
       type="button"
       className={styles.mark}
       onClick={replay}
-      aria-label="Glyph signature: a handwritten digit resolving into SIMD lanes. Activate to redraw the next digit."
+      aria-label="Glyph signature: a row of handwritten digits resolving into a full-width field of SIMD lanes. Activate to redraw with new numbers."
     >
-      <svg viewBox="0 0 120 200" className={styles.svg} role="img" aria-hidden>
-        {/* the lanes the digit resolves into */}
-        <g className={styles.lanes} key={`lanes-${cycle}`} data-play={animate || undefined}>
-          {Array.from({ length: LANES }, (_, i) => {
-            const x = 22 + i * 9.6;
-            // the middle pair is the "live" sky rung; edges cool to steel
-            const hot = i === 3 || i === 4;
-            return (
-              <rect
-                key={i}
-                x={x}
-                y={22}
-                width={5.4}
-                height={146}
-                rx={2.6}
-                className={styles.lane}
-                data-hot={hot || undefined}
-                style={{ '--d': `${0.9 + i * 0.06}s` } as React.CSSProperties}
-              />
-            );
-          })}
-        </g>
+      {/* the lane field — edge to edge, rising from the bottom of the page */}
+      <div
+        className={styles.lanes}
+        key={`lanes-${cycle}`}
+        data-play={animate || undefined}
+        aria-hidden
+      >
+        {Array.from({ length: LANES }, (_, i) => {
+          // sky pairs on the register rhythm — every eighth pair runs hot,
+          // the wasm rung's cadence carried across the whole width
+          const hot = i % 8 === 3 || i % 8 === 4;
+          return (
+            <i
+              key={i}
+              className={styles.lane}
+              data-hot={hot || undefined}
+              style={
+                {
+                  '--d': `${1.05 + i * 0.018}s`,
+                  '--h': `${0.55 + 0.45 * Math.abs(Math.sin(i * 0.82))}`,
+                } as React.CSSProperties
+              }
+            />
+          );
+        })}
+      </div>
 
-        {/* the handwritten digit, drawn then dissolved */}
-        <path
-          key={`digit-${cycle}-${digit}`}
-          d={DIGITS[digit]}
-          className={styles.stroke}
-          pathLength={1}
-          data-play={animate || undefined}
-        />
-      </svg>
+      {/* the sheen — one continuous sweep across the register, sky-toned */}
+      {animate && <span className={styles.sweep} aria-hidden />}
+
+      {/* the handwritten row — drawn edge to edge, then dissolved */}
+      <div className={styles.digits} key={`digits-${cycle}`} aria-hidden>
+        {digits.map((d, i) => (
+          <svg
+            key={`${cycle}-${i}`}
+            viewBox="0 0 120 160"
+            className={styles.digit}
+            data-play={animate || undefined}
+            style={{ '--dd': `${i * 0.12}s` } as React.CSSProperties}
+          >
+            <path d={DIGITS[d]} className={styles.stroke} pathLength={1} />
+          </svg>
+        ))}
+      </div>
+
       <span className={styles.caption}>
         <b>glyph</b>
-        <em>a handwritten digit → the lanes that classify it</em>
+        <em>handwritten digits → the lanes that classify them · click to redraw</em>
       </span>
     </button>
   );
