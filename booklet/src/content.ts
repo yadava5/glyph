@@ -33,8 +33,8 @@ export const BRAND = {
   author: "Ayush Yadav",
   contributor: "Shree Chaturvedi",
   year: "2026",
-  liveUrl: "fast-mnist.vercel.app",
-  qrTarget: "https://fast-mnist.vercel.app",
+  liveUrl: "getglyph.vercel.app",
+  qrTarget: "https://getglyph.vercel.app",
 } as const;
 
 export const MASTHEAD = {
@@ -531,7 +531,7 @@ export const BUILD = {
   },
 
   closing: {
-    liveUrl: "fast-mnist.vercel.app",
+    liveUrl: "getglyph.vercel.app",
     spaceUrl: "dot_wasm128_rowvec · f64x2",
   },
 } as const;
@@ -547,9 +547,9 @@ export const TRY_IT = {
   headline: "Run the bench.",
   tagline:
     "Race the hand-written wasm128 kernel against scalar, live, on your own machine — the whole card, made executable.",
-  qrTarget: "https://fast-mnist.vercel.app",
+  qrTarget: "https://getglyph.vercel.app",
   qrCaption: "scan to open the live app",
-  liveUrl: "fast-mnist.vercel.app",
+  liveUrl: "getglyph.vercel.app",
   hotLoop: "dot_wasm128_rowvec · f64x2",
   steps: [
     { n: "1", k: "open the demo", v: "the wasm128 model loads and warms in-page." },
