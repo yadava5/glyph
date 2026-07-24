@@ -201,6 +201,8 @@ interface RollingProps {
   duration?: number;
   /** Re-roll when the element is hovered (a stat that "recomputes"). */
   rerollOnHover?: boolean;
+  /** Opt-in: a left-to-right highlight that sweeps across the digits. */
+  glow?: boolean;
 }
 
 const easeOutExpo = (t: number) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
@@ -226,6 +228,7 @@ export function RollingNumber({
   className,
   duration = 1100,
   rerollOnHover = false,
+  glow = false,
 }: RollingProps) {
   const reduced = useReducedMotion();
   const { ref, inView } = useInView<HTMLSpanElement>();
@@ -257,7 +260,7 @@ export function RollingNumber({
   return (
     <span
       ref={ref}
-      className={`${styles.rolling} tabular ${className ?? ''}`}
+      className={`${styles.rolling} tabular ${glow ? styles.glow : ''} ${className ?? ''}`}
       data-rolling={rolling || undefined}
       onPointerEnter={rerollOnHover && !reduced ? () => setRunId((n) => n + 1) : undefined}
     >

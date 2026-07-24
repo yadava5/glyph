@@ -70,3 +70,44 @@
 .rolling[data-rolling] {
   filter: blur(0.35px);
 }
+
+/* Opt-in glow (glow prop): a bright sky band travels left-to-right across the
+   digits over an otherwise text-strong fill, so the numerals stay legible.
+   Same background-clip:text sheen as the hero wordmark. Reduced-motion drops
+   to a solid fill with no sweep. */
+.glow {
+  background: linear-gradient(
+    100deg,
+    var(--text-strong) 0%,
+    var(--text-strong) 40%,
+    var(--sky-soft) 48%,
+    #eaf6ff 50%,
+    var(--sky-soft) 52%,
+    var(--text-strong) 60%,
+    var(--text-strong) 100%
+  );
+  background-size: 250% auto;
+  background-position: 125% center;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--text-strong);
+  animation: numberGlow 3s linear infinite;
+}
+
+@keyframes numberGlow {
+  from {
+    background-position: 125% center;
+  }
+  to {
+    background-position: -25% center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow {
+    background: none;
+    -webkit-text-fill-color: var(--text-strong);
+    animation: none;
+  }
+}

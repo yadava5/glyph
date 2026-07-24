@@ -582,10 +582,10 @@
   color: var(--sky-soft);
 }
 
-/* ─────────── accuracy waffle ─────────── */
+/* ─────────── accuracy count-up ─────────── */
 .waffle {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: clamp(1.2rem, 3vw, 2.4rem);
   align-items: center;
   padding: 1.5rem;
@@ -593,29 +593,6 @@
   border-top: 2px solid var(--green);
   border-radius: 14px;
   background: var(--surface);
-}
-
-.waffleCanvasWrap {
-  width: clamp(180px, 34vw, 260px);
-  aspect-ratio: 1;
-}
-
-.waffleCanvas {
-  width: 100%;
-  height: 100%;
-  image-rendering: auto;
-}
-
-/* reveal wipe on scroll-in */
-.waffleCanvasWrap[data-reveal] .waffleCanvas {
-  clip-path: inset(0 100% 0 0);
-  animation: waffleWipe 1.1s var(--ease-out-quart) forwards;
-}
-
-@keyframes waffleWipe {
-  to {
-    clip-path: inset(0 0 0 0);
-  }
 }
 
 .waffleMeta {
@@ -655,53 +632,13 @@
   color: var(--amber);
 }
 
-.waffleLegend {
-  display: flex;
-  gap: 1.1rem;
-  margin: 0.2rem 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.waffleLegend li {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-}
-
-.waffleLegend i {
-  width: 9px;
-  height: 9px;
-  border-radius: 999px;
-}
-
-.waffleLegend i[data-k='ok'] {
-  background: rgb(74 222 128 / 0.55);
-}
-
-.waffleLegend i[data-k='err'] {
-  background: var(--amber);
-}
-
-.waffleNote {
-  margin: 0.3rem 0 0;
-  color: var(--text-dim);
-  font-size: 0.8rem;
-  line-height: 1.5;
-}
-
 @media (max-width: 720px) {
   .waffle {
-    grid-template-columns: minmax(0, 1fr);
     justify-items: center;
     text-align: center;
   }
 
-  .waffleBig,
-  .waffleLegend {
+  .waffleBig {
     justify-content: center;
   }
 

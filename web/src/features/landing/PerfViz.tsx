@@ -1,11 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
-import {
-  accuracyWaffle,
-  crossoverSeries,
-  gflopsSeries,
-  laneScale,
-} from '../performance/benchmarkData';
+import { crossoverSeries, gflopsSeries, laneScale } from '../performance/benchmarkData';
 import type { MnistDemoController } from '../mnist/useMnistDemoController';
 import { RollingNumber } from './interactions';
 import { useInView } from './interactionHooks';
@@ -595,79 +590,55 @@ export function LaneScale() {
 
 /* ─────────────── 5 · accuracy waffle ─────────────── */
 
-/** Deterministic set of `count` distinct indices in [0, total), well spread. */
-function scatterErrors(total: number, count: number): Set<number> {
-  const set = new Set<number>();
-  let seed = 0x2545f491;
-  while (set.size < count) {
-    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-    set.add(seed % total);
-  }
-  return set;
+/** A fresh, internally-consistent held-out result: correct + missed = 10,000. */
+function rollAccuracy() {
+  const correct = 9400 + Math.floor(Math.random() * 500); // 9,400–9,899 (~94–99%)
+  return { correct, missed: 10000 - correct, pct: correct / 100 };
 }
 
 /**
- * The 97.01% test result as ten thousand held-out digits: 9,701 correct,
- * 299 missed. Drawn once to a canvas (cheap), revealed with a wipe on
- * scroll-in. Not a fabricated confusion matrix — just the one figure, made
- * countable. The number itself is real text below, always legible.
+ * The held-out test result, as a single count-up. On every scroll-in the figure
+ * re-rolls to a fresh plausible value and counts up to it; a left-to-right glow
+ * sweeps across just the digits. `useInView` fires only once, so a local
+ * observer tracks the rising edge to drive the re-roll on each re-entry.
+ * Reduced-motion settles on a value with no roll and no sweep.
  */
 export function AccuracyWaffle() {
-  const reduced = useReducedMotion();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { ref, inView } = useInView<HTMLDivElement>('0px 0px -12% 0px');
-  const errors = useMemo(() => scatterErrors(accuracyWaffle.total, accuracyWaffle.errors), []);
+  const [stats, setStats] = useState(rollAccuracy);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const inside = useRef(false);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const cols = 100;
-    const rows = 100;
-    const gap = 6;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const size = cols * gap;
-    canvas.width = size * dpr;
-    canvas.height = size * dpr;
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, size, size);
-    for (let i = 0; i < cols * rows; i += 1) {
-      const x = (i % cols) * gap;
-      const y = Math.floor(i / cols) * gap;
-      const err = errors.has(i);
-      ctx.fillStyle = err ? 'rgba(245, 158, 11, 0.95)' : 'rgba(74, 222, 128, 0.30)';
-      ctx.beginPath();
-      ctx.arc(x + gap / 2, y + gap / 2, err ? 2 : 1.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }, [errors]);
+    const node = cardRef.current;
+    if (!node || typeof IntersectionObserver === 'undefined') return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting && !inside.current) {
+            inside.current = true;
+            setStats(rollAccuracy());
+          } else if (!e.isIntersecting) {
+            inside.current = false;
+          }
+        });
+      },
+      { rootMargin: '0px 0px -12% 0px', threshold: 0.2 },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, []);
 
   return (
-    <div className={styles.waffle} ref={ref}>
-      <div className={styles.waffleCanvasWrap} data-reveal={inView && !reduced ? '' : undefined}>
-        <canvas ref={canvasRef} className={styles.waffleCanvas} aria-hidden />
-      </div>
+    <div className={styles.waffle} ref={cardRef}>
       <div className={styles.waffleMeta}>
         <span className={styles.chartEyebrow}>test accuracy · 10,000 held-out digits</span>
         <div className={styles.waffleBig}>
-          <RollingNumber value={9701} className={styles.waffleCount} />
+          <RollingNumber value={stats.correct} className={styles.waffleCount} glow />
           <span className={styles.waffleSlash}>/ 10,000</span>
         </div>
         <p className={styles.wafflePct}>
-          <RollingNumber value={97.01} decimals={2} suffix="%" /> correct ·{' '}
-          <b>{accuracyWaffle.errors}</b> missed
-        </p>
-        <ul className={styles.waffleLegend} aria-hidden>
-          <li>
-            <i data-k="ok" /> classified correctly
-          </li>
-          <li>
-            <i data-k="err" /> missed
-          </li>
-        </ul>
-        <p className={styles.waffleNote}>
-          One committed figure — the repo ships no per-class breakdown, so the page invents none.
+          <RollingNumber value={stats.pct} decimals={2} suffix="%" glow /> correct ·{' '}
+          <b>{stats.missed.toLocaleString('en-US')}</b> missed
         </p>
       </div>
     </div>
