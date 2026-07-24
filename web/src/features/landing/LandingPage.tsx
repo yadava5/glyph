@@ -241,7 +241,7 @@ function TitleWords({ text, offset = 0 }: { text: string; offset?: number }) {
 function Hero() {
   const reduced = useReducedMotion();
   const subhead =
-    'The classifier came as coursework — a from-scratch C++ MLP we did not write. The speed is ours: the hot dot-product hand-written in SIMD across four instruction sets — AVX-512, AVX2, NEON, and a wasm-simd128 port that races scalar, live, on the machine you are holding. Every number here is measured — including the case where it loses.';
+    'The classifier came as coursework; the speed is ours — the hot loop hand-written in SIMD, down to a wasm port that races scalar live in your browser. Every number here is measured, including where it loses.';
   const words = subhead.split(' ');
 
   return (
@@ -414,8 +414,7 @@ function ProblemAct() {
       lede={
         <>
           The starter classifier was correct and completely scalar. Every dot product walks the
-          weights one <span className={styles.serifTurn}>double</span> at a time — and the widest
-          math unit on the machine watches almost all of it happen in the dark.
+          weights one <span className={styles.serifTurn}>double</span> at a time.
         </>
       }
     >
@@ -435,8 +434,7 @@ function ProblemAct() {
             </div>
           </div>
           <p className={styles.laneCaption}>
-            <b className="tabular">{scalarIdle.headline}</b> — {scalarIdle.caption}. The lanes exist
-            in the hardware; the scalar loop simply never fills them.
+            <b className="tabular">{scalarIdle.headline}</b> — {scalarIdle.caption}.
           </p>
         </div>
 
@@ -448,9 +446,7 @@ function ProblemAct() {
           </p>
           <p>
             And the compiler will not rescue it: LLVM&apos;s autovectorizer declines this reduction
-            loop, so{' '}
-            <span className={styles.serifTurn}>the width is right there, and nothing uses it.</span>{' '}
-            The speed was never missing. It was left on the floor.
+            loop.
           </p>
           <ul className={styles.starterFacts} aria-label="The starter network">
             <li>
@@ -600,11 +596,6 @@ function ImplementationAct({ controller }: { controller: MnistDemoController }) 
           </li>
         ))}
       </ol>
-      <p className={styles.actNote}>
-        The wasm-simd128 rung compiles the exact same kernel with Emscripten — which is what lets
-        the instrument below time it against scalar, on your own machine.
-      </p>
-
       <LaneScale />
 
       <div className={styles.tierGrid}>
@@ -735,19 +726,13 @@ function ProofAct({ controller }: { controller: MnistDemoController }) {
           </article>
         ))}
       </div>
-      <p className={styles.benchFootnote}>
-        Hand-written SIMD is active in <b>all</b> configs above (NEON on the M2 that produced this
-        run) — these bars measure threading and native codegen on top of it. The SIMD-vs-scalar
-        comparison is the live one in the workbench, on your machine.
-      </p>
-
       <div className={styles.chartsRow}>
         <CrossoverChart />
         <GflopsSlope />
       </div>
 
       <div className={styles.crossover}>
-        <h3>The crossover — where OpenMP loses on purpose</h3>
+        <h3>The crossover</h3>
         <p>
           Below a per-op size threshold, thread startup costs more than the work. The committed run
           keeps the losses:{' '}
@@ -884,7 +869,6 @@ function TryItBand() {
 function Footer() {
   return (
     <footer className={styles.footer} data-reveal>
-      <FlowMark />
       <div className={styles.footerMeta}>
         <span>
           Glyph — a course-provided network, hand-optimized. Optimization by Ayush Yadav;
@@ -905,6 +889,7 @@ function Footer() {
           MIT license · benchmarks from committed M2 run 20251226-154121
         </span>
       </div>
+      <FlowMark />
     </footer>
   );
 }
