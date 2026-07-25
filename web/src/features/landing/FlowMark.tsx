@@ -90,7 +90,12 @@ export function FlowMark() {
             viewBox="0 0 120 160"
             className={styles.digit}
             data-play={animate || undefined}
-            style={{ '--dd': `${i * 0.12}s` } as React.CSSProperties}
+            style={
+              {
+                '--dd': `${i * 0.12}s`,
+                '--gi': i,
+              } as React.CSSProperties
+            }
           >
             <path d={DIGITS[d]} className={styles.stroke} pathLength={1} />
           </svg>

@@ -58,15 +58,17 @@
   stroke: rgb(247 248 248 / 0.34);
 }
 
-/* animated: draw the ink, then a sky glow sweeps L→R — each digit lights on its
-   own stagger (calc below), so the highlight travels across the row. */
+/* animated: draw the ink once, then a bright point runs left → right across the
+   row FOREVER at constant speed. The per-digit delay is exactly period ÷ 8
+   digits, so as the highlight leaves the last digit it re-enters the first —
+   a seamless, nonstop L→R run. Constant (linear) timing = even speed. */
 .digit[data-play] .stroke {
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
   animation:
     fmDraw 0.9s var(--ease-out-quart) forwards,
-    fmGlowSweep 3.2s ease-in-out infinite;
-  animation-delay: var(--dd), calc(1.1s + var(--dd) * 2.2);
+    fmGlowRun 2.72s linear infinite;
+  animation-delay: var(--dd), calc(1s + var(--gi) * 0.34s);
 }
 
 @keyframes fmDraw {
@@ -75,17 +77,22 @@
   }
 }
 
-/* the left → right glow — on just the numbers, nothing else */
-@keyframes fmGlowSweep {
-  0%,
-  72%,
-  100% {
-    stroke: rgb(247 248 248 / 0.42);
+/* the running glow — the number's OWN ink lights sky-bright as the highlight
+   passes (tight white core + wide sky halo, the AutoML-glow feel on the digit
+   itself, not a border), then settles back to a calm readable row. */
+@keyframes fmGlowRun {
+  0% {
+    stroke: rgb(247 248 248 / 0.4);
     filter: none;
   }
-  36% {
-    stroke: rgb(186 230 253 / 0.96);
-    filter: drop-shadow(0 0 9px rgb(56 189 248 / 0.65));
+  11% {
+    stroke: rgb(240 249 255 / 1);
+    filter: drop-shadow(0 0 2px rgb(224 242 254 / 0.95)) drop-shadow(0 0 12px rgb(56 189 248 / 0.9));
+  }
+  38%,
+  100% {
+    stroke: rgb(247 248 248 / 0.4);
+    filter: none;
   }
 }
 
