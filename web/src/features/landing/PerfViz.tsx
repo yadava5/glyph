@@ -590,21 +590,19 @@ export function LaneScale() {
 
 /* ─────────────── 5 · accuracy waffle ─────────────── */
 
-/** A fresh, internally-consistent held-out result: correct + missed = 10,000. */
-function rollAccuracy() {
-  const correct = 9400 + Math.floor(Math.random() * 500); // 9,400–9,899 (~94–99%)
-  return { correct, missed: 10000 - correct, pct: correct / 100 };
-}
+/** The model's real held-out MNIST result — matches the hero's 97.01%. */
+const HELD_OUT = { correct: 9701, missed: 299, pct: 97.01 };
 
 /**
- * The held-out test result, as a single count-up. On every scroll-in the figure
- * re-rolls to a fresh plausible value and counts up to it; a left-to-right glow
- * sweeps across just the digits. `useInView` fires only once, so a local
- * observer tracks the rising edge to drive the re-roll on each re-entry.
- * Reduced-motion settles on a value with no roll and no sweep.
+ * The held-out test result, as a single count-up on the model's real 97.01%
+ * figure (measured, not invented — and consistent with the hero). On every
+ * scroll-in the count-up replays and a left-to-right glow sweeps across just the
+ * digits. `useInView` fires only once, so a local observer tracks the rising
+ * edge and bumps a `run` key to re-fire the count-up on each re-entry.
+ * Reduced-motion settles on the value with no roll and no sweep.
  */
 export function AccuracyWaffle() {
-  const [stats, setStats] = useState(rollAccuracy);
+  const [run, setRun] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
   const inside = useRef(false);
 
@@ -616,7 +614,7 @@ export function AccuracyWaffle() {
         entries.forEach((e) => {
           if (e.isIntersecting && !inside.current) {
             inside.current = true;
-            setStats(rollAccuracy());
+            setRun((r) => r + 1);
           } else if (!e.isIntersecting) {
             inside.current = false;
           }
@@ -633,12 +631,17 @@ export function AccuracyWaffle() {
       <div className={styles.waffleMeta}>
         <span className={styles.chartEyebrow}>test accuracy · 10,000 held-out digits</span>
         <div className={styles.waffleBig}>
-          <RollingNumber value={stats.correct} className={styles.waffleCount} glow />
+          <RollingNumber
+            key={`c${run}`}
+            value={HELD_OUT.correct}
+            className={styles.waffleCount}
+            glow
+          />
           <span className={styles.waffleSlash}>/ 10,000</span>
         </div>
         <p className={styles.wafflePct}>
-          <RollingNumber value={stats.pct} decimals={2} suffix="%" glow /> correct ·{' '}
-          <b>{stats.missed.toLocaleString('en-US')}</b> missed
+          <RollingNumber key={`p${run}`} value={HELD_OUT.pct} decimals={2} suffix="%" glow />{' '}
+          correct · <b>{HELD_OUT.missed.toLocaleString('en-US')}</b> missed
         </p>
       </div>
     </div>
