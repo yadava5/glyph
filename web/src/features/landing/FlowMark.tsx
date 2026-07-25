@@ -3,18 +3,13 @@ import { useReducedMotion } from 'motion/react';
 import styles from './FlowMark.module.css';
 
 /*
- * The signature flow-mark — Glyph's own ending, redesigned as a full-bleed
- * register band anchored at the very bottom of the page (the AutoML-landing
- * treatment, in Glyph's language).
+ * The signature flow-mark — Glyph's own ending, a full-bleed band at the very
+ * bottom of the page. A row of handwritten digits draws itself edge-to-edge,
+ * and a sky glow then sweeps left → right across just the digits. Every time it
+ * scrolls into view (or you click it) it rolls a fresh random row. No lanes, no
+ * sheen — the numbers are the whole mark.
  *
- * A row of handwritten digits draws itself edge-to-edge across the whole
- * viewport, then RESOLVES INTO A LANE FIELD: the ink dims as a full-width
- * rank of vector lanes rises from the bottom edge, sky pairs glowing on the
- * register rhythm while a sheen sweeps the width. The whole thesis in one
- * band — handwriting in, lanes out.
- *
- * Click (or Enter/Space) anywhere on the band to redraw with new numbers.
- * Reduced-motion renders the resolved final state, static.
+ * Reduced-motion renders the static drawn row with no draw and no glow.
  */
 
 // Single-stroke "handwritten" digit paths in a 120×160 box. Imperfect on
@@ -32,10 +27,7 @@ const DIGITS: string[] = [
   'M88 74 C86 40 54 26 40 50 C26 74 44 100 66 96 C80 94 88 82 88 74 C88 118 78 146 44 150', // 9
 ];
 
-/** Full-width rank of lanes — a register file, not a single register. */
-const LANES = 64;
-
-/** First render spells π — the easter egg before the dice take over. */
+/** Initial row (spells π) before the first scroll-in roll. */
 const SEED: number[] = [3, 1, 4, 1, 5, 9, 2, 6];
 
 function rollDigits(): number[] {
@@ -49,7 +41,8 @@ export function FlowMark() {
   const [cycle, setCycle] = useState(0);
   const [played, setPlayed] = useState(false);
 
-  // Play once when it scrolls into view (unless reduced-motion → always final).
+  // Roll a fresh random row and play the draw whenever it scrolls into view
+  // (unless reduced-motion → always the static drawn row).
   useEffect(() => {
     if (reduced) return;
     const node = ref.current;
@@ -60,6 +53,8 @@ export function FlowMark() {
     const obs = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
+          setDigits(rollDigits());
+          setCycle((c) => c + 1);
           setPlayed(true);
           obs.disconnect();
         }
@@ -84,39 +79,10 @@ export function FlowMark() {
       type="button"
       className={styles.mark}
       onClick={replay}
-      aria-label="Glyph signature: a row of handwritten digits resolving into a full-width field of SIMD lanes. Activate to redraw with new numbers."
+      aria-label="Glyph signature: a row of handwritten digits that redraws with new random numbers. Activate to redraw."
     >
-      {/* the lane field — edge to edge, rising from the bottom of the page */}
-      <div
-        className={styles.lanes}
-        key={`lanes-${cycle}`}
-        data-play={animate || undefined}
-        aria-hidden
-      >
-        {Array.from({ length: LANES }, (_, i) => {
-          // sky pairs on the register rhythm — every eighth pair runs hot,
-          // the wasm rung's cadence carried across the whole width
-          const hot = i % 8 === 3 || i % 8 === 4;
-          return (
-            <i
-              key={i}
-              className={styles.lane}
-              data-hot={hot || undefined}
-              style={
-                {
-                  '--d': `${1.05 + i * 0.018}s`,
-                  '--h': `${0.55 + 0.45 * Math.abs(Math.sin(i * 0.82))}`,
-                } as React.CSSProperties
-              }
-            />
-          );
-        })}
-      </div>
-
-      {/* the sheen — one continuous sweep across the register, sky-toned */}
-      {animate && <span className={styles.sweep} aria-hidden />}
-
-      {/* the handwritten row — drawn edge to edge, then dissolved */}
+      {/* the handwritten row — the only mark: each digit draws itself, then a
+          sky glow sweeps left → right across the row. */}
       <div className={styles.digits} key={`digits-${cycle}`} aria-hidden>
         {digits.map((d, i) => (
           <svg
@@ -133,7 +99,7 @@ export function FlowMark() {
 
       <span className={styles.caption}>
         <b>glyph</b>
-        <em>handwritten digits → the lanes that classify them · click to redraw</em>
+        <em>handwritten digits · click to redraw</em>
       </span>
     </button>
   );
