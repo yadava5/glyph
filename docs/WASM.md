@@ -1,7 +1,7 @@
 # Browser-native inference via WebAssembly
 
-The `fast-mnist-nn` project ships the same C++ classifier to both a
-native HTTP backend **and** to the browser as a WebAssembly module.
+Glyph ships the same C++ classifier to both a native HTTP backend
+**and** to the browser as a WebAssembly module.
 The web demo tries the backend first and falls back to the WASM path
 when the server is unavailable, so the site runs on any static host.
 If generated WASM artifacts are not present, the frontend uses a small
