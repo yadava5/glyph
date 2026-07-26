@@ -126,7 +126,7 @@ export const BackCoverPage: React.FC = () => (
             color: COLORS.ON_DARK,
           }}
         >
-          fast<span style={{ color: COLORS.SKY_SOFT }}>-mnist</span>
+          Gly<span style={{ color: COLORS.SKY_SOFT }}>ph</span>
         </span>
         <span style={{ width: 26, height: 1, background: COLORS.ON_DARK_HAIRLINE }} />
         <span
