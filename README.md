@@ -16,17 +16,17 @@ input saliency — on a monochrome, WebGL-free landing page.
 [![license][license-badge]][license-url]
 [![release][release-badge]][release-url]
 [![web app][web-badge]][web-url]
+[![system card][systemcard-badge]][systemcard-url]
 [![openssf scorecard][scorecard-badge]][scorecard-url]
 
 ## Web demo
 
-**Live: https://fast-mnist.vercel.app** — draw a digit; the hand-written
+**Live: https://getglyph.vercel.app** — draw a digit; the hand-written
 simd128 kernel races scalar on your machine, in your browser.
 
-
-The React demo is ready for local use and zero-cost Vercel deployment. Draw a
-digit, see the prediction, rotate the network, and inspect the activation
-pipeline. See [`web/README.md`](web/README.md) for the deploy/run commands.
+Draw a digit, see the prediction, rotate the network, and inspect the
+activation pipeline. See [`web/README.md`](web/README.md) for the deploy and
+run commands.
 
 > The public deployment target is Vercel Hobby with root directory `web`. It
 > calls a C++ `/predict` API only when `VITE_API_BASE_URL` is configured. Static
@@ -106,9 +106,9 @@ macOS one-liner:
 ./tools/bootstrap_macos.sh
 ```
 
-The build is warning-clean on GCC, Clang, and MSVC. Catch2 tests live under
-`tests/` and run via CTest. `cmake -DFAST_MNIST_ENABLE_DOXYGEN=ON` adds a
-`docs` target.
+The build is warning-clean on GCC, Clang, and MSVC. 41 Catch2 tests — unit,
+property-based, and HTTP API — live under `tests/` and run via CTest.
+`cmake -DFAST_MNIST_ENABLE_DOXYGEN=ON` adds a `docs` target.
 
 ## Run the CLI
 
@@ -196,12 +196,18 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the branching model, commit
 convention, and PR template. Security issues: [`SECURITY.md`](SECURITY.md).
 Code of conduct: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 
+## Authors
+
+- **[Ayush Yadav](https://github.com/yadava5)** — author. C++ core, SIMD
+  kernels, build system, and the complete React/TypeScript web frontend and
+  application.
+- **[Shree Chaturvedi](https://github.com/shreebatsa)** — kernel and
+  optimization contributions.
+
 ## Acknowledgments
 
 - Michael Nielsen, *Neural Networks and Deep Learning* — the reference
   implementation and pedagogy behind the two-layer MLP.
-- [Shree Chaturvedi](https://github.com/shreebatsa) — frontend contributions
-  and review.
 - [cpp-httplib](https://github.com/yhirose/cpp-httplib),
   [nlohmann/json](https://github.com/nlohmann/json),
   [Catch2](https://github.com/catchorg/Catch2),
@@ -221,6 +227,8 @@ MIT — see [`LICENSE`](LICENSE).
 [release-badge]: https://img.shields.io/github/v/release/yadava5/fast-mnist-nn?sort=semver
 [release-url]: https://github.com/yadava5/fast-mnist-nn/releases
 [web-badge]: https://img.shields.io/badge/web-demo-brightgreen
-[web-url]: web/README.md
+[web-url]: https://getglyph.vercel.app
 [scorecard-badge]: https://api.securityscorecards.dev/projects/github.com/yadava5/fast-mnist-nn/badge
 [scorecard-url]: https://securityscorecards.dev/viewer/?uri=github.com/yadava5/fast-mnist-nn
+[systemcard-badge]: https://img.shields.io/badge/system%20card-read-blue
+[systemcard-url]: https://getglyph.vercel.app/system-card
