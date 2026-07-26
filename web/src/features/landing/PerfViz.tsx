@@ -479,10 +479,13 @@ export function ThroughputGauge({ controller }: { controller: MnistDemoControlle
               </g>
             );
           })}
-          {/* value arc */}
+          {/* value arc — sweeps from frac 0 (left) to `frac`, so it always spans
+              frac×180° ≤ 180°: the large-arc-flag is ALWAYS 0 (the minor arc over
+              the top). A conditional flag draws the major arc the long way round
+              the bottom, which the 300×190 viewBox then clips into fragments. */}
           {live && (
             <path
-              d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${frac > 0.5 ? 1 : 0} 1 ${valEnd.x} ${valEnd.y}`}
+              d={`M ${start.x} ${start.y} A ${r} ${r} 0 0 1 ${valEnd.x} ${valEnd.y}`}
               className={styles.gaugeValue}
             />
           )}
