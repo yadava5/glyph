@@ -1,37 +1,42 @@
 <p align="center">
   <img src="docs/branding/readme-light.svg#gh-light-mode-only" width="700"
-       alt="Fast MNIST NN">
+       alt="Glyph">
   <img src="docs/branding/readme-dark.svg#gh-dark-mode-only" width="700"
-       alt="Fast MNIST NN">
+       alt="Glyph">
 </p>
 
 ---
 
-Hand-rolled C++ neural network that classifies MNIST digits at ~97% accuracy,
-with revolvable 3D architecture visualization and real activation heatmaps that
-run in your browser.
+A course-provided C++ MNIST network, hand-optimized: AVX-512 / AVX2 /
+NEON / wasm simd128 kernels behind a 97.01%-accuracy classifier, with a
+live in-browser scalar-vs-SIMD benchmark, real activation heatmaps, and
+input saliency — on a monochrome, WebGL-free landing page.
 
 [![ci][ci-badge]][ci-url]
 [![license][license-badge]][license-url]
 [![release][release-badge]][release-url]
 [![web app][web-badge]][web-url]
+[![system card][systemcard-badge]][systemcard-url]
 [![openssf scorecard][scorecard-badge]][scorecard-url]
 
 ## Web demo
 
-The React demo is ready for local use and zero-cost Vercel deployment. Draw a
-digit, see the prediction, rotate the network, and inspect the activation
-pipeline. See [`web/README.md`](web/README.md) for the deploy/run commands.
+**Live: https://getglyph.vercel.app** — draw a digit; the hand-written
+simd128 kernel races scalar on your machine, in your browser.
+
+Draw a digit, see the prediction, rotate the network, and inspect the
+activation pipeline. See [`web/README.md`](web/README.md) for the deploy and
+run commands.
 
 > The public deployment target is Vercel Hobby with root directory `web`. It
-> tries a C++ `/predict` API first, then staged browser WASM artifacts, then a
-> browser-only demo classifier so the app remains interactive without paid
-> backend hosting.
+> calls a C++ `/predict` API only when `VITE_API_BASE_URL` is configured. Static
+> deployments use staged browser WASM when `VITE_ENABLE_WASM=true`, otherwise
+> they use the clearly-labeled browser JS demo classifier.
 
 ## Demo preview
 
 <img src="web/public/hero-poster.svg" width="760"
-     alt="Fast MNIST NN animated web demo preview">
+     alt="Glyph animated web demo preview">
 
 Draw a digit, load the sample through the command palette, inspect real
 softmax and saliency output, and scroll through the animated 784 -> 100 -> 10
@@ -41,24 +46,26 @@ pipeline stage.
 
 A C++17 core library that implements a two-layer multilayer perceptron
 (784 → 100 → 10) from the ground up. Matrix primitives — `dot`, `transpose`,
-`axpy` — are hand-written with AVX-512, AVX2, and NEON intrinsics, with a
-scalar fallback and OpenMP parallelism above empirically-tuned element-count
-thresholds. After ~30 epochs on MNIST the network reaches ~97% test accuracy.
+`axpy` — are hand-written with AVX-512, AVX2, NEON, and WebAssembly simd128
+intrinsics, with a scalar fallback and OpenMP parallelism above
+empirically-tuned element-count thresholds. After ~30 epochs on MNIST the network reaches ~97% test accuracy.
 
 The library ships as three deployables. A CLI (`fast_mnist_cli`) trains and
 evaluates from the terminal. An HTTP server (`fast_mnist_server`, built on
 cpp-httplib + nlohmann/json) exposes `/health` and `/predict`. An Emscripten
-build compiles the same core to WebAssembly with `-msimd128`, so the web app
-has an offline fallback when no server is available. The frontend also keeps
-a small JS fallback for free static previews that do not have generated WASM
-artifacts staged yet.
+build compiles the same core to WebAssembly with `-msimd128`. The frontend uses
+that path only when the generated artifacts are staged and explicitly enabled;
+otherwise the public static demo falls back to a labeled browser JS classifier.
 
-The frontend is a Vite-bundled React 19 + TypeScript SPA. It uses Motion v12
-for transitions, Tailwind v4 with OKLCH tokens for the design system, and
-`three` + `@react-three/fiber` + `@react-three/drei` for a revolvable 3D
-architecture view. Drawing uses perfect-freehand over an SVG canvas. The
-activation heatmap is real, not decorative — it reads `hidden_activations`
-and `input_grad` from the `/predict` response.
+The frontend is a Vite-bundled React 19 + TypeScript SPA — a monochrome
+landing page with the live classifier as the fold visual. It uses Motion v12
+for entrances, Tailwind v4 tokens for the design system, and self-hosted
+Geist / Geist Mono / Instrument Serif. Drawing uses perfect-freehand over an
+SVG canvas, with MNIST-style preprocessing (bounding-box crop, 20x20 fit,
+center-of-mass centering) before inference. The activation heatmap and
+saliency panels are real, not decorative — they read `hidden_activations`
+and `input_grad` from the classifier response. No WebGL ships: the page is a
+single ~134KB-gzip bundle.
 
 ## Quickstart
 
@@ -99,9 +106,9 @@ macOS one-liner:
 ./tools/bootstrap_macos.sh
 ```
 
-The build is warning-clean on GCC, Clang, and MSVC. Catch2 tests live under
-`tests/` and run via CTest. `cmake -DFAST_MNIST_ENABLE_DOXYGEN=ON` adds a
-`docs` target.
+The build is warning-clean on GCC, Clang, and MSVC. 41 Catch2 tests — unit,
+property-based, and HTTP API — live under `tests/` and run via CTest.
+`cmake -DFAST_MNIST_ENABLE_DOXYGEN=ON` adds a `docs` target.
 
 ## Run the CLI
 
@@ -122,12 +129,13 @@ Exposes:
 
 | Method | Endpoint   | Description                                             |
 | ------ | ---------- | ------------------------------------------------------- |
-| GET    | `/health`  | Liveness probe                                          |
+| GET    | `/health`  | Readiness, model path, model-loaded state, topology     |
 | POST   | `/predict` | Classify a digit — `{ "pixels": [784 floats in 0..1] }` |
 
 The server returns the predicted label, full softmax distribution, hidden
 activations, and the input-gradient saliency map the frontend uses for
-heatmaps.
+heatmaps. Missing model files are startup errors, and request validation
+returns stable JSON errors as `{ "error": { "code": "...", "message": "..." } }`.
 
 ## Web app
 
@@ -137,9 +145,9 @@ npm install
 npm run dev
 ```
 
-Opens on `localhost:5173` and talks to `VITE_API_BASE_URL`
-(defaults to `http://localhost:8080`). See [`web/README.md`](web/README.md)
-for Vercel deployment notes.
+Opens on `localhost:5173`. Set `VITE_API_BASE_URL` only when you want the
+frontend to call a running C++ server; leave it unset for static demo mode.
+See [`web/README.md`](web/README.md) for Vercel deployment notes.
 
 ## Architecture
 
@@ -158,8 +166,8 @@ for Vercel deployment notes.
                                     ▼
                       React 19 + Vite + Motion v12 SPA
                       · perfect-freehand SVG canvas
-                      · r3f + drei 3D viz
-                      · Tailwind v4 OKLCH tokens
+                      · live 28x28 raster + saliency
+                      · Tailwind v4 monochrome tokens
 ```
 
 ## Philosophy
@@ -188,19 +196,23 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the branching model, commit
 convention, and PR template. Security issues: [`SECURITY.md`](SECURITY.md).
 Code of conduct: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 
+## Authors
+
+- **[Ayush Yadav](https://github.com/yadava5)** — author. C++ core, SIMD
+  kernels, build system, and the complete React/TypeScript web frontend and
+  application.
+- **[Shree Chaturvedi](https://github.com/shreebatsa)** — kernel and
+  optimization contributions.
+
 ## Acknowledgments
 
 - Michael Nielsen, *Neural Networks and Deep Learning* — the reference
   implementation and pedagogy behind the two-layer MLP.
-- [Shree Chaturvedi](https://github.com/shreebatsa) — frontend contributions
-  and review.
 - [cpp-httplib](https://github.com/yhirose/cpp-httplib),
   [nlohmann/json](https://github.com/nlohmann/json),
   [Catch2](https://github.com/catchorg/Catch2),
   [Google Benchmark](https://github.com/google/benchmark),
   [perfect-freehand](https://github.com/steveruizok/perfect-freehand),
-  [react-three-fiber](https://github.com/pmndrs/react-three-fiber),
-  [drei](https://github.com/pmndrs/drei),
   [Motion](https://motion.dev/),
   [Tailwind CSS](https://tailwindcss.com/).
 
@@ -215,6 +227,8 @@ MIT — see [`LICENSE`](LICENSE).
 [release-badge]: https://img.shields.io/github/v/release/yadava5/fast-mnist-nn?sort=semver
 [release-url]: https://github.com/yadava5/fast-mnist-nn/releases
 [web-badge]: https://img.shields.io/badge/web-demo-brightgreen
-[web-url]: web/README.md
+[web-url]: https://getglyph.vercel.app
 [scorecard-badge]: https://api.securityscorecards.dev/projects/github.com/yadava5/fast-mnist-nn/badge
 [scorecard-url]: https://securityscorecards.dev/viewer/?uri=github.com/yadava5/fast-mnist-nn
+[systemcard-badge]: https://img.shields.io/badge/system%20card-read-blue
+[systemcard-url]: https://getglyph.vercel.app/system-card
