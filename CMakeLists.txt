@@ -139,6 +139,13 @@ if(NOT EMSCRIPTEN)
   # little-endian .bin for loading in the WASM browser path.
   add_executable(export_weights apps/export_weights.cpp)
   target_link_libraries(export_weights PRIVATE fast_mnist)
+
+  # Full-test-set evaluator. Produces the committed accuracy artifact
+  # (benchmarks/mnist_eval.json + .txt + mnist_misclassified.csv) so the
+  # headline accuracy figure is a measurement with a reproducible run
+  # behind it, not a hand-typed literal.
+  add_executable(fast_mnist_eval apps/eval_model.cpp)
+  target_link_libraries(fast_mnist_eval PRIVATE fast_mnist)
 endif()
 
 # Web API Server
