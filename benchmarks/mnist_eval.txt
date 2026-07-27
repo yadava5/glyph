@@ -1,0 +1,362 @@
+Glyph -- MNIST test-set evaluation
+==================================
+
+generator : apps/eval_model.cpp (fast_mnist_eval)
+model     : model.weights  (800678 bytes)
+sha256    : dddc925062c6a918e094652df7a0393692a66f9d90568cc1ec4a5e4072a884e8
+layers    : 784 -> 100 -> 10 (sigmoid MLP)
+dataset   : TestingSetList.txt (10000 images under data/)
+
+OVERALL
+-------
+correct   : 9701 / 10000
+incorrect : 299
+accuracy  : 97.0100 %
+error rate: 2.9900 %
+macro P/R/F1: 0.9701 / 0.9698 / 0.9698
+
+PER-CLASS
+---------
+digit  support  correct   errors  precision   recall       f1
+    0      980      973        7     0.9549   0.9929   0.9735
+    1     1135     1123       12     0.9868   0.9894   0.9881
+    2     1032      975       57     0.9878   0.9448   0.9658
+    3     1010      983       27     0.9544   0.9733   0.9637
+    4      982      948       34     0.9804   0.9654   0.9728
+    5      892      854       38     0.9760   0.9574   0.9666
+    6      958      940       18     0.9563   0.9812   0.9686
+    7     1028     1000       28     0.9681   0.9728   0.9704
+    8      974      937       37     0.9690   0.9620   0.9655
+    9     1009      968       41     0.9670   0.9594   0.9632
+
+CONFUSION MATRIX (rows = true, cols = predicted)
+-----------------------------------------------
+            0     1     2     3     4     5     6     7     8     9
+   0 |    973     0     0     0     0     1     3     1     2     0
+   1 |      0  1123     2     2     0     1     5     0     2     0
+   2 |     11     0   975    15     5     1     5    10    10     0
+   3 |      3     0     1   983     0    12     0     5     4     2
+   4 |      1     1     0     0   948     0    11     3     2    16
+   5 |      6     0     0     7     1   854    13     1     4     6
+   6 |      8     2     0     0     1     3   940     1     3     0
+   7 |      2     6     5     4     2     0     1  1000     2     6
+   8 |      8     0     3     8     2     1     5     7   937     3
+   9 |      7     6     1    11     8     2     0     5     1   968
+
+TOP CONFUSIONS
+--------------
+  true 4 -> predicted 9 : 16
+  true 2 -> predicted 3 : 15
+  true 5 -> predicted 6 : 13
+  true 3 -> predicted 5 : 12
+  true 2 -> predicted 0 : 11
+  true 4 -> predicted 6 : 11
+  true 9 -> predicted 3 : 11
+  true 2 -> predicted 8 : 10
+  true 2 -> predicted 7 : 10
+  true 9 -> predicted 4 : 8
+
+MISCLASSIFIED IMAGES (299) -- index is 0-based position in TestingSetList.txt
+----------------------------------------------------------
+  #    8  true 5  pred 6  TestingSet/digit_8_5.pgm
+  #  124  true 7  pred 4  TestingSet/digit_124_7.pgm
+  #  149  true 2  pred 4  TestingSet/digit_149_2.pgm
+  #  151  true 9  pred 0  TestingSet/digit_151_9.pgm
+  #  199  true 2  pred 3  TestingSet/digit_199_2.pgm
+  #  247  true 4  pred 6  TestingSet/digit_247_4.pgm
+  #  259  true 6  pred 0  TestingSet/digit_259_6.pgm
+  #  318  true 2  pred 3  TestingSet/digit_318_2.pgm
+  #  321  true 2  pred 7  TestingSet/digit_321_2.pgm
+  #  340  true 5  pred 3  TestingSet/digit_340_5.pgm
+  #  352  true 5  pred 0  TestingSet/digit_352_5.pgm
+  #  445  true 6  pred 0  TestingSet/digit_445_6.pgm
+  #  447  true 4  pred 9  TestingSet/digit_447_4.pgm
+  #  449  true 3  pred 5  TestingSet/digit_449_3.pgm
+  #  495  true 8  pred 0  TestingSet/digit_495_8.pgm
+  #  543  true 8  pred 9  TestingSet/digit_543_8.pgm
+  #  582  true 8  pred 2  TestingSet/digit_582_8.pgm
+  #  583  true 2  pred 8  TestingSet/digit_583_2.pgm
+  #  610  true 4  pred 6  TestingSet/digit_610_4.pgm
+  #  646  true 2  pred 6  TestingSet/digit_646_2.pgm
+  #  659  true 2  pred 8  TestingSet/digit_659_2.pgm
+  #  684  true 7  pred 3  TestingSet/digit_684_7.pgm
+  #  707  true 4  pred 9  TestingSet/digit_707_4.pgm
+  #  717  true 0  pred 6  TestingSet/digit_717_0.pgm
+  #  740  true 4  pred 9  TestingSet/digit_740_4.pgm
+  #  844  true 8  pred 7  TestingSet/digit_844_8.pgm
+  #  846  true 7  pred 9  TestingSet/digit_846_7.pgm
+  #  924  true 2  pred 7  TestingSet/digit_924_2.pgm
+  #  939  true 2  pred 0  TestingSet/digit_939_2.pgm
+  #  951  true 5  pred 4  TestingSet/digit_951_5.pgm
+  #  956  true 1  pred 6  TestingSet/digit_956_1.pgm
+  #  965  true 6  pred 0  TestingSet/digit_965_6.pgm
+  #  975  true 2  pred 3  TestingSet/digit_975_2.pgm
+  # 1003  true 5  pred 3  TestingSet/digit_1003_5.pgm
+  # 1014  true 6  pred 5  TestingSet/digit_1014_6.pgm
+  # 1039  true 7  pred 2  TestingSet/digit_1039_7.pgm
+  # 1044  true 6  pred 8  TestingSet/digit_1044_6.pgm
+  # 1107  true 9  pred 3  TestingSet/digit_1107_9.pgm
+  # 1112  true 4  pred 6  TestingSet/digit_1112_4.pgm
+  # 1166  true 3  pred 5  TestingSet/digit_1166_3.pgm
+  # 1178  true 4  pred 6  TestingSet/digit_1178_4.pgm
+  # 1226  true 7  pred 2  TestingSet/digit_1226_7.pgm
+  # 1232  true 9  pred 4  TestingSet/digit_1232_9.pgm
+  # 1242  true 4  pred 9  TestingSet/digit_1242_4.pgm
+  # 1247  true 9  pred 3  TestingSet/digit_1247_9.pgm
+  # 1260  true 7  pred 1  TestingSet/digit_1260_7.pgm
+  # 1289  true 5  pred 9  TestingSet/digit_1289_5.pgm
+  # 1299  true 5  pred 7  TestingSet/digit_1299_5.pgm
+  # 1319  true 8  pred 0  TestingSet/digit_1319_8.pgm
+  # 1328  true 7  pred 9  TestingSet/digit_1328_7.pgm
+  # 1337  true 2  pred 6  TestingSet/digit_1337_2.pgm
+  # 1378  true 5  pred 6  TestingSet/digit_1378_5.pgm
+  # 1395  true 2  pred 3  TestingSet/digit_1395_2.pgm
+  # 1469  true 3  pred 5  TestingSet/digit_1469_3.pgm
+  # 1494  true 7  pred 0  TestingSet/digit_1494_7.pgm
+  # 1500  true 7  pred 1  TestingSet/digit_1500_7.pgm
+  # 1522  true 7  pred 9  TestingSet/digit_1522_7.pgm
+  # 1525  true 5  pred 0  TestingSet/digit_1525_5.pgm
+  # 1527  true 1  pred 6  TestingSet/digit_1527_1.pgm
+  # 1530  true 8  pred 7  TestingSet/digit_1530_8.pgm
+  # 1549  true 4  pred 6  TestingSet/digit_1549_4.pgm
+  # 1553  true 9  pred 3  TestingSet/digit_1553_9.pgm
+  # 1609  true 2  pred 3  TestingSet/digit_1609_2.pgm
+  # 1621  true 0  pred 6  TestingSet/digit_1621_0.pgm
+  # 1634  true 4  pred 7  TestingSet/digit_1634_4.pgm
+  # 1678  true 2  pred 0  TestingSet/digit_1678_2.pgm
+  # 1681  true 3  pred 7  TestingSet/digit_1681_3.pgm
+  # 1709  true 9  pred 3  TestingSet/digit_1709_9.pgm
+  # 1717  true 8  pred 0  TestingSet/digit_1717_8.pgm
+  # 1790  true 2  pred 8  TestingSet/digit_1790_2.pgm
+  # 1850  true 8  pred 9  TestingSet/digit_1850_8.pgm
+  # 1868  true 1  pred 3  TestingSet/digit_1868_1.pgm
+  # 1878  true 8  pred 3  TestingSet/digit_1878_8.pgm
+  # 1901  true 9  pred 4  TestingSet/digit_1901_9.pgm
+  # 1911  true 5  pred 6  TestingSet/digit_1911_5.pgm
+  # 1938  true 4  pred 6  TestingSet/digit_1938_4.pgm
+  # 1940  true 5  pred 0  TestingSet/digit_1940_5.pgm
+  # 1952  true 9  pred 5  TestingSet/digit_1952_9.pgm
+  # 1984  true 2  pred 0  TestingSet/digit_1984_2.pgm
+  # 2043  true 4  pred 8  TestingSet/digit_2043_4.pgm
+  # 2044  true 2  pred 7  TestingSet/digit_2044_2.pgm
+  # 2053  true 4  pred 9  TestingSet/digit_2053_4.pgm
+  # 2098  true 2  pred 0  TestingSet/digit_2098_2.pgm
+  # 2109  true 3  pred 7  TestingSet/digit_2109_3.pgm
+  # 2118  true 6  pred 0  TestingSet/digit_2118_6.pgm
+  # 2125  true 5  pred 9  TestingSet/digit_2125_5.pgm
+  # 2129  true 9  pred 2  TestingSet/digit_2129_9.pgm
+  # 2130  true 4  pred 9  TestingSet/digit_2130_4.pgm
+  # 2135  true 6  pred 1  TestingSet/digit_2135_6.pgm
+  # 2182  true 1  pred 2  TestingSet/digit_2182_1.pgm
+  # 2186  true 2  pred 3  TestingSet/digit_2186_2.pgm
+  # 2189  true 9  pred 1  TestingSet/digit_2189_9.pgm
+  # 2224  true 5  pred 6  TestingSet/digit_2224_5.pgm
+  # 2266  true 1  pred 6  TestingSet/digit_2266_1.pgm
+  # 2272  true 8  pred 0  TestingSet/digit_2272_8.pgm
+  # 2293  true 9  pred 0  TestingSet/digit_2293_9.pgm
+  # 2298  true 8  pred 0  TestingSet/digit_2298_8.pgm
+  # 2299  true 2  pred 7  TestingSet/digit_2299_2.pgm
+  # 2369  true 5  pred 9  TestingSet/digit_2369_5.pgm
+  # 2387  true 9  pred 1  TestingSet/digit_2387_9.pgm
+  # 2406  true 9  pred 1  TestingSet/digit_2406_9.pgm
+  # 2414  true 9  pred 4  TestingSet/digit_2414_9.pgm
+  # 2422  true 6  pred 7  TestingSet/digit_2422_6.pgm
+  # 2462  true 2  pred 0  TestingSet/digit_2462_2.pgm
+  # 2488  true 2  pred 4  TestingSet/digit_2488_2.pgm
+  # 2514  true 4  pred 9  TestingSet/digit_2514_4.pgm
+  # 2534  true 3  pred 5  TestingSet/digit_2534_3.pgm
+  # 2598  true 8  pred 2  TestingSet/digit_2598_8.pgm
+  # 2607  true 7  pred 1  TestingSet/digit_2607_7.pgm
+  # 2618  true 3  pred 5  TestingSet/digit_2618_3.pgm
+  # 2648  true 9  pred 0  TestingSet/digit_2648_9.pgm
+  # 2654  true 6  pred 1  TestingSet/digit_2654_6.pgm
+  # 2780  true 2  pred 3  TestingSet/digit_2780_2.pgm
+  # 2810  true 5  pred 3  TestingSet/digit_2810_5.pgm
+  # 2896  true 8  pred 0  TestingSet/digit_2896_8.pgm
+  # 2921  true 3  pred 0  TestingSet/digit_2921_3.pgm
+  # 2927  true 3  pred 2  TestingSet/digit_2927_3.pgm
+  # 2939  true 9  pred 7  TestingSet/digit_2939_9.pgm
+  # 2953  true 3  pred 5  TestingSet/digit_2953_3.pgm
+  # 3005  true 9  pred 1  TestingSet/digit_3005_9.pgm
+  # 3030  true 6  pred 8  TestingSet/digit_3030_6.pgm
+  # 3060  true 9  pred 7  TestingSet/digit_3060_9.pgm
+  # 3073  true 1  pred 2  TestingSet/digit_3073_1.pgm
+  # 3110  true 3  pred 5  TestingSet/digit_3110_3.pgm
+  # 3117  true 5  pred 9  TestingSet/digit_3117_5.pgm
+  # 3172  true 4  pred 9  TestingSet/digit_3172_4.pgm
+  # 3189  true 7  pred 6  TestingSet/digit_3189_7.pgm
+  # 3206  true 8  pred 3  TestingSet/digit_3206_8.pgm
+  # 3289  true 8  pred 3  TestingSet/digit_3289_8.pgm
+  # 3330  true 2  pred 3  TestingSet/digit_3330_2.pgm
+  # 3333  true 7  pred 9  TestingSet/digit_3333_7.pgm
+  # 3405  true 4  pred 9  TestingSet/digit_3405_4.pgm
+  # 3422  true 6  pred 0  TestingSet/digit_3422_6.pgm
+  # 3490  true 4  pred 9  TestingSet/digit_3490_4.pgm
+  # 3503  true 9  pred 1  TestingSet/digit_3503_9.pgm
+  # 3520  true 6  pred 4  TestingSet/digit_3520_6.pgm
+  # 3533  true 4  pred 9  TestingSet/digit_3533_4.pgm
+  # 3558  true 5  pred 0  TestingSet/digit_3558_5.pgm
+  # 3597  true 9  pred 3  TestingSet/digit_3597_9.pgm
+  # 3674  true 8  pred 3  TestingSet/digit_3674_8.pgm
+  # 3718  true 4  pred 9  TestingSet/digit_3718_4.pgm
+  # 3749  true 6  pred 0  TestingSet/digit_3749_6.pgm
+  # 3757  true 8  pred 3  TestingSet/digit_3757_8.pgm
+  # 3767  true 7  pred 2  TestingSet/digit_3767_7.pgm
+  # 3776  true 5  pred 8  TestingSet/digit_3776_5.pgm
+  # 3780  true 4  pred 6  TestingSet/digit_3780_4.pgm
+  # 3808  true 7  pred 8  TestingSet/digit_3808_7.pgm
+  # 3811  true 2  pred 3  TestingSet/digit_3811_2.pgm
+  # 3817  true 2  pred 4  TestingSet/digit_3817_2.pgm
+  # 3838  true 7  pred 1  TestingSet/digit_3838_7.pgm
+  # 3855  true 5  pred 8  TestingSet/digit_3855_5.pgm
+  # 3871  true 8  pred 3  TestingSet/digit_3871_8.pgm
+  # 3893  true 5  pred 6  TestingSet/digit_3893_5.pgm
+  # 3906  true 1  pred 3  TestingSet/digit_3906_1.pgm
+  # 3926  true 9  pred 3  TestingSet/digit_3926_9.pgm
+  # 3941  true 4  pred 6  TestingSet/digit_3941_4.pgm
+  # 3943  true 3  pred 5  TestingSet/digit_3943_3.pgm
+  # 3946  true 2  pred 8  TestingSet/digit_3946_2.pgm
+  # 3976  true 7  pred 1  TestingSet/digit_3976_7.pgm
+  # 4007  true 7  pred 4  TestingSet/digit_4007_7.pgm
+  # 4017  true 4  pred 9  TestingSet/digit_4017_4.pgm
+  # 4075  true 8  pred 0  TestingSet/digit_4075_8.pgm
+  # 4078  true 9  pred 3  TestingSet/digit_4078_9.pgm
+  # 4093  true 9  pred 4  TestingSet/digit_4093_9.pgm
+  # 4154  true 9  pred 4  TestingSet/digit_4154_9.pgm
+  # 4163  true 9  pred 0  TestingSet/digit_4163_9.pgm
+  # 4176  true 2  pred 6  TestingSet/digit_4176_2.pgm
+  # 4224  true 9  pred 7  TestingSet/digit_4224_9.pgm
+  # 4248  true 2  pred 8  TestingSet/digit_4248_2.pgm
+  # 4256  true 3  pred 0  TestingSet/digit_4256_3.pgm
+  # 4289  true 2  pred 7  TestingSet/digit_4289_2.pgm
+  # 4300  true 5  pred 9  TestingSet/digit_4300_5.pgm
+  # 4306  true 3  pred 7  TestingSet/digit_4306_3.pgm
+  # 4355  true 5  pred 9  TestingSet/digit_4355_5.pgm
+  # 4369  true 9  pred 4  TestingSet/digit_4369_9.pgm
+  # 4374  true 5  pred 6  TestingSet/digit_4374_5.pgm
+  # 4415  true 2  pred 0  TestingSet/digit_4415_2.pgm
+  # 4435  true 3  pred 7  TestingSet/digit_4435_3.pgm
+  # 4497  true 8  pred 7  TestingSet/digit_4497_8.pgm
+  # 4500  true 9  pred 1  TestingSet/digit_4500_9.pgm
+  # 4504  true 2  pred 7  TestingSet/digit_4504_2.pgm
+  # 4567  true 4  pred 9  TestingSet/digit_4567_4.pgm
+  # 4575  true 4  pred 9  TestingSet/digit_4575_4.pgm
+  # 4601  true 8  pred 4  TestingSet/digit_4601_8.pgm
+  # 4615  true 2  pred 3  TestingSet/digit_4615_2.pgm
+  # 4635  true 3  pred 5  TestingSet/digit_4635_3.pgm
+  # 4731  true 8  pred 3  TestingSet/digit_4731_8.pgm
+  # 4738  true 4  pred 6  TestingSet/digit_4738_4.pgm
+  # 4740  true 3  pred 5  TestingSet/digit_4740_3.pgm
+  # 4761  true 9  pred 8  TestingSet/digit_4761_9.pgm
+  # 4807  true 8  pred 0  TestingSet/digit_4807_8.pgm
+  # 4814  true 6  pred 0  TestingSet/digit_4814_6.pgm
+  # 4823  true 9  pred 4  TestingSet/digit_4823_9.pgm
+  # 4837  true 7  pred 2  TestingSet/digit_4837_7.pgm
+  # 4876  true 2  pred 4  TestingSet/digit_4876_2.pgm
+  # 4880  true 0  pred 8  TestingSet/digit_4880_0.pgm
+  # 4886  true 7  pred 1  TestingSet/digit_4886_7.pgm
+  # 4943  true 2  pred 8  TestingSet/digit_4943_2.pgm
+  # 4956  true 8  pred 4  TestingSet/digit_4956_8.pgm
+  # 4966  true 7  pred 8  TestingSet/digit_4966_7.pgm
+  # 5068  true 4  pred 1  TestingSet/digit_5068_4.pgm
+  # 5331  true 1  pred 6  TestingSet/digit_5331_1.pgm
+  # 5409  true 4  pred 6  TestingSet/digit_5409_4.pgm
+  # 5457  true 1  pred 8  TestingSet/digit_5457_1.pgm
+  # 5495  true 8  pred 3  TestingSet/digit_5495_8.pgm
+  # 5600  true 7  pred 9  TestingSet/digit_5600_7.pgm
+  # 5634  true 2  pred 3  TestingSet/digit_5634_2.pgm
+  # 5642  true 1  pred 5  TestingSet/digit_5642_1.pgm
+  # 5677  true 4  pred 6  TestingSet/digit_5677_4.pgm
+  # 5734  true 3  pred 7  TestingSet/digit_5734_3.pgm
+  # 5749  true 8  pred 6  TestingSet/digit_5749_8.pgm
+  # 5835  true 7  pred 9  TestingSet/digit_5835_7.pgm
+  # 5842  true 4  pred 7  TestingSet/digit_5842_4.pgm
+  # 5887  true 7  pred 0  TestingSet/digit_5887_7.pgm
+  # 5888  true 4  pred 0  TestingSet/digit_5888_4.pgm
+  # 5936  true 4  pred 9  TestingSet/digit_5936_4.pgm
+  # 5937  true 5  pred 3  TestingSet/digit_5937_5.pgm
+  # 5955  true 3  pred 8  TestingSet/digit_5955_3.pgm
+  # 5973  true 3  pred 8  TestingSet/digit_5973_3.pgm
+  # 6030  true 3  pred 5  TestingSet/digit_6030_3.pgm
+  # 6035  true 2  pred 0  TestingSet/digit_6035_2.pgm
+  # 6045  true 3  pred 5  TestingSet/digit_6045_3.pgm
+  # 6059  true 3  pred 0  TestingSet/digit_6059_3.pgm
+  # 6065  true 3  pred 8  TestingSet/digit_6065_3.pgm
+  # 6071  true 9  pred 3  TestingSet/digit_6071_9.pgm
+  # 6081  true 9  pred 3  TestingSet/digit_6081_9.pgm
+  # 6091  true 9  pred 3  TestingSet/digit_6091_9.pgm
+  # 6093  true 2  pred 8  TestingSet/digit_6093_2.pgm
+  # 6166  true 9  pred 3  TestingSet/digit_6166_9.pgm
+  # 6172  true 9  pred 0  TestingSet/digit_6172_9.pgm
+  # 6173  true 9  pred 0  TestingSet/digit_6173_9.pgm
+  # 6390  true 5  pred 8  TestingSet/digit_6390_5.pgm
+  # 6391  true 2  pred 6  TestingSet/digit_6391_2.pgm
+  # 6505  true 9  pred 0  TestingSet/digit_6505_9.pgm
+  # 6555  true 8  pred 9  TestingSet/digit_6555_8.pgm
+  # 6571  true 9  pred 7  TestingSet/digit_6571_9.pgm
+  # 6597  true 0  pred 7  TestingSet/digit_6597_0.pgm
+  # 6598  true 5  pred 3  TestingSet/digit_6598_5.pgm
+  # 6625  true 8  pred 7  TestingSet/digit_6625_8.pgm
+  # 6632  true 9  pred 5  TestingSet/digit_6632_9.pgm
+  # 6651  true 0  pred 5  TestingSet/digit_6651_0.pgm
+  # 6755  true 8  pred 7  TestingSet/digit_6755_8.pgm
+  # 6783  true 1  pred 6  TestingSet/digit_6783_1.pgm
+  # 6796  true 2  pred 7  TestingSet/digit_6796_2.pgm
+  # 7208  true 8  pred 7  TestingSet/digit_7208_8.pgm
+  # 7216  true 0  pred 6  TestingSet/digit_7216_0.pgm
+  # 7434  true 4  pred 8  TestingSet/digit_7434_4.pgm
+  # 7451  true 5  pred 6  TestingSet/digit_7451_5.pgm
+  # 7472  true 2  pred 7  TestingSet/digit_7472_2.pgm
+  # 7511  true 5  pred 3  TestingSet/digit_7511_5.pgm
+  # 7539  true 2  pred 8  TestingSet/digit_7539_2.pgm
+  # 7637  true 2  pred 3  TestingSet/digit_7637_2.pgm
+  # 7797  true 5  pred 6  TestingSet/digit_7797_5.pgm
+  # 7823  true 8  pred 2  TestingSet/digit_7823_8.pgm
+  # 7886  true 2  pred 4  TestingSet/digit_7886_2.pgm
+  # 7921  true 8  pred 6  TestingSet/digit_7921_8.pgm
+  # 7945  true 2  pred 6  TestingSet/digit_7945_2.pgm
+  # 8020  true 1  pred 8  TestingSet/digit_8020_1.pgm
+  # 8094  true 2  pred 8  TestingSet/digit_8094_2.pgm
+  # 8246  true 3  pred 9  TestingSet/digit_8246_3.pgm
+  # 8279  true 8  pred 7  TestingSet/digit_8279_8.pgm
+  # 8318  true 2  pred 0  TestingSet/digit_8318_2.pgm
+  # 8339  true 8  pred 6  TestingSet/digit_8339_8.pgm
+  # 8408  true 8  pred 6  TestingSet/digit_8408_8.pgm
+  # 8453  true 5  pred 8  TestingSet/digit_8453_5.pgm
+  # 8502  true 5  pred 3  TestingSet/digit_8502_5.pgm
+  # 8519  true 7  pred 3  TestingSet/digit_8519_7.pgm
+  # 8522  true 8  pred 6  TestingSet/digit_8522_8.pgm
+  # 8863  true 5  pred 6  TestingSet/digit_8863_5.pgm
+  # 8889  true 2  pred 3  TestingSet/digit_8889_2.pgm
+  # 8952  true 3  pred 9  TestingSet/digit_8952_3.pgm
+  # 9009  true 7  pred 3  TestingSet/digit_9009_7.pgm
+  # 9015  true 7  pred 2  TestingSet/digit_9015_7.pgm
+  # 9024  true 7  pred 3  TestingSet/digit_9024_7.pgm
+  # 9280  true 8  pred 5  TestingSet/digit_9280_8.pgm
+  # 9500  true 2  pred 3  TestingSet/digit_9500_2.pgm
+  # 9535  true 2  pred 3  TestingSet/digit_9535_2.pgm
+  # 9587  true 9  pred 4  TestingSet/digit_9587_9.pgm
+  # 9634  true 0  pred 8  TestingSet/digit_9634_0.pgm
+  # 9642  true 9  pred 7  TestingSet/digit_9642_9.pgm
+  # 9664  true 2  pred 7  TestingSet/digit_9664_2.pgm
+  # 9669  true 4  pred 7  TestingSet/digit_9669_4.pgm
+  # 9679  true 6  pred 5  TestingSet/digit_9679_6.pgm
+  # 9698  true 6  pred 5  TestingSet/digit_9698_6.pgm
+  # 9716  true 2  pred 5  TestingSet/digit_9716_2.pgm
+  # 9729  true 5  pred 6  TestingSet/digit_9729_5.pgm
+  # 9749  true 5  pred 6  TestingSet/digit_9749_5.pgm
+  # 9768  true 2  pred 0  TestingSet/digit_9768_2.pgm
+  # 9770  true 5  pred 0  TestingSet/digit_9770_5.pgm
+  # 9777  true 5  pred 0  TestingSet/digit_9777_5.pgm
+  # 9779  true 2  pred 0  TestingSet/digit_9779_2.pgm
+  # 9839  true 2  pred 7  TestingSet/digit_9839_2.pgm
+  # 9858  true 6  pred 8  TestingSet/digit_9858_6.pgm
+  # 9867  true 2  pred 8  TestingSet/digit_9867_2.pgm
+  # 9888  true 6  pred 0  TestingSet/digit_9888_6.pgm
+  # 9904  true 2  pred 0  TestingSet/digit_9904_2.pgm
+  # 9941  true 5  pred 6  TestingSet/digit_9941_5.pgm
+  # 9944  true 3  pred 8  TestingSet/digit_9944_3.pgm
+  # 9982  true 5  pred 6  TestingSet/digit_9982_5.pgm
+
+Full machine-readable record: benchmarks/mnist_eval.json
+Compact error list          : benchmarks/mnist_misclassified.csv
