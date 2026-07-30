@@ -64,8 +64,10 @@ Geist / Geist Mono / Instrument Serif. Drawing uses perfect-freehand over an
 SVG canvas, with MNIST-style preprocessing (bounding-box crop, 20x20 fit,
 center-of-mass centering) before inference. The activation heatmap and
 saliency panels are real, not decorative — they read `hidden_activations`
-and `input_grad` from the classifier response. No WebGL ships: the page is a
-single ~134KB-gzip bundle.
+and `input_grad` from the classifier response. WebGL does ship, but only on
+demand: three.js, react-three-fiber and drei are routed into a separate
+`three-vendor` chunk by `manualChunks` in `web/vite.config.ts`, and the hero
+lazy-loads it on mount, so it stays out of the initial bundle.
 
 ## Quickstart
 
@@ -220,15 +222,15 @@ Code of conduct: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 
 MIT — see [`LICENSE`](LICENSE).
 
-[ci-badge]: https://github.com/yadava5/fast-mnist-nn/actions/workflows/ci.yml/badge.svg
-[ci-url]: https://github.com/yadava5/fast-mnist-nn/actions/workflows/ci.yml
+[ci-badge]: https://github.com/yadava5/glyph/actions/workflows/ci.yml/badge.svg
+[ci-url]: https://github.com/yadava5/glyph/actions/workflows/ci.yml
 [license-badge]: https://img.shields.io/badge/license-MIT-blue.svg
 [license-url]: LICENSE
-[release-badge]: https://img.shields.io/github/v/release/yadava5/fast-mnist-nn?sort=semver
-[release-url]: https://github.com/yadava5/fast-mnist-nn/releases
+[release-badge]: https://img.shields.io/github/v/release/yadava5/glyph?sort=semver
+[release-url]: https://github.com/yadava5/glyph/releases
 [web-badge]: https://img.shields.io/badge/web-demo-brightgreen
 [web-url]: https://getglyph.vercel.app
-[scorecard-badge]: https://api.securityscorecards.dev/projects/github.com/yadava5/fast-mnist-nn/badge
-[scorecard-url]: https://securityscorecards.dev/viewer/?uri=github.com/yadava5/fast-mnist-nn
+[scorecard-badge]: https://api.securityscorecards.dev/projects/github.com/yadava5/glyph/badge
+[scorecard-url]: https://securityscorecards.dev/viewer/?uri=github.com/yadava5/glyph
 [systemcard-badge]: https://img.shields.io/badge/system%20card-read-blue
 [systemcard-url]: https://getglyph.vercel.app/system-card
