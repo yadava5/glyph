@@ -8,8 +8,8 @@
 ---
 
 A course-provided C++ MNIST network, hand-optimized: AVX-512 / AVX2 /
-NEON / wasm simd128 kernels behind a 97.01%-accuracy classifier, with a
-live in-browser scalar-vs-SIMD benchmark, real activation heatmaps, and
+NEON kernels over a scalar fallback, behind a 97.01%-accuracy classifier,
+with a native scalar-vs-optimized race, real activation heatmaps, and
 input saliency — on a monochrome, WebGL-free landing page.
 
 [![ci][ci-badge]][ci-url]
@@ -21,8 +21,10 @@ input saliency — on a monochrome, WebGL-free landing page.
 
 ## Web demo
 
-**Live: https://getglyph.vercel.app** — draw a digit; the hand-written
-simd128 kernel races scalar on your machine, in your browser.
+**Live: https://getglyph.vercel.app** — draw a digit and the WebAssembly
+build reads it, on your machine, with no server. (The scalar-vs-optimized
+race is the native `/predict` path in `apps/server.cpp`; the browser build
+reports no scalar baseline — see `web/src/lib/wasmClassifier.ts`.)
 
 Draw a digit, see the prediction, rotate the network, and inspect the
 activation pipeline. See [`web/README.md`](web/README.md) for the deploy and
@@ -46,8 +48,8 @@ pipeline stage.
 
 A C++17 core library that implements a two-layer multilayer perceptron
 (784 → 100 → 10) from the ground up. Matrix primitives — `dot`, `transpose`,
-`axpy` — are hand-written with AVX-512, AVX2, NEON, and WebAssembly simd128
-intrinsics, with a scalar fallback and OpenMP parallelism above
+`axpy` — are hand-written with AVX-512, AVX2 and NEON intrinsics, with a
+scalar fallback and OpenMP parallelism above
 empirically-tuned element-count thresholds. After ~30 epochs on MNIST the network reaches ~97% test accuracy.
 
 The library ships as three deployables. A CLI (`fast_mnist_cli`) trains and
@@ -108,8 +110,8 @@ macOS one-liner:
 ./tools/bootstrap_macos.sh
 ```
 
-The build is warning-clean on GCC, Clang, and MSVC. 41 Catch2 tests — unit,
-property-based, and HTTP API — live under `tests/` and run via CTest.
+The build is warning-clean on GCC, Clang, and MSVC. 34 Catch2 tests — unit
+and property-based — live under `tests/` and run via CTest.
 `cmake -DFAST_MNIST_ENABLE_DOXYGEN=ON` adds a `docs` target.
 
 ## Run the CLI

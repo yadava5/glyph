@@ -96,10 +96,15 @@ workloads sit in the slow regime by design (784 × 100 × 10 weights), which
 is why the scalar `classify` is actually the fastest number in the final
 table — OpenMP overhead is pure loss at that scale.
 
-**`-march=native` alone barely moves the needle.** Comparing baseline to
-native, the uplift is typically single-digit percent — the hand-written
-intrinsic kernels already dispatch to the widest SIMD the target supports
-at runtime, so giving the autovectorizer more ISA doesn't help it catch up.
+**`-march=native` alone barely moves the needle — and on arm64 it cannot.**
+The kernels are selected at COMPILE time by `#if` on `__AVX512F__` /
+`__AVX2__` / `__ARM_NEON`; there is no runtime dispatch anywhere in the
+library. On an Apple-silicon host the `baseline` and `native` binaries come
+out **byte-identical** (same md5), because `-march=native` is an x86 flag
+clang does not act on there — so the baseline-to-native delta in the tables
+above is run-to-run noise on that platform, not a measurement of intrinsics
+versus the autovectorizer. On x86 the two binaries do differ and the
+single-digit reading is real.
 Where `native` does help is in the *non*-kernel code (bounds checks,
 serialization glue), which matters for the end-to-end `learn`/`classify`
 numbers more than for isolated ops.
