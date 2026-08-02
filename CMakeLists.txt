@@ -138,6 +138,27 @@ if(NOT EMSCRIPTEN)
   # little-endian .bin for loading in the WASM browser path.
   add_executable(export_weights apps/export_weights.cpp)
   target_link_libraries(export_weights PRIVATE fast_mnist)
+
+  # Evaluation harness — the tool that MEASURES the headline accuracy.
+  #
+  # This target was missing. apps/eval_model.cpp has been committed since
+  # 97de736, and benchmarks/mnist_eval.json is quoted as the source for
+  # "97.01% on the 10,000-image MNIST test set" wherever that number
+  # appears — but no CMake target built it, and it appeared in no
+  # workflow. The report was reproducible in principle and unbuildable in
+  # practice: you had to hand-compile the generator to check the number.
+  #
+  # That is the wrong way round for the one figure this repository is
+  # most often judged on. The file's own header calls itself "the
+  # measurement"; a measurement nobody can re-run is a claim.
+  #
+  #   cmake --build build --target fast_mnist_eval
+  #   ./build/fast_mnist_eval model.weights data TestingSetList.txt benchmarks
+  #
+  # Verified 2026-08-02: the regenerated mnist_eval.json and
+  # mnist_misclassified.csv are byte-identical to the committed ones.
+  add_executable(fast_mnist_eval apps/eval_model.cpp)
+  target_link_libraries(fast_mnist_eval PRIVATE fast_mnist)
 endif()
 
 # Web API Server
