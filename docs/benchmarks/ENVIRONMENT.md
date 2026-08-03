@@ -87,8 +87,24 @@ stddev in the record to support or refute the claim.
 
 Measured here, the claim is **false as a blanket statement** and true only of
 some cases. Nothing about the headline result changes: dot 256 medians give
-**3.570×**, against 3.504× in the committed December record and 3.520× in a
-single-repetition re-run. Three independent measurements, same conclusion.
+**3.570×** over 10 repetitions and **3.536×** over 20, against 3.504× in the
+committed December record. Three artifact-backed measurements, same conclusion.
+
+This paragraph also cited 3.520× from "a single-repetition re-run" until
+2026-08-03. That number is withdrawn — not because it was wrong, but because it
+cannot be checked. No JSON for it was ever committed, and this file and the
+portfolio's own audit log disagreed about how it was taken: this one called it a
+single repetition, the log recorded `--benchmark_repetitions=3`. A number whose
+two surviving records contradict each other about its methodology is not a
+measurement, and re-running the kernel would not rescue it — four readings of
+this kernel span 3.504 to 3.570, so a fresh run produces a fifth number rather
+than an artifact for the fourth.
+
+**3.536× is the one to cite.** It has the most repetitions (20), the tightest
+coefficient of variation (0.2% and 0.3%, against 0.4% and 1.6% for the 10-rep
+pair), and the smallest load asymmetry between the two sides of the division —
+`load_avg` 4.70 baseline against 2.55 for openmp+native, where the 10-rep pair
+was 9.80 against 4.79.
 
 `tools/run_benchmarks.py` now passes `--benchmark_repetitions` so this cannot
 recur silently.
