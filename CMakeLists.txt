@@ -5,6 +5,7 @@ project(fast_mnist_nn VERSION 1.0.0 LANGUAGES CXX)
 option(FAST_MNIST_ENABLE_OPENMP "Enable OpenMP support" ON)
 option(FAST_MNIST_ENABLE_NATIVE "Enable -march=native" OFF)
 option(FAST_MNIST_ENABLE_BENCHMARKS "Enable Google Benchmark" OFF)
+option(FAST_MNIST_ENABLE_COVERAGE "Instrument for source-based coverage" OFF)
 option(FAST_MNIST_ENABLE_DOXYGEN "Enable Doxygen docs target" OFF)
 
 # Sanitizer selection. Accepts: OFF, asan, ubsan, asan-ubsan, tsan, msan.
@@ -98,6 +99,35 @@ if(NOT FAST_MNIST_ENABLE_SANITIZERS STREQUAL "OFF")
       "Unknown FAST_MNIST_ENABLE_SANITIZERS value: "
       "'${FAST_MNIST_ENABLE_SANITIZERS}'. "
       "Expected one of: OFF, asan, ubsan, asan-ubsan, tsan, msan.")
+  endif()
+endif()
+
+# Source-based coverage instrumentation. PUBLIC for the same reason the
+# sanitizer flags are: the counters have to exist in the library AND in the
+# test binary that drives it, or the report shows the tests covering
+# themselves and nothing else.
+#
+# A separate build directory from the benchmark configurations on purpose.
+# Instrumentation changes inlining and adds counter updates on every branch,
+# so a coverage build's timings are meaningless -- benchmarking it would
+# publish numbers about a binary nobody ships. Kept apart so the two can never
+# be confused for one another.
+#
+# Clang/AppleClang and GCC disagree on the mechanism, so this is not one flag.
+if(FAST_MNIST_ENABLE_COVERAGE)
+  if(MSVC)
+    message(WARNING "FAST_MNIST_ENABLE_COVERAGE is not supported on MSVC")
+  elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(fast_mnist PUBLIC
+      -fprofile-instr-generate -fcoverage-mapping -O0 -g)
+    target_link_options(fast_mnist PUBLIC -fprofile-instr-generate)
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(fast_mnist PUBLIC --coverage -O0 -g)
+    target_link_options(fast_mnist PUBLIC --coverage)
+  else()
+    message(WARNING
+      "FAST_MNIST_ENABLE_COVERAGE: unrecognised compiler "
+      "'${CMAKE_CXX_COMPILER_ID}'; no instrumentation added.")
   endif()
 endif()
 

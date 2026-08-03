@@ -63,3 +63,6 @@ fast_mnist_trainer
 # - .claude/worktrees/ is agent ephemeral
 .claude/settings.local.json
 .claude/worktrees/
+
+# tools/coverage.sh output — an instrumented build, regenerated on demand.
+build-coverage/
