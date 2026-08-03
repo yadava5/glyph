@@ -388,6 +388,16 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Enable -march=native for the optimized config.",
     )
+    parser.add_argument(
+        "--repetitions",
+        type=int,
+        default=10,
+        help=(
+            "Repetitions per case. Ten by default so every record carries a "
+            "mean, median and stddev; one datapoint cannot support a claim "
+            "about variance, and this script used to emit exactly one."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -433,9 +443,23 @@ def main() -> int:
         bench_bin = build_dir / ("fast_mnist_benchmarks.exe"
                                  if sys.platform == "win32"
                                  else "fast_mnist_benchmarks")
+        # --benchmark_repetitions is NOT optional here, and its absence was a
+        # real defect. Without it Google Benchmark writes one datapoint per
+        # case and no aggregate entries at all, so every run this script has
+        # ever produced (docs/benchmarks/runs/bench-20251226-*.json) records
+        # "repetitions": 1 with no mean, median or stddev.
+        #
+        # BENCHMARKS.md meanwhile claimed variance was "sub-percent on a quiet
+        # machine" — a statement nothing in the committed record could support
+        # or refute. Measured properly on 2026-08-02 it ranges 0.2%–4.3% by
+        # case, so the claim was false as written.
+        #
+        # scripts/bench.sh already passed 10; the two harnesses disagreed and
+        # the documented one was the weaker. They agree now.
         run_cmd(
             [
                 str(bench_bin),
+                f"--benchmark_repetitions={args.repetitions}",
                 f"--benchmark_out={run_path}",
                 "--benchmark_out_format=json",
             ],

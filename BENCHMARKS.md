@@ -8,11 +8,36 @@ and published as JSON + CSV + SVG under `docs/benchmarks/`.
 ## Methodology
 
 - **Harness.** Google Benchmark auto-selects iteration counts so each case
-  runs for at least 0.5 s of CPU time. Reported numbers are the mean
-  wall-clock nanoseconds per iteration across that window. Variance is
+  runs for at least 0.5 s of CPU time. Reported numbers are wall-clock
+  nanoseconds per iteration.
+- **Variance — measured, not assumed.** This bullet used to read *"variance is
   small enough (sub-percent on a quiet machine) that we don't publish
-  confidence intervals today; see *Continuous benchmarking* below for the
-  plan.
+  confidence intervals today."* Nothing supported that. `tools/run_benchmarks.py`
+  passed no `--benchmark_repetitions`, so every committed run recorded
+  `"repetitions": 1` with no aggregates — there was no stddev in the record to
+  check the claim against.
+
+  Measured on 2026-08-02 over ten repetitions per case, the coefficient of
+  variation ranges **0.2% to 4.3%**, so the blanket claim was false. It holds
+  for some cases and not others:
+
+  | case | baseline | omp+native |
+  |---|---|---|
+  | `benchDot/256` — **the headline** | **0.4%** | **1.6%** |
+  | `benchDot/128` | 0.2% | 2.6% |
+  | `benchTranspose/1024` | 4.0% | 0.5% |
+  | `benchAxpy/256` | **4.3%** | 1.0% |
+
+  The dot-256 comparison the 3.5× claim rests on is among the *tightest*, which
+  is why that result survives even the busy machine these were taken on
+  (`load_avg` 9.80). The small-`axpy` and large-`transpose` rows should be read
+  as indicative only.
+
+  Aggregated records with mean/median/stddev are committed at
+  `docs/benchmarks/runs/bench-20260802-aggregated-*.json`, and the machine and
+  its uncontrolled conditions are recorded in `docs/benchmarks/ENVIRONMENT.md`.
+  `tools/run_benchmarks.py` now defaults to ten repetitions so a record without
+  aggregates cannot be produced by accident again.
 - **Warm-up.** Google Benchmark's default pre-roll is sufficient for these
   cache-resident workloads. The largest working set (a 1024×1024 float
   matrix pair, ~8 MiB) exceeds L2 on M2; the smallest (32×32) fits in L1.
