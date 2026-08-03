@@ -17,21 +17,30 @@ and published as JSON + CSV + SVG under `docs/benchmarks/`.
   `"repetitions": 1` with no aggregates — there was no stddev in the record to
   check the claim against.
 
-  Measured on 2026-08-02 over ten repetitions per case, the coefficient of
-  variation ranges **0.2% to 4.3%**, so the blanket claim was false. It holds
-  for some cases and not others:
+  Measured on 2026-08-02. The claim turns out to be **right about the kernels
+  it matters for and wrong as a blanket statement**, which is the sort of thing
+  only a measurement can tell you.
 
-  | case | baseline | omp+native |
-  |---|---|---|
-  | `benchDot/256` — **the headline** | **0.4%** | **1.6%** |
-  | `benchDot/128` | 0.2% | 2.6% |
-  | `benchTranspose/1024` | 4.0% | 0.5% |
-  | `benchAxpy/256` | **4.3%** | 1.0% |
+  At **20 repetitions**, the `dot` family — where the headline result lives — is
+  comfortably sub-percent, and stays there on a machine reporting `load_avg`
+  4.70:
 
-  The dot-256 comparison the 3.5× claim rests on is among the *tightest*, which
-  is why that result survives even the busy machine these were taken on
-  (`load_avg` 9.80). The small-`axpy` and large-`transpose` rows should be read
-  as indicative only.
+  | case | baseline | omp+native | ratio |
+  |---|---|---|---|
+  | `benchDot/32` | 0.1% | 0.4% | 1.001× |
+  | `benchDot/64` | 0.9% | 0.2% | 0.482× |
+  | `benchDot/128` | 0.2% | 0.1% | 1.524× |
+  | **`benchDot/256`** | **0.2%** | **0.3%** | **3.536×** |
+
+  At **10 repetitions across all 14 cases**, the spread is wider and the blanket
+  claim breaks: `benchAxpy/256` reaches **4.3%**, `benchTranspose/1024` 4.0%.
+  Those are small or memory-bound cases where scheduler noise dominates, and
+  they should be read as indicative only.
+
+  So: sub-percent for `dot`, not for everything. The headline is the tight one,
+  which is why **3.5×** survives three independent measurements taken on
+  different machines with different repetition counts — 3.504× (Dec, 1 rep),
+  3.570× (10 rep), 3.536× (20 rep).
 
   Aggregated records with mean/median/stddev are committed at
   `docs/benchmarks/runs/bench-20260802-aggregated-*.json`, and the machine and

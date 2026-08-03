@@ -93,11 +93,38 @@ single-repetition re-run. Three independent measurements, same conclusion.
 `tools/run_benchmarks.py` now passes `--benchmark_repetitions` so this cannot
 recur silently.
 
-## Provenance of the December runs
+## Which record is canonical, and why it is this one
+
+**The 2026-08-02 runs on the M1 Pro are the reference. The December runs are
+history.** This is not about whose machine is nicer — it is that the two are
+structurally different in exactly the dimension the headline claim measures.
 
 `runs/bench-20251226-*.json` record `context.host_name = Shrees-MacBook.local`
 and an executable path under `/Users/shreebatsa/`, while `BENCHMARKS.md`
-describes the tables as "produced on a local M2". Those runs came from a
-different machine and a different collaborator than this record. They are kept
-because they are real measurements; this file exists so a reader can tell the two
-apart.
+described the tables as "produced on a local M2". That was a **MacBook Air**:
+fanless, and on Apple silicon the Air configurations carry roughly **4
+performance cores** against this machine's **8**.
+
+The headline result is an *OpenMP scaling* number. Measuring it on half the
+performance cores, with no fan to sustain them, does not produce a slightly
+noisier version of the same figure — it measures a different machine's ceiling.
+A sustained parallel benchmark is also precisely where a fanless chassis
+throttles and an actively-cooled one does not.
+
+The December runs are kept because they are real measurements and deleting
+inconvenient data is how records stop being trustworthy. They are simply no
+longer the reference, and this file exists so nobody has to guess which is which.
+
+That both machines land near 3.5× is worth noting rather than hiding: it says
+the dot-256 kernel is bound by something other than raw core count at this size.
+It does not make an Air a Pro.
+
+## What load does to these numbers
+
+The 20-repetition run above was taken at `load_avg 4.70` and still produced
+0.1–0.3% coefficients of variation on the `dot` cases. Load matters less than
+expected here, with one asymmetry worth stating: **background load penalises the
+parallel configuration more than the single-threaded baseline**, because OpenMP
+wants every core and the baseline does not care. Any bias from a busy machine
+therefore pushes the measured ratio **down**. The figures here are a floor, not a
+best case.
