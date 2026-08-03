@@ -111,8 +111,33 @@ macOS one-liner:
 ```
 
 The build is warning-clean on GCC, Clang, and MSVC. 34 Catch2 tests — unit
-and property-based — live under `tests/` and run via CTest.
+and property-based — live under `tests/` and run via CTest, carrying **455
+assertions** between them (the honest figure for a property-based suite, since a
+single rapidcheck case drives many generated inputs).
 `cmake -DFAST_MNIST_ENABLE_DOXYGEN=ON` adds a `docs` target.
+
+### Coverage
+
+```sh
+tools/coverage.sh                 # build instrumented, run CTest, report
+tools/coverage.sh --html          # plus a browsable HTML report
+tools/coverage.sh --floor 60      # fail below a line-coverage percentage
+```
+
+Measured 2026-08-03 with clang source-based instrumentation:
+
+| File | Regions | Lines | Branches |
+| --- | ---: | ---: | ---: |
+| `src/Matrix.cpp` | 89.8% | **92.4%** | 78.8% |
+| `src/NeuralNet.cpp` | 89.8% | **91.9%** | 86.5% |
+| `include/fast_mnist/NeuralNet.h` | 100% | 100% | — |
+| `include/fast_mnist/Matrix.h` | 72.6% | 69.6% | 77.3% |
+| **Total** | **87.5%** | **88.9%** | **82.0%** |
+
+Coverage builds live in their own directory and are never benchmarked.
+Instrumentation forces `-O0` and adds a counter update on every branch, so a
+coverage build's timings describe a binary nobody ships — keeping the two
+configurations apart is what stops one being mistaken for the other.
 
 ## Run the CLI
 
