@@ -25,6 +25,8 @@
 #define NN_USE_AVX2 1
 #elif defined(__ARM_NEON) || defined(__ARM_NEON__)
 #define NN_USE_NEON 1
+#elif defined(__wasm_simd128__)
+#define NN_USE_WASM_SIMD 1
 #else
 #define NN_USE_SCALAR 1
 #endif
@@ -33,6 +35,8 @@
 #include <immintrin.h>
 #elif NN_USE_NEON
 #include <arm_neon.h>
+#elif NN_USE_WASM_SIMD
+#include <wasm_simd128.h>
 #endif
 
 #if NN_USE_AVX512
@@ -179,6 +183,38 @@ static inline void sgd_update_row_neon(double* __restrict wr,
 }
 #endif
 
+#if NN_USE_WASM_SIMD
+/*
+ * Dot product of one row with a vector using WebAssembly simd128.
+ * Same latency-hiding shape as the AVX-512 kernel above: two
+ * independent f64x2 accumulators (4 doubles per iteration) keep the
+ * multiply-add dependency chain from serializing, which is exactly
+ * what LLVM's autovectorizer declines to do for this loop. wasm
+ * simd128 has no FMA, so this is mul + add per lane pair.
+ */
+static inline double dot_wasm128_rowvec(const double* __restrict row,
+                                        const double* __restrict x,
+                                        std::size_t n) {
+    std::size_t k = 0, n4 = n & ~std::size_t(3);
+    v128_t acc0 = wasm_f64x2_splat(0.0);
+    v128_t acc1 = wasm_f64x2_splat(0.0);
+    for (; k < n4; k += 4) {
+        acc0 = wasm_f64x2_add(
+            acc0, wasm_f64x2_mul(wasm_v128_load(row + k),
+                                 wasm_v128_load(x + k)));
+        acc1 = wasm_f64x2_add(
+            acc1, wasm_f64x2_mul(wasm_v128_load(row + k + 2),
+                                 wasm_v128_load(x + k + 2)));
+    }
+    const v128_t acc = wasm_f64x2_add(acc0, acc1);
+    double sum =
+        wasm_f64x2_extract_lane(acc, 0) + wasm_f64x2_extract_lane(acc, 1);
+    for (; k < n; ++k)
+        sum += row[k] * x[k]; // tail
+    return sum;
+}
+#endif
+
 /*
  * Fused operation: y = sigmoid(W * x + b) where W is a row-major
  * matrix, x is a column vector, and y is the output vector.
@@ -198,6 +234,8 @@ static inline void gemv_rowplusbias_sigmoid(const Matrix& W, const Matrix& b,
         s = dot256_rowvec(row, xp, n);
 #elif NN_USE_NEON
         s = dot_neon_rowvec(row, xp, n);
+#elif NN_USE_WASM_SIMD
+        s = dot_wasm128_rowvec(row, xp, n);
 #else
         for (std::size_t k = 0; k < n; ++k)
             s += row[k] * xp[k];

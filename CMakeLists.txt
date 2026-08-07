@@ -36,6 +36,7 @@ endif()
 add_library(fast_mnist
   src/Matrix.cpp
   src/NeuralNet.cpp
+  src/ServerApi.cpp
 )
 
 target_include_directories(fast_mnist
@@ -257,6 +258,7 @@ if(BUILD_TESTING)
     tests/test_matrix.cpp
     tests/test_matrix_properties.cpp
     tests/test_neural_net.cpp
+    tests/test_server_api.cpp
   )
   target_link_libraries(fast_mnist_tests
     PRIVATE
