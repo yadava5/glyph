@@ -60,15 +60,16 @@ export function HiddenHeatmap({ hiddenActivations, size = 220 }: HiddenHeatmapPr
 
       if (present && a >= threshold && a > 0) {
         // Soft glow for top-5% cells. Drawn before the cell so it sits
-        // under it and fringes out by ~2px.
-        ctx.fillStyle = `oklch(${0.3 + 0.5 * a} 0.22 280 / 0.6)`;
+        // under it and fringes out by ~2px. Monochrome: white ink only.
+        ctx.fillStyle = `oklch(${0.25 + 0.72 * a} 0 0 / 0.55)`;
         ctx.fillRect(x - 2, y - 2, cell + 4, cell + 4);
       }
 
       if (present) {
-        ctx.fillStyle = `oklch(${0.3 + 0.5 * a} 0.22 280)`;
+        // Value-only colormap: brighter = more activated.
+        ctx.fillStyle = `oklch(${0.22 + 0.72 * a} 0 0)`;
       } else {
-        ctx.fillStyle = 'oklch(0.5 0.05 280 / 0.3)';
+        ctx.fillStyle = 'rgb(255 255 255 / 0.05)';
       }
       ctx.fillRect(x, y, cell - 1, cell - 1);
     }
@@ -83,7 +84,7 @@ export function HiddenHeatmap({ hiddenActivations, size = 220 }: HiddenHeatmapPr
       <canvas
         ref={canvasRef}
         className="activation-canvas"
-        style={{ width: size, height: size }}
+        style={{ width: '100%', height: 'auto', aspectRatio: '1' }}
         aria-label="Hidden layer activation heatmap"
       />
     </div>

@@ -8,8 +8,10 @@ interface SoftmaxBarsProps {
 }
 
 const DIGITS = 10;
-const WINNER_COLOR = 'oklch(0.7 0.22 280)';
-const OTHER_COLOR = 'oklch(0.4 0.15 280 / 0.5)';
+// Monochrome discipline: the winner speaks in full ink, the rest in
+// low-alpha gray. Meaning is carried by value, not hue.
+const WINNER_COLOR = '#f7f8f8';
+const OTHER_COLOR = 'rgb(255 255 255 / 0.30)';
 
 /**
  * Panel 3: horizontal softmax bars for digits 0-9.
@@ -23,7 +25,7 @@ export function SoftmaxBars({ prediction, confidence }: SoftmaxBarsProps) {
   const bars = Array.from({ length: DIGITS }, (_, i) => confidence[i] ?? 0);
 
   return (
-    <div className="softmax-bars" role="group" aria-label="Softmax probabilities">
+    <div className="softmax-bars" role="group" aria-label="Per-class confidence">
       {bars.map((conf, digit) => {
         const isWinner = digit === prediction;
         const pct = Math.max(0, Math.min(1, conf)) * 100;

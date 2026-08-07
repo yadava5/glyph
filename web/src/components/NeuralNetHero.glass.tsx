@@ -1,7 +1,7 @@
 /**
  * Frosted-glass backdrop panel behind the neural-net scene.
  * Sits at z = -2.5 without transmission/refraction so the hero stays
- * legible in screenshots and on lower-power mobile GPUs.
+ * legible in screenshots and on lower-power GPUs.
  */
 export function GlassBackdrop() {
   return (

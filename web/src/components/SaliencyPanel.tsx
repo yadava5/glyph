@@ -12,13 +12,12 @@ const GRID = 28;
 /**
  * Panel 1: 28x28 saliency overlay.
  *
- * - Cell color comes from a diverging colormap:
- *     input_grad[i] < 0 -> cool blue  oklch(0.7 0.15 220)
- *     input_grad[i] = 0 -> neutral    oklch(0.6 0 0 / 0.3)
- *     input_grad[i] > 0 -> warm red   oklch(0.65 0.22 25)
+ * - Monochrome-plus-one-semantic colormap:
+ *     input_grad[i] > 0 -> white ink (evidence FOR the predicted class)
+ *     input_grad[i] < 0 -> red      (evidence AGAINST it)
  * - Magnitude / max-magnitude maps to opacity so zero-grad pixels
  *   fade out and the network's most-attended pixels pop.
- * - Missing gradient -> uniform 20% opacity fallback.
+ * - Missing gradient -> uniform low-alpha fallback.
  */
 export function SaliencyPanel({ inputGrad, size = 220 }: SaliencyPanelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -39,10 +38,10 @@ export function SaliencyPanel({ inputGrad, size = 220 }: SaliencyPanelProps) {
     const cell = size / GRID;
 
     if (!present) {
-      ctx.fillStyle = 'oklch(0.6 0 0 / 0.2)';
+      ctx.fillStyle = 'rgb(255 255 255 / 0.03)';
       ctx.fillRect(0, 0, size, size);
       // Subtle grid cue so the panel reads as 28x28 even in fallback.
-      ctx.strokeStyle = 'oklch(0.5 0 0 / 0.15)';
+      ctx.strokeStyle = 'rgb(255 255 255 / 0.05)';
       ctx.lineWidth = 1;
       for (let i = 1; i < GRID; i++) {
         const p = i * cell;
@@ -71,7 +70,7 @@ export function SaliencyPanel({ inputGrad, size = 220 }: SaliencyPanelProps) {
         const v = grad[row * GRID + col];
         const mag = Math.abs(v) / maxMag;
         if (mag === 0) continue;
-        const color = v > 0 ? `oklch(0.65 0.22 25 / ${mag})` : `oklch(0.7 0.15 220 / ${mag})`;
+        const color = v > 0 ? `oklch(0.97 0 0 / ${mag})` : `oklch(0.637 0.205 25 / ${mag * 0.85})`;
         ctx.fillStyle = color;
         ctx.fillRect(col * cell, row * cell, cell, cell);
       }
@@ -84,7 +83,7 @@ export function SaliencyPanel({ inputGrad, size = 220 }: SaliencyPanelProps) {
       <canvas
         ref={canvasRef}
         className="activation-canvas"
-        style={{ width: size, height: size }}
+        style={{ width: '100%', height: 'auto', aspectRatio: '1' }}
         aria-label="Input saliency overlay (28x28)"
       />
     </div>

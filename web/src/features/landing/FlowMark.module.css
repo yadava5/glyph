@@ -1,0 +1,134 @@
+/* The signature flow-mark: a full-bleed band at the bottom of the page. A row
+ * of handwritten digits draws itself edge-to-edge; a sky glow then sweeps
+ * left → right across just the digits. No lanes, no sheen. */
+
+.mark {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: clamp(200px, 26vw, 300px);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+  overflow: hidden;
+}
+
+.mark:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: -2px;
+}
+
+/* ── the handwritten row — vertically centered, spanning the width ── */
+
+.digits {
+  position: absolute;
+  inset: 0 0 2.4rem;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  pointer-events: none;
+}
+
+.digit {
+  height: 60%;
+  width: auto;
+  overflow: visible;
+}
+
+/* on narrow screens, half the row bows out so the strokes stay legible */
+@media (max-width: 640px) {
+  .digit:nth-child(2n) {
+    display: none;
+  }
+}
+
+.stroke {
+  fill: none;
+  stroke: var(--text-strong);
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* default / reduced-motion / no-JS: a calm dim row, fully drawn */
+.digit:not([data-play]) .stroke {
+  stroke: rgb(247 248 248 / 0.34);
+}
+
+/* animated: draw the ink once, then a bright point runs left → right across the
+   row FOREVER at constant speed. The per-digit delay is exactly period ÷ 8
+   digits, so as the highlight leaves the last digit it re-enters the first —
+   a seamless, nonstop L→R run. Constant (linear) timing = even speed. */
+.digit[data-play] .stroke {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation:
+    fmDraw 0.9s var(--ease-out-quart) forwards,
+    fmGlowRun 2.72s linear infinite;
+  animation-delay: var(--dd), calc(1s + var(--gi) * 0.34s);
+}
+
+@keyframes fmDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* the running glow — the number's OWN ink lights sky-bright as the highlight
+   passes (tight white core + wide sky halo, the AutoML-glow feel on the digit
+   itself, not a border), then settles back to a calm readable row. */
+@keyframes fmGlowRun {
+  0% {
+    stroke: rgb(247 248 248 / 0.4);
+    filter: none;
+  }
+  11% {
+    stroke: rgb(240 249 255 / 1);
+    filter: drop-shadow(0 0 2px rgb(224 242 254 / 0.95)) drop-shadow(0 0 12px rgb(56 189 248 / 0.9));
+  }
+  38%,
+  100% {
+    stroke: rgb(247 248 248 / 0.4);
+    filter: none;
+  }
+}
+
+/* ── caption — floating over the band, centered ── */
+
+.caption {
+  position: absolute;
+  inset: auto 0 1.1rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.22rem;
+  pointer-events: none;
+}
+
+.caption b {
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.caption em {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-style: normal;
+  letter-spacing: 0.02em;
+}
+
+.mark:hover .caption em {
+  color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .digit[data-play] .stroke {
+    animation: none;
+  }
+}

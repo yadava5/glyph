@@ -1,0 +1,658 @@
+/* Varied performance visualizations — one visual grammar, five distinct forms.
+   Cool-steel palette; every chart legible at final state with no JS/motion. */
+
+/* shared card + heads */
+.chartCard,
+.slopeCard,
+.gaugeCard {
+  position: relative;
+  display: grid;
+  gap: 1rem;
+  padding: 1.4rem 1.5rem;
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgb(56 189 248 / 0.04), transparent 55%), var(--surface);
+}
+
+/* Signature cards (crossover + live gauge): a slow beam travels the 1px
+   border. @property lets the angle animate; where unsupported it falls back
+   to a static gradient ring — no error, just calmer. */
+@property --beam {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.chartCard::after,
+.gaugeCard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--beam),
+    transparent 0deg 250deg,
+    rgb(56 189 248 / 0.5) 315deg,
+    rgb(125 211 252 / 0.12) 345deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: beamSpin 7s linear infinite;
+}
+
+@keyframes beamSpin {
+  to {
+    --beam: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chartCard::after,
+  .gaugeCard::after {
+    animation: none;
+  }
+}
+
+.chartHead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.chartEyebrow {
+  display: block;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chartTitle {
+  margin: 0.3rem 0 0;
+  color: var(--text-strong);
+  font-size: 1.06rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legend li,
+.slopeLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.legend i,
+.slopeLegend i {
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.chartWrap {
+  overflow-x: auto;
+}
+
+.chartSvg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.chartFoot {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.chartFoot code {
+  padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+}
+
+/* lazy-load placeholder — reserves height so the swap-in doesn't jump */
+.vizFallback {
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+/* axes + grid */
+.grid {
+  stroke: rgb(255 255 255 / 0.05);
+  stroke-width: 1;
+}
+
+.axisText {
+  fill: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.axisLabel {
+  fill: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+/* crossover specifics */
+.lossBand {
+  fill: rgb(245 158 11 / 0.06);
+}
+
+.lossLabel {
+  fill: rgb(245 158 11 / 0.7);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+.breakEven {
+  stroke: rgb(245 158 11 / 0.55);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 5;
+}
+
+.breakLabel {
+  fill: rgb(245 158 11 / 0.85);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+}
+
+/* series lines + points */
+.series {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dot {
+  fill: var(--page-bg);
+  stroke-width: 2;
+  cursor: pointer;
+  transition:
+    r 0.16s var(--ease-out-quart),
+    filter 0.16s var(--ease-out-quart);
+}
+
+.dot[data-loses] {
+  fill: rgb(245 158 11 / 0.18);
+}
+
+.dot:hover,
+.dot:focus-visible {
+  r: 7.5;
+  filter: drop-shadow(0 0 7px currentColor);
+  outline: none;
+}
+
+/* draw-in enhancement (only when data-draw present) */
+.chartCard[data-draw] .series,
+.slopeCard[data-draw] .series {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: vizDraw 1s var(--ease-out-quart) forwards;
+}
+
+.chartCard[data-draw] .series:nth-of-type(2) {
+  animation-delay: 0.12s;
+}
+.chartCard[data-draw] .series:nth-of-type(3) {
+  animation-delay: 0.24s;
+}
+
+@keyframes vizDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.chartCard[data-draw] .dot,
+.slopeCard[data-draw] .dot {
+  opacity: 0;
+  animation: vizDot 0.4s var(--ease-out-quart) forwards;
+  animation-delay: 0.6s;
+}
+
+@keyframes vizDot {
+  to {
+    opacity: 1;
+  }
+}
+
+/* tooltip */
+.tip rect {
+  fill: rgb(9 11 18 / 0.96);
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+
+.tipOp {
+  fill: var(--text-strong);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.tipRow {
+  fill: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.tipVal {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--text-strong);
+}
+
+.tipHint {
+  fill: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+}
+
+/* slope */
+.peakLabel {
+  fill: var(--sky-soft);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.slopeLegend {
+  display: flex;
+  gap: 1rem;
+}
+
+.slopeLegend i {
+  width: 12px;
+  height: 3px;
+}
+
+/* ─────────── gauge ─────────── */
+.gaugeCard {
+  position: relative;
+}
+
+.gaugePulse {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--text-dim);
+}
+
+.gaugePulse[data-live] {
+  background: var(--green);
+  box-shadow: 0 0 10px rgb(74 222 128 / 0.6);
+  animation: gaugePulse 2s ease-in-out infinite;
+}
+
+@keyframes gaugePulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.gaugeWrap {
+  display: grid;
+  justify-items: center;
+}
+
+.gaugeSvg {
+  width: min(100%, 300px);
+  height: auto;
+}
+
+.gaugeTrack {
+  fill: none;
+  stroke: rgb(148 163 184 / 0.16);
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+
+.gaugeValue {
+  fill: none;
+  stroke: var(--sky);
+  stroke-width: 10;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 6px rgb(56 189 248 / 0.4));
+  transition: none;
+}
+
+.gaugeTick {
+  stroke: rgb(148 163 184 / 0.4);
+  stroke-width: 1.5;
+}
+
+.gaugeTick[data-break] {
+  stroke: var(--amber);
+  stroke-width: 2;
+}
+
+.gaugeTickText {
+  fill: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.gaugeNeedle {
+  stroke: var(--text-strong);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: transform 0.7s var(--ease-out-expo);
+}
+
+.gaugeHub {
+  fill: var(--text-strong);
+}
+
+.gaugeBig {
+  fill: var(--text-strong);
+  font-family: var(--font-mono);
+  font-size: 30px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gaugeNeedle {
+    transition: none;
+  }
+}
+
+.gaugeReadout {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: rgb(11 13 21 / 0.6);
+}
+
+.gaugeReadout > div {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.7rem 0.85rem;
+  border-right: 1px solid var(--line-soft);
+}
+
+.gaugeReadout > div:last-child {
+  border-right: 0;
+}
+
+.gaugeReadout dt {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.gaugeReadout dd {
+  margin: 0;
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ─────────── lane scale ─────────── */
+.laneScale {
+  display: grid;
+  gap: 1.1rem;
+  padding: 1.4rem 1.5rem;
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.laneScaleHead {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.laneRowsScale {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.laneScaleRow {
+  display: grid;
+  grid-template-columns: minmax(8.5rem, 1.1fr) minmax(0, 2.4fr) 2.4rem;
+  gap: 0.9rem;
+  align-items: center;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--surface-2);
+  transition:
+    border-color 0.18s var(--ease-out-quart),
+    transform 0.18s var(--ease-out-quart);
+}
+
+.laneScaleRow:hover {
+  border-color: var(--line-strong);
+  transform: translateX(2px);
+}
+
+.laneScaleRow[data-tone='idle'] {
+  opacity: 0.9;
+}
+
+.laneScaleName {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.laneScaleName b {
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.laneScaleName em {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-style: normal;
+  letter-spacing: 0.02em;
+}
+
+.laneScaleCells {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+}
+
+.laneScaleCells i {
+  height: 20px;
+  border-radius: 3px;
+  background: rgb(148 163 184 / 0.09);
+  box-shadow: inset 0 0 0 1px rgb(148 163 184 / 0.08);
+}
+
+/* lit state (in view or reduced-motion): filled lanes light up, staggered */
+.laneRowsScale[data-lit] .laneScaleCells i[data-on] {
+  background: linear-gradient(180deg, var(--steel), rgb(148 163 184 / 0.7));
+  box-shadow: inset 0 0 0 1px rgb(148 163 184 / 0.4);
+  animation: laneOn 0.4s var(--ease-out-quart) backwards;
+  animation-delay: var(--d);
+}
+
+.laneRowsScale[data-lit] .laneScaleRow[data-tone='live'] .laneScaleCells i[data-on] {
+  background: linear-gradient(180deg, var(--sky-soft), var(--sky));
+  box-shadow:
+    inset 0 0 0 1px rgb(56 189 248 / 0.5),
+    0 0 10px rgb(56 189 248 / 0.35);
+}
+
+.laneRowsScale[data-lit] .laneScaleRow[data-tone='idle'] .laneScaleCells i[data-on] {
+  background: linear-gradient(180deg, var(--amber-soft), var(--amber));
+  box-shadow:
+    inset 0 0 0 1px rgb(245 158 11 / 0.5),
+    0 0 10px rgb(245 158 11 / 0.3);
+}
+
+/* soft idle shimmer on the live (wasm) row only */
+.laneRowsScale[data-lit]:not([data-reduced])
+  .laneScaleRow[data-tone='live']
+  .laneScaleCells
+  i[data-on] {
+  animation:
+    laneOn 0.4s var(--ease-out-quart) backwards,
+    laneShimmer 3.4s ease-in-out infinite;
+  animation-delay: var(--d), calc(1s + var(--d));
+}
+
+@keyframes laneOn {
+  from {
+    opacity: 0;
+    transform: scaleY(0.2);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes laneShimmer {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.4);
+  }
+}
+
+.laneRowsScale[data-reduced] .laneScaleCells i[data-on] {
+  animation: none !important;
+}
+
+.laneScaleMult {
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  font-weight: 650;
+  text-align: right;
+}
+
+.laneScaleRow[data-tone='live'] .laneScaleMult {
+  color: var(--sky-soft);
+}
+
+/* ─────────── accuracy count-up ─────────── */
+.waffle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(1.2rem, 3vw, 2.4rem);
+  align-items: center;
+  padding: 1.5rem;
+  border: 1px solid var(--line-soft);
+  border-top: 2px solid var(--green);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.waffleMeta {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.waffleBig {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.waffleCount {
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+  font-size: clamp(2.2rem, 5vw, 3rem);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.waffleSlash {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+}
+
+.wafflePct {
+  margin: 0;
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+}
+
+.wafflePct b {
+  color: var(--amber);
+}
+
+@media (max-width: 720px) {
+  .waffle {
+    justify-items: center;
+    text-align: center;
+  }
+
+  .waffleBig {
+    justify-content: center;
+  }
+
+  .gaugeReadout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gaugeReadout > div {
+    border-right: 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .laneScaleRow {
+    grid-template-columns: minmax(6rem, 1fr) minmax(0, 1.6fr) 2rem;
+    gap: 0.5rem;
+  }
+}

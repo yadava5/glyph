@@ -1,0 +1,113 @@
+/* Micro-interaction primitives — cool-steel, restrained. */
+
+/* Cursor-follow spotlight. The glow layer is a pseudo-element so it never
+   intercepts pointer events and never repaints the content beneath it. */
+.spotlight {
+  position: relative;
+  --mx: 50%;
+  --my: 50%;
+  --spot: 0;
+}
+
+.spotlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: var(--spot);
+  background: radial-gradient(
+    280px circle at var(--mx) var(--my),
+    rgb(var(--glow) / 0.13),
+    transparent 60%
+  );
+  transition: opacity 0.3s var(--ease-out-quart);
+}
+
+/* keep authored children above the glow */
+.spotlight > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spotlight::after {
+    display: none;
+  }
+}
+
+/* Tilt + magnetic — the transform is written per-frame in JS; the CSS
+   transition does the smoothing and the ease-back on leave. */
+.tilt {
+  transform-style: preserve-3d;
+  transition: transform 0.28s var(--ease-out-quart);
+  will-change: transform;
+}
+
+.magnetic {
+  transition:
+    transform 0.35s var(--ease-out-expo),
+    box-shadow 0.16s var(--ease-out-quart);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tilt,
+  .magnetic {
+    transition: none;
+  }
+}
+
+/* Rolling stat — a hair of blur + lift while the digits are in motion,
+   snapping crisp when settled. Reduced-motion never sets data-rolling. */
+.rolling {
+  display: inline-block;
+  transition:
+    filter 0.2s var(--ease-out-quart),
+    transform 0.2s var(--ease-out-quart);
+}
+
+.rolling[data-rolling] {
+  filter: blur(0.35px);
+}
+
+/* Opt-in glow (glow prop): a bright sky band travels left-to-right across the
+   digits over an otherwise text-strong fill, so the numerals stay legible.
+   Same background-clip:text sheen as the hero wordmark. Reduced-motion drops
+   to a solid fill with no sweep. */
+.glow {
+  background: linear-gradient(
+    100deg,
+    var(--text-strong) 0%,
+    var(--text-strong) 40%,
+    var(--sky-soft) 48%,
+    #eaf6ff 50%,
+    var(--sky-soft) 52%,
+    var(--text-strong) 60%,
+    var(--text-strong) 100%
+  );
+  background-size: 250% auto;
+  background-position: 125% center;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--text-strong);
+  animation: numberGlow 3s linear infinite;
+}
+
+@keyframes numberGlow {
+  from {
+    background-position: 125% center;
+  }
+  to {
+    background-position: -25% center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow {
+    background: none;
+    -webkit-text-fill-color: var(--text-strong);
+    animation: none;
+  }
+}

@@ -8,8 +8,71 @@ import { useReducedMotion } from '../hooks/useReducedMotion';
 import { Edges, Layer } from './NeuralNetHero.Layers';
 import { gridPositions } from '../lib/layout';
 import { GlassBackdrop } from './NeuralNetHero.glass';
+import type { VisualState } from '../features/experience/scrollScenes';
 
 const EDGE_COLOR = '#7dd3fc';
+type NetworkVisualState = VisualState | 'hero';
+
+const stateAccent: Record<
+  NetworkVisualState,
+  {
+    input: string;
+    hidden: string;
+    output: string;
+    edge: string;
+    hiddenIntensity: number;
+    outputIntensity: number;
+  }
+> = {
+  hero: {
+    input: '#7dd3fc',
+    hidden: '#a78bfa',
+    output: '#86efac',
+    edge: EDGE_COLOR,
+    hiddenIntensity: 0.25,
+    outputIntensity: 0.4,
+  },
+  raster: {
+    input: '#7dd3fc',
+    hidden: '#6b7280',
+    output: '#6b7280',
+    edge: '#38bdf8',
+    hiddenIntensity: 0.08,
+    outputIntensity: 0.08,
+  },
+  simd: {
+    input: '#f59e0b',
+    hidden: '#7dd3fc',
+    output: '#6b7280',
+    edge: '#f59e0b',
+    hiddenIntensity: 0.18,
+    outputIntensity: 0.08,
+  },
+  hidden: {
+    input: '#7dd3fc',
+    hidden: '#a78bfa',
+    output: '#6b7280',
+    edge: '#a78bfa',
+    hiddenIntensity: 0.42,
+    outputIntensity: 0.08,
+  },
+  softmax: {
+    input: '#7dd3fc',
+    hidden: '#a78bfa',
+    output: '#86efac',
+    edge: '#86efac',
+    hiddenIntensity: 0.26,
+    outputIntensity: 0.58,
+  },
+  benchmark: {
+    input: '#7dd3fc',
+    hidden: '#f59e0b',
+    output: '#86efac',
+    edge: '#7dd3fc',
+    hiddenIntensity: 0.32,
+    outputIntensity: 0.4,
+  },
+};
 
 /**
  * Auto-rotate the scene around Y when the user is not actively dragging.
@@ -92,14 +155,19 @@ function ScrollCameraRig({ targetRef }: { targetRef: React.RefObject<Group | nul
   return null;
 }
 
-export default function NeuralNetHeroScene() {
+export default function NeuralNetHeroScene({
+  visualState = 'hero',
+}: {
+  visualState?: NetworkVisualState;
+}) {
   const reduced = useReducedMotion();
   const rootRef = useRef<Group>(null);
   const controlsRef = useRef<OrbitControlsImpl>(null);
+  const accent = stateAccent[visualState];
 
   // Layer geometry uses a sampled visual grid, not every model weight.
-  // This keeps the hero readable on mobile while the copy still names
-  // the real 784 -> 100 -> 10 architecture.
+  // This keeps the hero readable while the copy still names the real
+  // 784 -> 100 -> 10 architecture.
   const { input, hidden, output } = useMemo(() => {
     return {
       input: gridPositions(5, 5, 2.25, 2.25, -1.2),
@@ -124,27 +192,27 @@ export default function NeuralNetHeroScene() {
         <Layer
           positions={input}
           radius={0.066}
-          color="#7dd3fc"
-          emissive="#0ea5e9"
+          color={accent.input}
+          emissive={accent.input}
           emissiveIntensity={0.25}
         />
         <Layer
           positions={hidden}
           radius={0.083}
-          color="#a78bfa"
-          emissive="#7c3aed"
-          emissiveIntensity={0.25}
+          color={accent.hidden}
+          emissive={accent.hidden}
+          emissiveIntensity={accent.hiddenIntensity}
         />
         <Layer
           positions={output}
           radius={0.11}
-          color="#86efac"
-          emissive="#22c55e"
-          emissiveIntensity={0.4}
+          color={accent.output}
+          emissive={accent.output}
+          emissiveIntensity={accent.outputIntensity}
         />
 
-        <Edges from={input} to={hidden} count={18} color={EDGE_COLOR} />
-        <Edges from={hidden} to={output} count={12} color={EDGE_COLOR} />
+        <Edges from={input} to={hidden} count={18} color={accent.edge} />
+        <Edges from={hidden} to={output} count={12} color={accent.edge} />
       </group>
 
       <AutoRotate rootRef={rootRef} controlsRef={controlsRef} disabled={reduced} />

@@ -11,7 +11,11 @@
     "preview": "vite preview",
     "prepare": "cd .. && husky web/.husky || true",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\""
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\"",
+    "test:e2e:visual": "playwright test --grep @visual",
+    "test:e2e:perf": "playwright test --grep @perf",
+    "demo:artifacts": "playwright test --grep @artifacts",
+    "bundle:check": "node scripts/check-bundle-budget.mjs"
   },
   "dependencies": {
     "@paper-design/shaders-react": "^0.0.76",

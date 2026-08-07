@@ -3,9 +3,10 @@ import {
   Brush,
   CornerDownLeft,
   GitPullRequest,
-  MoonStar,
+  Gauge,
   RotateCcw,
   Search,
+  Server,
   Sparkles,
   Target,
   Workflow,
@@ -17,7 +18,6 @@ import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import { useTheme } from '../hooks/useTheme';
 
 interface CommandPaletteProps {
   onClearCanvas: () => void;
@@ -48,7 +48,6 @@ export function CommandPalette({
   canClear,
 }: CommandPaletteProps) {
   const [open, setOpen] = useState(false);
-  const { toggleTheme } = useTheme();
   const reduced = useReducedMotion();
 
   useHotkeys('mod+k', (e) => {
@@ -79,12 +78,12 @@ export function CommandPalette({
       run: () => onLoadSampleDigit(),
     },
     {
-      id: 'draw',
-      label: 'Go to drawing canvas',
-      detail: 'Jump to the interactive classifier',
+      id: 'classifier',
+      label: 'Go to live bench',
+      detail: 'Jump to the wasm workbench',
       icon: Brush,
-      keywords: ['draw', 'canvas', 'classify'],
-      run: () => scrollToSection('draw'),
+      keywords: ['draw', 'canvas', 'classify', 'bench', 'workbench'],
+      run: () => scrollToSection('classifier'),
     },
     {
       id: 'results',
@@ -95,28 +94,36 @@ export function CommandPalette({
       run: () => scrollToSection('results'),
     },
     {
-      id: 'network',
-      label: 'Go to network animation',
-      detail: 'Jump to the 3D neural network',
+      id: 'problem',
+      label: 'Go to the problem',
+      detail: 'Jump to the idle-lanes act',
       icon: Zap,
-      keywords: ['network', 'hero', 'three', 'animation'],
-      run: () => scrollToSection('network'),
+      keywords: ['problem', 'scalar', 'lanes', 'idle'],
+      run: () => scrollToSection('problem'),
     },
     {
-      id: 'pipeline',
-      label: 'Go to pipeline',
-      detail: 'Jump to the scroll sequence',
+      id: 'solution',
+      label: 'Go to the solution',
+      detail: 'Jump to the hand-written kernel',
       icon: Workflow,
-      keywords: ['pipeline', 'scroll', 'steps'],
-      run: () => scrollToSection('pipeline'),
+      keywords: ['solution', 'kernel', 'simd', 'intrinsics', 'avx'],
+      run: () => scrollToSection('solution'),
     },
     {
-      id: 'theme',
-      label: 'Toggle theme',
-      detail: 'Switch dark and light modes',
-      icon: MoonStar,
-      keywords: ['theme', 'dark', 'light'],
-      run: () => toggleTheme(),
+      id: 'build',
+      label: 'Go to the instruction sets',
+      detail: 'Jump to the ISA ladder and runtimes',
+      icon: Server,
+      keywords: ['build', 'isa', 'wasm', 'native', 'runtime', 'fallback'],
+      run: () => scrollToSection('build'),
+    },
+    {
+      id: 'proof',
+      label: 'Go to the proof',
+      detail: 'Jump to benchmarks and reproducibility',
+      icon: Gauge,
+      keywords: ['proof', 'benchmark', 'performance', 'openmp', 'reproduce', 'evidence'],
+      run: () => scrollToSection('proof'),
     },
     {
       id: 'clear',

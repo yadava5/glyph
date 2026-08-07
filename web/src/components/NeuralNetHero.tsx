@@ -1,13 +1,15 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { cn } from '../lib/cn';
+import type { VisualState } from '../features/experience/scrollScenes';
 
 const Scene = lazy(() => import('./NeuralNetHero.Scene'));
 
 interface Props {
   className?: string;
+  visualState?: VisualState | 'hero';
 }
 
-export function NeuralNetHero({ className }: Props) {
+export function NeuralNetHero({ className, visualState = 'hero' }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [shouldLoad, setShouldLoad] = useState(false);
 
@@ -40,7 +42,7 @@ export function NeuralNetHero({ className }: Props) {
       )}
       {shouldLoad && (
         <Suspense fallback={null}>
-          <Scene />
+          <Scene visualState={visualState} />
         </Suspense>
       )}
     </div>

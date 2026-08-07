@@ -9,6 +9,7 @@
 // className/variable metadata here.
 const SANS_FAMILY = 'GeistVariable';
 const MONO_FAMILY = 'GeistMonoVariable';
+const SERIF_FAMILY = 'InstrumentSerif';
 const STYLE_ID = 'geist-font-face';
 
 function injectFontFaces() {
@@ -31,9 +32,24 @@ function injectFontFaces() {
   font-style: normal;
   font-display: swap;
 }
+@font-face {
+  font-family: '${SERIF_FAMILY}';
+  src: url('/fonts/InstrumentSerif-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: '${SERIF_FAMILY}';
+  src: url('/fonts/InstrumentSerif-Italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
 :root {
   --font-geist-sans: '${SANS_FAMILY}', ui-sans-serif, system-ui, sans-serif;
   --font-geist-mono: '${MONO_FAMILY}', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-instrument-serif: '${SERIF_FAMILY}', Georgia, 'Times New Roman', serif;
 }
 .${SANS_FAMILY.toLowerCase()}-class {
   font-family: var(--font-geist-sans);
@@ -57,4 +73,9 @@ export const GeistMono = {
   className: `${MONO_FAMILY.toLowerCase()}-class`,
   variable: '--font-geist-mono',
   style: { fontFamily: `var(--font-geist-mono)` },
+};
+
+export const InstrumentSerif = {
+  variable: '--font-instrument-serif',
+  style: { fontFamily: `var(--font-instrument-serif)` },
 };

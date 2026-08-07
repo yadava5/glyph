@@ -14,6 +14,8 @@
 import type { PredictionResponse } from '../api/predict';
 import { classifyWithJsFallback } from './jsFallbackClassifier';
 
+const WASM_ENABLED = import.meta.env.VITE_ENABLE_WASM === 'true';
+
 /**
  * Live instance produced by Embind. We treat it as opaque and only
  * ever call the two methods we bound in wasm_bindings.cpp:
@@ -35,11 +37,14 @@ interface WasmClassifierInstance {
 interface WasmFactory {
   (opts?: { locateFile?: (path: string) => string }): Promise<{
     WasmClassifier: new () => WasmClassifierInstance;
+    buildInfo: () => string;
   }>;
 }
 
 interface WasmModuleHandle {
   classifier: WasmClassifierInstance;
+  /** Compile-time ISA of the module, e.g. "simd128". */
+  build: string;
 }
 
 let modulePromise: Promise<WasmModuleHandle> | null = null;
@@ -79,7 +84,8 @@ export function ensureWasm(): Promise<WasmModuleHandle> {
 
       const classifier: WasmClassifierInstance = new instance.WasmClassifier();
       classifier.loadWeightsFromBinary(weightsBytes);
-      return { classifier };
+      const build = typeof instance.buildInfo === 'function' ? instance.buildInfo() : 'wasm';
+      return { classifier, build };
     })().catch((err) => {
       // Reset the cache on failure so a later retry can re-attempt.
       modulePromise = null;
@@ -103,30 +109,35 @@ function toNumberArray(v: unknown): number[] {
 }
 
 /**
- * Execute a forward pass entirely in the browser via the WASM
- * classifier. Returns a shape compatible with the HTTP /predict
- * response, minus `baseline_time_ms` (we don't expose a scalar
- * baseline from JS; leaving the field present with 0 keeps the UI
- * unaffected when toggled into WASM mode).
+ * Execute a forward pass entirely in the browser. WASM is attempted
+ * only when VITE_ENABLE_WASM is explicitly true; otherwise this uses
+ * the labeled JS demo fallback without probing absent artifacts.
  */
 export async function classifyInBrowser(pixels: number[]): Promise<PredictionResponse> {
-  try {
-    const { classifier } = await ensureWasm();
-    const t0 = performance.now();
-    const result = classifier.classify(pixels);
-    const t1 = performance.now();
+  if (!WASM_ENABLED) {
+    return classifyWithJsFallback(pixels);
+  }
 
+  try {
+    const { classifier, build } = await ensureWasm();
+    const result = classifier.classify(pixels);
+
+    // Timings come from C++ (adaptive-mean, forward pass only —
+    // marshalling and the saliency backward pass are excluded).
+    // baseline = the same math with vectorization disabled; optimized =
+    // the hand-written wasm simd128 kernel. See wasm/wasm_bindings.cpp.
     return {
       prediction: Number(result.prediction),
       confidence: toNumberArray(result.confidence),
-      baseline_time_ms: 0,
-      optimized_time_ms: t1 - t0,
+      baseline_time_ms: Number(result.baseline_time_ms) || 0,
+      optimized_time_ms: Number(result.optimized_time_ms) || 0,
       hidden_activations: toNumberArray(result.hidden_activations),
       input_grad: toNumberArray(result.input_grad),
       source: 'browser-wasm',
+      build,
     };
   } catch (error) {
-    console.warn('WASM classifier unavailable; using JS fallback.', error);
+    void error;
     return classifyWithJsFallback(pixels);
   }
 }

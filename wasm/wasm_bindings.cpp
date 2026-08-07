@@ -15,6 +15,7 @@
  *     input_grad) so the TS fallback glue is near-trivial.
  */
 
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -51,6 +52,72 @@ val toFloatArray(const std::vector<double>& src) {
         arr.set(i, src[i]);
     }
     return arr;
+}
+
+/*
+ * Adaptive micro-timing: run `fn` until at least `minTotalMs` of wall
+ * time has accumulated (or `maxIters`), never fewer than `minIters`
+ * runs, and report the mean per-iteration milliseconds plus the count.
+ * Single-shot timing at sub-millisecond scale is dominated by timer
+ * quantization and scheduling noise; a bounded mean is stable enough
+ * for a live readout while keeping the per-stroke budget ~10ms.
+ */
+struct TimedMean {
+    double meanMs;
+    int iters;
+};
+
+template <typename F>
+TimedMean timeMeanMs(F&& fn, int minIters, int maxIters, double minTotalMs) {
+    using clock = std::chrono::steady_clock;
+    const auto t0 = clock::now();
+    int iters = 0;
+    double elapsed = 0.0;
+    while (iters < minIters || (elapsed < minTotalMs && iters < maxIters)) {
+        fn();
+        ++iters;
+        elapsed =
+            std::chrono::duration<double, std::milli>(clock::now() - t0)
+                .count();
+    }
+    return {elapsed / iters, iters};
+}
+
+/*
+ * Scalar reference forward pass with loop vectorization explicitly
+ * disabled. The whole module compiles with -O3 -msimd128, so the
+ * regular path is LLVM-autovectorized to wasm simd128; this reference
+ * runs the same math with vector lanes off (scalar unrolling and every
+ * other -O3 optimization stay enabled). Timing the two on the same
+ * input, same weights, same machine isolates exactly what SIMD buys —
+ * mirroring apps/server.cpp's baseline_gemv_sigmoid, which is
+ * "intentionally NOT optimized to provide a fair comparison".
+ */
+void novec_gemv_sigmoid(const Matrix& W, const Matrix& b,
+                        const std::vector<double>& x,
+                        std::vector<double>& y) {
+    const std::size_t m = W.height(), n = W.width();
+    for (std::size_t i = 0; i < m; ++i) {
+        double s = 0.0;
+#pragma clang loop vectorize(disable) interleave(disable)
+        for (std::size_t k = 0; k < n; ++k) {
+            s += W[i][k] * x[k];
+        }
+        s += b[i][0];
+        y[i] = 1.0 / (1.0 + std::exp(-s));
+    }
+}
+
+/*
+ * Which vector ISA this module was built for. Compile-time, mirroring
+ * the AVX-512 / AVX2 / NEON selection in src/NeuralNet.cpp.
+ */
+std::string buildInfo() {
+#if defined(__wasm_simd128__)
+    return "simd128";
+#else
+    return "wasm scalar";
+#endif
 }
 
 } // namespace
@@ -97,26 +164,64 @@ class WasmClassifier {
             input[i][0] = pixels[i];
         }
 
-        // Forward pass with hidden-layer capture.
-        std::vector<double> hidden;
-        Matrix logits = net_.classifyWithHidden(input, hidden);
+        // ── Live SIMD-vs-scalar measurement ──────────────────────────
+        // Time ONLY the forward pass (classify), in C++, so the readout
+        // excludes Embind marshalling and the saliency backward pass
+        // (which is documented below as "not timed"). Two variants run
+        // on the same input and weights:
+        //   simd   — the module's regular path (-O3 -msimd128 autovec)
+        //   scalar — novec_gemv_sigmoid, vector lanes disabled
+        double sink = 0.0;
+        const TimedMean simd = timeMeanMs(
+            [&] {
+                Matrix out = net_.classify(input);
+                sink += out[0][0];
+            },
+            3, 60, 5.0);
 
-        // argmax + softmax-style normalization (matches server.cpp's
-        // response shape so the TS layer can treat both sources
-        // interchangeably).
-        std::vector<double> confidence(logits.height());
+        const auto& weights = net_.getWeights();
+        const auto& biases = net_.getBiases();
+        std::vector<double> x(784);
+        for (std::size_t i = 0; i < 784; ++i) {
+            x[i] = pixels[i];
+        }
+        std::vector<double> h1(weights[0].height());
+        std::vector<double> o1(weights[1].height());
+        const TimedMean scalar = timeMeanMs(
+            [&] {
+                novec_gemv_sigmoid(weights[0], biases[0], x, h1);
+                novec_gemv_sigmoid(weights[1], biases[1], h1, o1);
+                sink += o1[0];
+            },
+            3, 60, 5.0);
+        (void)sink;
+
+        // Forward pass with hidden-layer capture (untimed). The returned
+        // matrix is the post-sigmoid output layer, not raw logits.
+        std::vector<double> hidden;
+        Matrix outputs = net_.classifyWithHidden(input, hidden);
+
+        // argmax over the raw network outputs. The output layer is
+        // sigmoid, so each out[i] is already a per-class score in [0, 1]
+        // and the winning class saturates near 0.9999.
+        std::vector<double> confidence(outputs.height());
         int prediction = 0;
-        double maxVal = logits[0][0];
-        for (std::size_t i = 0; i < logits.height(); ++i) {
-            confidence[i] = logits[i][0];
-            if (logits[i][0] > maxVal) {
-                maxVal = logits[i][0];
+        double maxVal = outputs[0][0];
+        for (std::size_t i = 0; i < outputs.height(); ++i) {
+            confidence[i] = outputs[i][0];
+            if (outputs[i][0] > maxVal) {
+                maxVal = outputs[i][0];
                 prediction = static_cast<int>(i);
             }
         }
+        // L1-normalize the non-negative sigmoid outputs so the reported
+        // distribution sums to 1. Do NOT softmax/exp here: exponentiating
+        // already-saturated sigmoids squashes a near-certain prediction
+        // toward uniform (a confident digit would read ~0.23 instead of
+        // ~0.999), which makes the demo look far less accurate than the
+        // model actually is.
         double sum = 0.0;
         for (std::size_t i = 0; i < confidence.size(); ++i) {
-            confidence[i] = std::exp(confidence[i]);
             sum += confidence[i];
         }
         if (sum > 0.0) {
@@ -135,6 +240,14 @@ class WasmClassifier {
         result.set("confidence", toFloatArray(confidence));
         result.set("hidden_activations", toFloatArray(hidden));
         result.set("input_grad", toFloatArray(inputGrad));
+        // Forward-only means, measured in C++ (marshalling + saliency
+        // excluded). "baseline" = vectorization disabled; "optimized" =
+        // the module's simd128 path. Field names match server.cpp's
+        // /predict response shape.
+        result.set("baseline_time_ms", scalar.meanMs);
+        result.set("optimized_time_ms", simd.meanMs);
+        result.set("timing_iters_simd", simd.iters);
+        result.set("timing_iters_scalar", scalar.iters);
         return result;
     }
 
@@ -148,4 +261,5 @@ EMSCRIPTEN_BINDINGS(fast_mnist) {
         .function("loadWeightsFromBinary",
                   &WasmClassifier::loadWeightsFromBinary)
         .function("classify", &WasmClassifier::classify);
+    emscripten::function("buildInfo", &buildInfo);
 }

@@ -1,0 +1,91 @@
+/* Glyph wordmark: a handwritten "2" over four SIMD lanes, plus the mono word.
+   The tile carries the mark; the word carries the wordmark. Draw-on the pen
+   stroke on hover / focus, reduced-motion-safe. */
+
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--text-strong);
+  text-decoration: none;
+  border-radius: 10px;
+}
+
+.root:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 4px;
+}
+
+.tile {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  overflow: visible;
+}
+
+.chip {
+  fill: var(--surface-2);
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+
+/* the machine: four crisp, evenly-spaced vector lanes */
+.lanes line {
+  stroke: var(--steel);
+  stroke-width: 1.4;
+  opacity: 0.5;
+  transition: opacity var(--dur-med) var(--ease-out-quart);
+}
+
+/* the hand: one confident pen stroke, drawn straight over the lanes */
+.hand {
+  fill: none;
+  stroke: var(--text-strong);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* micro-interaction — the pen re-strokes across the lanes on hover / keyboard
+   focus, then rests fully drawn. HAND over MACHINE, replayed on touch. */
+.root:hover .hand,
+.root:focus-visible .hand {
+  animation: glyphDraw 0.72s var(--ease-out-quart);
+}
+
+.root:hover .lanes line,
+.root:focus-visible .lanes line {
+  opacity: 0.72;
+}
+
+@keyframes glyphDraw {
+  from {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+}
+
+.word {
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root:hover .hand,
+  .root:focus-visible .hand {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .root {
+    min-height: 44px;
+  }
+}
