@@ -348,6 +348,14 @@ if(EMSCRIPTEN)
     -sSTACK_SIZE=1MB
     -sEXPORT_ES6=1
     -sUSE_ES6_IMPORT_META=1
+    # web/vercel.json ships script-src 'self' 'wasm-unsafe-eval', which
+    # permits WebAssembly.instantiate but NOT new Function. Embind's
+    # craftInvokerFunction reaches new Function on some toolchains, and
+    # when it does the factory throws EvalError, the module never loads,
+    # and every visitor silently gets the JS fallback. This makes the
+    # eval-free property a build requirement instead of a property the
+    # current emscripten happens to have.
+    -sDYNAMIC_EXECUTION=0
   )
   set_target_properties(fast_mnist_wasm PROPERTIES
     OUTPUT_NAME "fast_mnist"

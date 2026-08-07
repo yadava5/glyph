@@ -21,6 +21,9 @@ on:
       - 'tools/build_wasm.sh'
       - '.github/workflows/wasm.yml'
       - 'model.weights'
+      # The committed glue is what production serves, so an edit to it
+      # must re-run the drift check even when no source file moved.
+      - 'web/public/wasm/**'
   pull_request:
     paths:
       - 'src/**'
@@ -31,6 +34,9 @@ on:
       - 'tools/build_wasm.sh'
       - '.github/workflows/wasm.yml'
       - 'model.weights'
+      # The committed glue is what production serves, so an edit to it
+      # must re-run the drift check even when no source file moved.
+      - 'web/public/wasm/**'
   workflow_dispatch:
 
 permissions:
@@ -56,6 +62,54 @@ jobs:
 
       - name: Build WASM target
         run: cmake --build build-wasm -j
+
+      # ---------------------------------------------------------------
+      # The gate this workflow was missing.
+      #
+      # web/public/wasm/ is COMMITTED (see .gitignore) because git-driven
+      # Vercel builds must ship the real simd128 artifacts. Nothing ever
+      # compared the committed bytes against a rebuild, so glue staged
+      # from an unpinned local toolchain shipped to production and stayed
+      # there: its Embind invoker reached `new Function`, which the CSP in
+      # web/vercel.json forbids, and every visitor silently got the JS
+      # fallback while the badge and the .wasm 200 both looked healthy.
+      #
+      # A byte comparison is safe to make blocking here, and that was
+      # measured rather than assumed: at emsdk 3.1.64 this build is
+      # reproducible byte-for-byte across linux/amd64 and macOS/arm64
+      # (verified 2026-08-07 against emscripten/emsdk:3.1.64 in Docker —
+      # identical sha256 for both fast_mnist.js and fast_mnist.wasm).
+      # If a future emsdk bump breaks that, bump the pin above and
+      # re-commit the glue in the same change; do not weaken this to a
+      # warning.
+      - name: Committed glue matches a pinned rebuild
+        run: |
+          set -euo pipefail
+          fail=0
+          for f in fast_mnist.js fast_mnist.wasm; do
+            if ! cmp -s "build-wasm/$f" "web/public/wasm/$f"; then
+              echo "::error title=WASM drift::web/public/wasm/$f differs from a rebuild at the pinned emsdk. Re-run tools/build_wasm.sh and commit the result."
+              echo "  rebuilt:   $(sha256sum "build-wasm/$f" | cut -d' ' -f1)"
+              echo "  committed: $(sha256sum "web/public/wasm/$f" | cut -d' ' -f1)"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      # Independent of drift, and the check that names the actual defect:
+      # the CSP permits 'wasm-unsafe-eval' but NOT new Function or eval.
+      # This one needs no toolchain and cannot go stale with the pin.
+      - name: Committed glue is eval-free, as the CSP requires
+        run: |
+          set -euo pipefail
+          for pat in 'new Function(' 'eval('; do
+            n=$(grep -o "$pat" web/public/wasm/fast_mnist.js | wc -l | tr -d ' ')
+            echo "$pat -> $n"
+            if [ "$n" != "0" ]; then
+              echo "::error title=CSP violation in committed glue::web/public/wasm/fast_mnist.js contains $n occurrence(s) of '$pat'. script-src in web/vercel.json allows 'wasm-unsafe-eval' only, so the Embind factory will throw EvalError and every visitor will get the JS fallback."
+              exit 1
+            fi
+          done
 
       - name: Configure native (for export_weights)
         run: |

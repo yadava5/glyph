@@ -49,6 +49,9 @@ interface WasmModuleHandle {
 
 let modulePromise: Promise<WasmModuleHandle> | null = null;
 
+/** Guards the fallback log so it fires once, not once per stroke. */
+let wasmFailureReported = false;
+
 /**
  * First caller kicks off the download + instantiation; subsequent
  * callers await the same promise. The promise resolves to an object
@@ -137,7 +140,26 @@ export async function classifyInBrowser(pixels: number[]): Promise<PredictionRes
       build,
     };
   } catch (error) {
-    void error;
+    // Falling back is right for the visitor; falling back SILENTLY is
+    // what let a production defect live unnoticed. The CSP shipped in
+    // web/vercel.json permits 'wasm-unsafe-eval' but not new Function,
+    // so an Embind glue built by a toolchain that reaches new Function
+    // made this factory throw EvalError for every visitor — while the
+    // page kept serving the JS stub and said nothing. `void error`
+    // stood here, and it would have hidden the next cause too.
+    //
+    // Once per session, not per stroke: a draw pad classifies on every
+    // pointer move, and an error logged per classification is noise
+    // nobody reads.
+    if (!wasmFailureReported) {
+      wasmFailureReported = true;
+      console.error(
+        '[glyph] WASM classifier unavailable — serving the JS fallback. ' +
+          'Predictions remain correct but the reported timings are not the ' +
+          'simd128 kernel. Cause:',
+        error,
+      );
+    }
     return classifyWithJsFallback(pixels);
   }
 }
