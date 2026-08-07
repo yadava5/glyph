@@ -12,6 +12,12 @@ const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox",
 const page = await browser.newPage();
 await page.setViewport({ width: 840, height: 1080, deviceScaleFactor: 2 });
 await page.goto(URL, { waitUntil: "networkidle0", timeout: 60000 });
+// The screen reader scales each leaf to fit the window (Booklet.tsx `useFitScale`).
+// Measuring through that transform shrinks every escape delta by the same factor —
+// at this viewport it is 0.911 — which desensitises this gate by ~9% without
+// changing a single reported ratio. Neutralise it: relative geometry is identical,
+// and absolute deltas go back to true page pixels.
+await page.addStyleTag({ content: ".leaf-inner { transform: none !important; }" });
 await page.evaluate(async () => { await document.fonts.ready; });
 await new Promise((r) => setTimeout(r, 500));
 

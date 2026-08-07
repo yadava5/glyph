@@ -2,14 +2,18 @@ import React from "react";
 import { COLORS, FONTS, PAGE } from "../theme";
 import { BACK_COVER } from "../content";
 import { DigitLanesField } from "../visuals/DigitLanesField";
+import { GlyphMark } from "../visuals/Mark";
 
 /**
- * Back cover (page 28) — a PURE closing. It mirrors the front cover: the same
- * full-bleed digit-lanes field (reseeded to a "7" so it reads as a wraparound),
- * a quiet serif closing line over a lower scrim, the wordmark, and the
- * colophon. Deliberately NO QR / scan / URL / CTA — the reader is sent to the
- * live product on page 27 (Try It); this last leaf just closes the book, a
- * bookend to the opening cover.
+ * Back cover (page 28) — a PURE closing that ANSWERS the front rather than
+ * mirroring it. The field is the same system at rest: a ghost "7" hugging the
+ * spine (as the front's "3" does, so the flat sheet reads as two digits
+ * back-to-back), the scan band continuing around the spine at the same height
+ * but settled into WIN_GREEN, the hot row resolved — and no lane rail, no
+ * captions: the race is over. Deliberately NO QR / scan / URL / CTA — the
+ * reader is sent to the live product on page 27 (Try It); this last leaf just
+ * closes the book. The project's mark (visuals/Mark.tsx) leads the imprint
+ * line, echoing the cover's title lockup at text scale.
  */
 export const BackCoverPage: React.FC = () => (
   <section
@@ -66,13 +70,14 @@ export const BackCoverPage: React.FC = () => (
         fontWeight: 600,
         letterSpacing: "0.2em",
         textTransform: "uppercase",
-        color: COLORS.ON_DARK_SUBTLE,
+        color: COLORS.ON_DARK_MUTED,
       }}
     >
       {BACK_COVER.volume} · fin.
     </div>
 
-    {/* Vertical margin echo — right edge, mirrors the cover's silicon callout */}
+    {/* Vertical margin echo — right edge, answers the cover's silicon callout.
+        MUTED, not SUBTLE: measured APCA Lc -22 for SUBTLE here vs -52. */}
     <div
       style={{
         position: "absolute",
@@ -84,13 +89,14 @@ export const BackCoverPage: React.FC = () => (
         fontWeight: 500,
         letterSpacing: "0.22em",
         textTransform: "uppercase",
-        color: COLORS.ON_DARK_SUBTLE,
+        color: COLORS.ON_DARK_MUTED,
       }}
     >
       {BACK_COVER.edgeNote}
     </div>
 
-    {/* Closing block — lower-left, mirrors the cover's title block */}
+    {/* Closing block — lower-left. The serif line is the hero of this leaf;
+        a short WIN_GREEN dash above it is the book's final "measured" tick. */}
     <div
       style={{
         position: "absolute",
@@ -99,24 +105,29 @@ export const BackCoverPage: React.FC = () => (
         right: "1.1in",
         display: "flex",
         flexDirection: "column",
-        gap: 14,
+        gap: 16,
       }}
     >
+      <div style={{ width: 36, height: 3, borderRadius: 2, background: COLORS.WIN_GREEN }} />
+
       <div
         style={{
           fontFamily: FONTS.SERIF,
           fontStyle: "italic",
-          fontSize: 34,
-          lineHeight: 1.15,
+          fontSize: 42,
+          lineHeight: 1.12,
           letterSpacing: "-0.01em",
           color: COLORS.ON_DARK,
-          maxWidth: "5.6in",
+          maxWidth: "6.6in",
         }}
       >
-        — {BACK_COVER.closingLine}
+        {BACK_COVER.closingLine}
       </div>
 
       <div style={{ display: "flex", alignItems: "baseline", gap: 14, flexWrap: "wrap" }}>
+        {/* the chip leads the imprint line — the same device that closes the
+            cover's title lockup, at text scale */}
+        <GlyphMark size={30} style={{ alignSelf: "center" }} />
         <span
           style={{
             fontFamily: FONTS.SANS,
@@ -137,7 +148,7 @@ export const BackCoverPage: React.FC = () => (
             fontWeight: 500,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: COLORS.ON_DARK_SUBTLE,
+            color: COLORS.ON_DARK_MUTED,
           }}
         >
           {BACK_COVER.signature}
@@ -151,7 +162,7 @@ export const BackCoverPage: React.FC = () => (
           fontWeight: 500,
           letterSpacing: "0.1em",
           textTransform: "uppercase",
-          color: COLORS.ON_DARK_SUBTLE,
+          color: COLORS.ON_DARK_MUTED,
           lineHeight: 1.7,
           borderTop: `0.5pt solid ${COLORS.ON_DARK_HAIRLINE}`,
           paddingTop: 12,

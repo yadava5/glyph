@@ -2,12 +2,17 @@ import React from "react";
 import { COLORS, FONTS, PAGE } from "../theme";
 import { BRAND, MASTHEAD } from "../content";
 import { DigitLanesField } from "../visuals/DigitLanesField";
+import { GlyphMark } from "../visuals/Mark";
 
 /**
- * Front cover (page 01). A full-bleed blue-black field: an MNIST digit raster
- * streaming into the SIMD lanes of the four ISAs (DigitLanesField) — the whole
- * story in one image — with a scalar/vectorized legend, a lower-left title
- * block over a scrim, and a vertical mono margin callout.
+ * Front cover (page 01). A full-bleed blue-black field: a monumental MNIST
+ * digit raster cropped by the bleed, its dot-product hot row lit as a
+ * full-width scan band that streams into the SIMD lane rail of the four ISAs
+ * (DigitLanesField) — the whole story in one image — with a scalar/vectorized
+ * legend, a display-scale title block over a scrim, and a vertical mono
+ * margin callout. The project's app chip (hand stroke over four SIMD lanes,
+ * inlined in visuals/Mark.tsx) closes the title lockup on the baseline — the
+ * product's icon beside its machine-set wordmark.
  */
 export const CoverPage: React.FC = () => (
   <section
@@ -79,7 +84,8 @@ export const CoverPage: React.FC = () => (
       ))}
     </div>
 
-    {/* Vertical margin callout — right edge */}
+    {/* Vertical margin callout — right edge. ON_DARK_MUTED, not SUBTLE:
+        measured APCA Lc -22 for SUBTLE on this ground vs -52 for MUTED. */}
     <div
       style={{
         position: "absolute",
@@ -91,7 +97,7 @@ export const CoverPage: React.FC = () => (
         fontWeight: 500,
         letterSpacing: "0.22em",
         textTransform: "uppercase",
-        color: COLORS.ON_DARK_SUBTLE,
+        color: COLORS.ON_DARK_MUTED,
       }}
     >
       benchmarked live on your silicon
@@ -110,7 +116,8 @@ export const CoverPage: React.FC = () => (
       }}
     />
 
-    {/* Title block — lower-left */}
+    {/* Title block — lower-left. Display scale (152px ≈ 114pt): the wordmark
+        is the counterweight to the monumental digit above it. */}
     <div
       style={{
         position: "absolute",
@@ -119,29 +126,44 @@ export const CoverPage: React.FC = () => (
         right: "0.7in",
         display: "flex",
         flexDirection: "column",
-        gap: 12,
+        gap: 14,
       }}
     >
       <div
         style={{
-          fontFamily: FONTS.SANS,
-          fontSize: 84,
-          fontWeight: 700,
-          letterSpacing: "-0.04em",
-          lineHeight: 0.92,
-          color: COLORS.ON_DARK,
+          display: "flex",
+          alignItems: "flex-end",
+          gap: 30,
+          // lineHeight < 1 lets the y/p descenders overflow the line box;
+          // reserve room so they never collide with the subtitle.
+          marginBottom: 22,
         }}
       >
-        {BRAND.name}
+        <div
+          style={{
+            fontFamily: FONTS.SANS,
+            fontSize: 152,
+            fontWeight: 700,
+            letterSpacing: "-0.045em",
+            lineHeight: 0.9,
+            color: COLORS.ON_DARK,
+          }}
+        >
+          {BRAND.name}
+        </div>
+        {/* the chip sits on the type baseline — the line box's bottom edge is
+            ~4px under the baseline at lineHeight 0.9, so a small bottom margin
+            levels the chip base with the letterforms */}
+        <GlyphMark size={96} style={{ marginBottom: 6 }} />
       </div>
       <div
         style={{
           fontFamily: FONTS.SERIF,
           fontStyle: "italic",
-          fontSize: 23,
+          fontSize: 24,
           lineHeight: 1.22,
           color: COLORS.ON_DARK_MUTED,
-          maxWidth: "5.6in",
+          maxWidth: "6.1in",
         }}
       >
         {BRAND.subtitle}
@@ -165,9 +187,9 @@ export const CoverPage: React.FC = () => (
           {BRAND.author} · {BRAND.year}
         </span>
         <span style={{ width: 28, height: 1, background: COLORS.ON_DARK_HAIRLINE }} />
-        <span style={{ color: COLORS.ON_DARK_SUBTLE }}>with {BRAND.contributor}</span>
+        <span style={{ color: COLORS.ON_DARK_MUTED }}>with {BRAND.contributor}</span>
         <span style={{ width: 28, height: 1, background: COLORS.ON_DARK_HAIRLINE }} />
-        <span style={{ color: COLORS.ON_DARK_SUBTLE }}>{MASTHEAD.volume}</span>
+        <span style={{ color: COLORS.ON_DARK_MUTED }}>{MASTHEAD.volume}</span>
       </div>
     </div>
   </section>
