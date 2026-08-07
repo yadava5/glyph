@@ -1,10 +1,10 @@
-# Build artifacts
-build/
-build-test/
-build-bench/
-build-omp/
-build-wasm/
+# Build artifacts. Every CMake build tree this repo or its CI creates is
+# named build*/ — build, build-test, build-wasm, build-audit,
+# build-coverage, build-san (sanitizers.yml), build-native (wasm.yml).
+# No tracked path starts with "build", so the glob cannot swallow sources.
+build*/
 cmake-build-*/
+dist-wasm/
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
@@ -65,5 +65,5 @@ fast_mnist_trainer
 .claude/settings.local.json
 .claude/worktrees/
 
-# tools/coverage.sh output — an instrumented build, regenerated on demand.
-build-coverage/
+# Vercel CLI: the local project link and `vercel build` output.
+.vercel
