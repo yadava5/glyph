@@ -19,6 +19,12 @@ input saliency — on a monochrome, WebGL-free landing page.
 [![system card][systemcard-badge]][systemcard-url]
 [![openssf scorecard][scorecard-badge]][scorecard-url]
 
+Glyph runs in your browser at [getglyph.vercel.app](https://getglyph.vercel.app);
+the model, its limits, and its measured numbers are on the
+[System Card](https://getglyph.vercel.app/system-card); the full portfolio —
+six projects — is at
+[yadava5.github.io/Portfolio-2.0](https://yadava5.github.io/Portfolio-2.0/).
+
 ## Web demo
 
 **Live: https://getglyph.vercel.app** — draw a digit and the WebAssembly
