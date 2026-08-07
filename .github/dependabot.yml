@@ -13,9 +13,44 @@ updates:
       minor-and-patch:
         dependency-type: "development"
         update-types: ["minor", "patch"]
+  # The System Card booklet is a second, independent npm project. It has no
+  # lockfile, so dependabot resolves straight from package.json.
+  - package-ecosystem: npm
+    directory: "/booklet"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 3
+    labels: ["type/chore", "area/hygiene"]
+    groups:
+      booklet-minor-and-patch:
+        update-types: ["minor", "patch"]
+
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
       day: monday
+    labels: ["type/chore", "area/hygiene"]
+
+  # tools/requirements-bootstrap.txt pins the MNIST data-prep helpers used by
+  # tools/prepare_mnist.py and tools/bootstrap_macos.sh.
+  - package-ecosystem: pip
+    directory: "/tools"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels: ["type/chore", "area/hygiene"]
+
+  # .clusterfuzzlite/Dockerfile pins the oss-fuzz base-builder image that the
+  # fuzzing workflow builds the harnesses in.
+  - package-ecosystem: docker
+    directory: "/.clusterfuzzlite"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
     labels: ["type/chore", "area/hygiene"]

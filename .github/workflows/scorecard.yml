@@ -3,7 +3,7 @@ name: OpenSSF Scorecard
 # OpenSSF Scorecard analyzes the repo against 18 supply-chain security
 # checks (code review, branch protection, signed releases, dependency
 # update tooling, SAST, etc.) and publishes the score publicly at
-# https://scorecard.dev/viewer/?uri=github.com/yadava5/fast-mnist-nn.
+# https://scorecard.dev/viewer/?uri=github.com/yadava5/glyph.
 #
 # Docs: https://github.com/ossf/scorecard-action
 
