@@ -1,0 +1,266 @@
+import React from "react";
+import { BodyPage } from "../templates/BodyPage";
+import { COLORS, FONTS, SECTION, SECTION_INK } from "../theme";
+import { HOW } from "../content";
+import { StatBig } from "../primitives/StatBig";
+import { PullQuote } from "../primitives/PullQuote";
+import { SourceNote } from "../primitives/SourceNote";
+import { IsaLaneSignature } from "../visuals/IsaSignatures";
+import { PerIterUnits, AccumPipeline, ScatterQuadrant, type ScatterPt } from "../visuals/Charts";
+import { Prose, HangingNote, CodePanel, BandRows } from "./kit";
+
+type PageProps = { parity: "recto" | "verso"; pageNumber: number; totalPages: number };
+
+const AMBER = SECTION["02_HOW"];
+const AMBER_INK = SECTION_INK["02_HOW"];
+
+// Verbatim (condensed) kernel excerpts — src/NeuralNet.cpp:49-73 / :195-215
+// (mirrored in benchmarkData.ts).
+const AVX512_SRC = `double dot512_rowvec(const double* row,
+                     const double* x, size_t n) {
+  __m512d acc0 = _mm512_setzero_pd(),
+          acc1 = _mm512_setzero_pd();
+  for (; k < n16; k += 16) {          // 16 doubles / iter
+    acc0 = _mm512_fmadd_pd(ld(row+k),   ld(x+k),   acc0);
+    acc1 = _mm512_fmadd_pd(ld(row+k+8), ld(x+k+8), acc1);
+  }
+  /* horizontal reduce + scalar tail */
+}`;
+
+const WASM_SRC = `double dot_wasm128_rowvec(const double* row,
+                          const double* x, size_t n) {
+  v128_t acc0 = wasm_f64x2_splat(0.0),
+         acc1 = wasm_f64x2_splat(0.0);
+  for (; k < n4; k += 4) {            // 4 doubles / iter
+    acc0 = wasm_f64x2_add(acc0,
+      wasm_f64x2_mul(ld(row+k),   ld(x+k)));
+    acc1 = wasm_f64x2_add(acc1,
+      wasm_f64x2_mul(ld(row+k+2), ld(x+k+2)));
+  }
+  /* extract lanes 0,1 + scalar tail */
+}`;
+
+// ── p9 · how-dispatch — four ISAs, one loop ────────────────────────────────
+export const HowDispatchPage: React.FC<PageProps> = (p) => {
+  const d = HOW.dispatch;
+  return (
+    <BodyPage {...p} sectionLabel="HOW" sectionColor={AMBER_INK} eyebrow={d.eyebrow} headline={d.headline}>
+      <div style={{ display: "grid", gridTemplateColumns: "1.05fr 0.95fr", columnGap: 26, alignItems: "start", marginTop: 6 }}>
+        <div>
+          <p style={{ fontFamily: FONTS.SERIF, fontStyle: "italic", fontSize: 15, lineHeight: 1.4, color: COLORS.INK_MUTED, margin: "0 0 12px" }}>
+            {d.lede}
+          </p>
+          <Prose items={[d.body]} />
+          <IsaRail steps={d.steps} />
+        </div>
+        <IsaLaneSignature />
+      </div>
+      <SourceNote style={{ marginTop: 18 }}>{d.source}</SourceNote>
+    </BodyPage>
+  );
+};
+
+const IsaRail: React.FC<{ steps: typeof HOW.dispatch.steps }> = ({ steps }) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 16 }}>
+    {steps.map((s) => (
+      <div
+        key={s.label}
+        style={{
+          display: "grid",
+          gridTemplateColumns: "22px 1fr auto",
+          alignItems: "center",
+          columnGap: 10,
+          border: `0.5pt solid ${COLORS.HAIRLINE}`,
+          borderLeft: `3px solid ${AMBER}`,
+          borderRadius: 4,
+          padding: "6px 10px",
+        }}
+      >
+        <span style={{ fontFamily: FONTS.MONO, fontSize: 11, fontWeight: 700, color: AMBER_INK }}>{s.n}</span>
+        <span style={{ fontFamily: FONTS.MONO, fontSize: 10.5, fontWeight: 700, color: COLORS.INK }}>
+          {s.label}
+          <span style={{ color: COLORS.INK_MUTED, fontWeight: 500 }}> · {s.detail}</span>
+        </span>
+        <span style={{ fontFamily: FONTS.MONO, fontSize: 8.5, color: COLORS.INK_SUBTLE }}>{s.accept}</span>
+      </div>
+    ))}
+  </div>
+);
+
+// ── p10 · how-avx — the x86 wide lanes ─────────────────────────────────────
+export const HowAvxPage: React.FC<PageProps> = (p) => {
+  const d = HOW.avx;
+  return (
+    <BodyPage {...p} sectionLabel="HOW" sectionColor={AMBER_INK} eyebrow={d.eyebrow} headline={d.headline}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 26, alignItems: "start" }}>
+        <div>
+          <Prose items={d.body} />
+          <HangingNote label="FMA" accent={AMBER} accentInk={AMBER_INK} style={{ marginTop: 12 }}>
+            {d.note}
+          </HangingNote>
+        </div>
+        <CodePanel caption="src/NeuralNet.cpp · dot512_rowvec (condensed)" code={AVX512_SRC} accent={AMBER_INK} />
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "0.82fr 1.18fr", columnGap: 30, alignItems: "center", marginTop: 22, paddingTop: 16, borderTop: `1pt solid ${AMBER}` }}>
+        <div style={{ display: "flex", gap: 30 }}>
+          <StatBig value={d.stat.value} label={d.stat.label} tier="metricMedium" color={AMBER_INK} />
+          <StatBig value={d.stat2.value} label={d.stat2.label} tier="metricMedium" color={COLORS.INK} />
+        </div>
+        <PerIterUnits accent={AMBER_INK} />
+      </div>
+      <SourceNote style={{ marginTop: 16 }}>source · src/NeuralNet.cpp:49-73 (AVX-512) · :95-123 (AVX2)</SourceNote>
+    </BodyPage>
+  );
+};
+
+// ── p11 · how-neon — the ARM / M-series kernel ─────────────────────────────
+export const HowNeonPage: React.FC<PageProps> = (p) => {
+  const d = HOW.neon;
+  return (
+    <BodyPage {...p} sectionLabel="HOW" sectionColor={AMBER_INK} eyebrow={d.eyebrow} headline={d.headline}>
+      <div style={{ maxWidth: "6.3in" }}>
+        <Prose items={d.body} />
+      </div>
+      <div
+        style={{
+          marginTop: 16,
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          background: COLORS.PAPER_ELEVATED,
+          border: `0.5pt solid ${COLORS.HAIRLINE}`,
+          borderLeft: `3px solid ${AMBER}`,
+          borderRadius: 6,
+          padding: "12px 16px",
+          maxWidth: "6.3in",
+        }}
+      >
+        <span style={{ fontFamily: FONTS.MONO, fontSize: 8.5, fontWeight: 700, letterSpacing: "0.12em", color: AMBER_INK, whiteSpace: "nowrap" }}>
+          THE REFERENCE RUN
+        </span>
+        <span style={{ fontFamily: FONTS.SERIF, fontStyle: "italic", fontSize: 13.5, color: COLORS.INK, lineHeight: 1.35 }}>
+          Apple M1 Pro · Apple clang 21 · Google Benchmark · run 2026-08-02 — the numbers in chapter 04 are this NEON kernel's.
+        </span>
+      </div>
+      <HangingNote label="On the record" accent={AMBER} accentInk={AMBER_INK} style={{ marginTop: 16 }}>
+        {d.note}
+      </HangingNote>
+      <div style={{ display: "grid", gridTemplateColumns: "0.72fr 1.28fr", columnGap: 30, alignItems: "center", marginTop: 20, paddingTop: 16, borderTop: `1pt solid ${AMBER}` }}>
+        <div style={{ display: "flex", gap: 28 }}>
+          <StatBig value={d.stat.value} label={d.stat.label} tier="metricSmall" color={AMBER_INK} />
+          <StatBig value={d.stat2.value} label={d.stat2.label} tier="metricSmall" color={COLORS.INK} />
+        </div>
+        <NeonSharedShape />
+      </div>
+      <SourceNote style={{ marginTop: 14 }}>source · src/NeuralNet.cpp:146-164 (dot_neon_rowvec) · benchmarkData.ts:1-6 · ENVIRONMENT.md:14-31</SourceNote>
+    </BodyPage>
+  );
+};
+
+// ── p12 · how-wasm — the fourth ISA, hand-written for the web ──────────────
+export const HowWasmPage: React.FC<PageProps> = (p) => {
+  const d = HOW.wasm;
+  return (
+    <BodyPage {...p} sectionLabel="HOW" sectionColor={AMBER_INK} eyebrow={d.eyebrow} headline={d.headline}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 26, alignItems: "start" }}>
+        <div>
+          <Prose items={d.body} />
+          <HangingNote label="New in v1.0" accent={AMBER} accentInk={AMBER_INK} style={{ marginTop: 12 }}>
+            {d.note}
+          </HangingNote>
+        </div>
+        <CodePanel caption="src/NeuralNet.cpp · dot_wasm128_rowvec (condensed)" code={WASM_SRC} accent={AMBER_INK} />
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "0.8fr 1.2fr", columnGap: 30, alignItems: "center", marginTop: 22, paddingTop: 16, borderTop: `1pt solid ${AMBER}` }}>
+        {/* stacked so the long `-msimd128` token never wraps its leading dash
+            onto its own line inside the narrow column */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <StatBig value={d.stat.value} label={d.stat.label} tier="metricMedium" color={AMBER_INK} />
+          <StatBig value={d.stat2.value} label={d.stat2.label} tier="metricSmall" color={COLORS.INK} />
+        </div>
+        <AccumPipeline accent={AMBER_INK} />
+      </div>
+      <SourceNote style={{ marginTop: 16 }}>source · src/NeuralNet.cpp:195-215 · CMakeLists.txt:332 (-msimd128)</SourceNote>
+    </BodyPage>
+  );
+};
+
+// ── p13 · how-threads — OpenMP, honestly ───────────────────────────────────
+export const HowThreadsPage: React.FC<PageProps> = (p) => {
+  const d = HOW.threads;
+  return (
+    <BodyPage {...p} sectionLabel="HOW" sectionColor={AMBER_INK} eyebrow={d.eyebrow} headline={d.headline}>
+      <p style={{ fontFamily: FONTS.SERIF, fontStyle: "italic", fontSize: 16, lineHeight: 1.4, color: COLORS.INK_MUTED, margin: "0 0 16px", maxWidth: "6.2in" }}>
+        {d.lede}
+      </p>
+      <div style={{ maxWidth: "6.3in", marginBottom: 18 }}>
+        <Prose items={[d.body]} />
+      </div>
+      <BandRows bands={d.bands} />
+      {/* the crossover, plotted: speedup vs how costly the op is single-threaded */}
+      <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "1fr 1.05fr", columnGap: 26, alignItems: "center" }}>
+        <div style={{ borderLeft: `2.5px solid ${AMBER}`, paddingLeft: 16 }}>
+          <PullQuote size="small" color={COLORS.INK} style={{ maxWidth: "3.2in" }}>
+            {d.loopNote}
+          </PullQuote>
+        </div>
+        <ScatterQuadrant pts={THREAD_PTS} accent={AMBER_INK} source="benchmarkData.ts:26-90" />
+      </div>
+      <SourceNote style={{ marginTop: 14 }}>{d.source}</SourceNote>
+    </BodyPage>
+  );
+};
+
+// Each op: 1-thread baseline cost (x, µs log) vs its omp+native speedup (y, log).
+// M1 Pro reference run, medians — docs/benchmarks/runs/bench-20260802-aggregated-*
+// (matmul 256² from the 20-rep dot20x pair). Note axpy 1024 sits BELOW the
+// break-even line: expensive and still a loss, which is the whole point.
+const THREAD_PTS: ScatterPt[] = [
+  { op: "matmul 256²", base: 4819, factor: 3.54, win: true, dx: -9, dy: 13 },
+  { op: "transpose 1024", base: 876, factor: 3.92, win: true, dx: 9, dy: -7 },
+  { op: "axpy 1024", base: 273, factor: 0.92, win: false, dx: 9, dy: 13 },
+  { op: "transpose 128", base: 5.7, factor: 0.127, win: false, dx: 9, dy: -6 },
+  { op: "axpy 256", base: 14.9, factor: 0.302, win: false, dx: 9, dy: 13 },
+];
+
+// p11 · the shared kernel shape across the four ISAs — NEON is the M1 Pro's.
+const NeonSharedShape: React.FC = () => {
+  const rows = [
+    { label: "AVX-512", lanes: "8-wide", note: "x86 servers" },
+    { label: "AVX2", lanes: "4-wide", note: "x86 laptops" },
+    { label: "NEON", lanes: "2-wide", note: "the M1 Pro · this run", live: true },
+    { label: "wasm128", lanes: "2-wide", note: "the browser" },
+  ];
+  return (
+    <div style={{ border: `0.5pt solid ${COLORS.HAIRLINE}`, borderRadius: 6, background: COLORS.PAPER_ELEVATED, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 7 }}>
+      <div style={{ fontFamily: FONTS.MONO, fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: AMBER_INK }}>
+        one shape · four ISAs
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+        {rows.map((r) => (
+          <div
+            key={r.label}
+            style={{
+              border: `0.5pt solid ${COLORS.HAIRLINE}`,
+              borderLeft: `2.5px solid ${r.live ? COLORS.SIMD_AMBER : COLORS.STEEL}`,
+              borderRadius: 4,
+              background: r.live ? COLORS.AMBER_TINT : COLORS.PAPER,
+              padding: "6px 9px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 1,
+            }}
+          >
+            <span style={{ fontFamily: FONTS.MONO, fontSize: 9.5, fontWeight: 700, color: r.live ? COLORS.AMBER_DEEP : COLORS.INK }}>
+              {r.label} <span style={{ color: COLORS.INK_SUBTLE, fontWeight: 500 }}>· {r.lanes}</span>
+            </span>
+            <span style={{ fontFamily: FONTS.MONO, fontSize: 7.5, color: COLORS.INK_MUTED }}>{r.note}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontFamily: FONTS.SERIF, fontStyle: "italic", fontSize: 10.5, lineHeight: 1.3, color: COLORS.INK_MUTED }}>
+        Narrower lanes, one dual-accumulator shape — NEON produced this card's reference run.
+      </div>
+    </div>
+  );
+};

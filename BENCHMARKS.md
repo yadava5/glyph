@@ -74,9 +74,19 @@ driver shells out to CMake and Google Benchmark — no extra dependencies
 beyond the toolchain and `tqdm` (auto-installed).
 
 **CI note.** Continuous integration intentionally runs benchmarks *without*
-`--native` to keep numbers reproducible across runner generations. The
-tables below were produced on a local M2. CI numbers will differ; treat
-local runs as the canonical reference.
+`--native` to keep numbers reproducible across runner generations. CI numbers
+will differ; treat local runs as the reference.
+
+**Which local run is the reference.** The tables in this section are the
+December 2025 run, produced on a **MacBook Air (M2, ~4 performance cores,
+fanless)**. They are **history, not the reference**. The reference is the
+2026-08-02 run on an **Apple M1 Pro** (8 performance + 2 efficiency cores,
+actively cooled), recorded in
+[`docs/benchmarks/ENVIRONMENT.md`](docs/benchmarks/ENVIRONMENT.md). The
+headline OpenMP scaling figure to cite is **3.536× (dot 256, 20 repetitions)**;
+see ENVIRONMENT.md:103. One row *changes sign* between the two machines —
+`axpy 1024` is a 2.007× win in the December table below and a **0.922× loss**
+on the reference machine — so read the tables below as the Air's numbers only.
 
 ## Environment
 
@@ -122,13 +132,37 @@ Full per-run metadata is pinned in
 
 **OpenMP is a scale story.** At N=32–128 the parallel variants are slower
 than scalar, sometimes by 3–7×. Thread wake-up, fork-join bookkeeping, and
-false-sharing around the accumulator dominate the arithmetic. Past the
-crossover — 128 for `dot`, 512 for `axpy`, 128–512 for `transpose` — the
-openmp+native variant pulls ahead and stays ahead. At dot 256 the parallel
-version is **3.5× faster** than baseline. The `learn()` and `classify()`
-workloads sit in the slow regime by design (784 × 100 × 10 weights), which
-is why the scalar `classify` is actually the fastest number in the final
-table — OpenMP overhead is pure loss at that scale.
+false-sharing around the accumulator dominate the arithmetic. For `dot`, past
+a crossover around 128 the openmp+native variant pulls ahead and stays ahead:
+at dot 256 the parallel version is **3.54× faster** than baseline on the
+reference machine.
+
+**But "past the crossover it pulls ahead and stays ahead" is not true in
+general, and `axpy` is the counter-example.** An earlier revision of this
+paragraph claimed a crossover at 512 for `axpy`; on the M1 Pro reference run
+`axpy` never crosses over at any benchmarked size:
+
+| `axpy` (n×n) | elements | omp+native vs baseline |
+| --- | ---: | ---: |
+| 128 | 16,384 | 0.093× |
+| 256 | 65,536 | 0.302× |
+| 512 | 262,144 | 0.883× |
+| 1024 | 1,048,576 | 0.922× |
+
+Every one of those is already past the `if (rows_ * cols_ >= 4096)` gate in
+`Matrix::axpy` (`src/Matrix.cpp:491`), so the gate fires in all four cases and
+loses in all four. `axpy` is memory-bandwidth-bound — spreading a streaming
+read-modify-write across cores adds synchronisation without adding bandwidth.
+The 4096 threshold is a reasonable heuristic for the compute-bound matmul path
+(`src/Matrix.cpp:381`), not a proof that parallelism pays past a size.
+
+The `learn()` and `classify()` workloads sit in the slow regime by design —
+the benchmark harness builds `NeuralNet net({784, 30, 10})`
+(`benchmarks/bench_matrix.cpp:72,84`), roughly 24K parameters, which is
+*smaller* than the shipped 784 × 100 × 10 model — which is why the scalar
+`classify` is the fastest number in the final table. On the reference machine
+that margin is only 0.5% (70,295 vs 69,957 img/s), against 17% in the December
+table below.
 
 **`-march=native` alone barely moves the needle — and on arm64 it cannot.**
 The kernels are selected at COMPILE time by `#if` on `__AVX512F__` /
@@ -185,13 +219,24 @@ optimization in `src/`.
 Committed numbers drift. Phase 5 of the roadmap wires
 [CodSpeed](https://codspeed.io/) into CI so every PR reports per-case
 performance deltas against `main`, with a fail-the-build threshold for
-regressions larger than a stated envelope. Until that lands, we treat
-local M2 numbers as the source of truth and rely on reviewers noticing
-unexplained movement in the summary CSV during PR review.
+regressions larger than a stated envelope. Until that lands, we treat the
+**2026-08-02 M1 Pro run** as the source of truth (per
+[`docs/benchmarks/ENVIRONMENT.md`](docs/benchmarks/ENVIRONMENT.md)) and rely
+on reviewers noticing unexplained movement in the summary CSV during PR
+review.
 
 ## Raw runs
 
 Committed JSON lives under [`docs/benchmarks/runs/`](docs/benchmarks/runs/):
+
+Reference — Apple M1 Pro, 2026-08-02 (10 repetitions; the `dot20x` pair is 20):
+
+- `bench-20260802-aggregated-baseline.json`
+- `bench-20260802-aggregated-openmp-native.json`
+- `bench-20260802-dot20x-baseline.json`
+- `bench-20260802-dot20x-openmp-native.json`
+
+History — MacBook Air (M2), 2025-12-26 (single repetition, no aggregates):
 
 - `bench-20251226-154121-baseline.json`
 - `bench-20251226-154121-native.json`

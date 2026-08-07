@@ -9,15 +9,24 @@ browser-only template classifier as a demo fallback instead of breaking.
 
 ## Artifacts
 
-| File                                     | Size (approx.) | Purpose                                        |
-| ---------------------------------------- | -------------- | ---------------------------------------------- |
-| `web/public/wasm/fast_mnist.js`          | ~50 KB         | Emscripten ES-module glue (factory function).   |
-| `web/public/wasm/fast_mnist.wasm`        | ~80-100 KB     | Compiled `Matrix` + `NeuralNet` + Embind shim. |
-| `web/public/wasm/model.weights.bin`      | ~318 KB raw / ~100 KB gzipped | Binary weights blob (float32).  |
+Sizes below are **measured from the committed artifacts** (`git cat-file -s`),
+not estimated. kB is decimal (bytes ÷ 1000); gzip is `gzip -9`.
 
-Nothing in `web/public/wasm/` is checked into git — artifacts are
-reproducible via `tools/build_wasm.sh` and the `.github/workflows/
-wasm.yml` workflow uploads them as a CI artifact on every change.
+| File                                     | Size (measured) | Purpose                                        |
+| ---------------------------------------- | -------------- | ---------------------------------------------- |
+| `web/public/wasm/fast_mnist.js`          | 44.9 kB (44,948 B) | Emscripten ES-module glue (factory function). |
+| `web/public/wasm/fast_mnist.wasm`        | 46.5 kB (46,517 B) · 23.4 kB gzipped | Compiled `Matrix` + `NeuralNet` + Embind shim. |
+| `web/public/wasm/model.weights.bin`      | 318 kB raw (318,064 B) / 299 kB gzipped | Binary weights blob (float32). |
+
+`web/public/wasm/` **is** checked into git: git-driven Vercel builds must ship
+the real simd128 artifacts rather than fall back to the JS classifier, so the
+three files above are tracked. They remain reproducible via
+`tools/build_wasm.sh`, and the `.github/workflows/wasm.yml` workflow also
+uploads them as a CI artifact on every change.
+
+The weights blob barely compresses (318 kB → 299 kB, ~6%): it is dense
+float32, so there is little redundancy for DEFLATE to find. An earlier
+revision of this table claimed ~100 kB gzipped, which was never measured.
 The JS fallback is intentionally separate from the C++ performance path; it
 exists only to keep zero-cost previews interactive before WASM artifacts are
 staged.

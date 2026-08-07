@@ -124,15 +124,24 @@ tools/coverage.sh --html          # plus a browsable HTML report
 tools/coverage.sh --floor 60      # fail below a line-coverage percentage
 ```
 
-Measured 2026-08-03 with clang source-based instrumentation:
+Measured 2026-08-06 with clang source-based instrumentation (`tools/coverage.sh`),
+over the 37 Catch2 cases — `ctest` reports `100% tests passed, 0 tests failed
+out of 37`:
 
 | File | Regions | Lines | Branches |
 | --- | ---: | ---: | ---: |
 | `src/Matrix.cpp` | 89.8% | **92.4%** | 78.8% |
 | `src/NeuralNet.cpp` | 89.8% | **91.9%** | 86.5% |
+| `src/ServerApi.cpp` | 73.1% | 68.6% | 55.6% |
 | `include/fast_mnist/NeuralNet.h` | 100% | 100% | — |
 | `include/fast_mnist/Matrix.h` | 72.6% | 69.6% | 77.3% |
-| **Total** | **87.5%** | **88.9%** | **82.0%** |
+| **Total** | **86.1%** | **87.2%** | **78.6%** |
+
+The total moved down from a previously recorded 88.9% lines / 87.5% regions.
+Nothing regressed: every pre-existing row is unchanged to the tenth of a
+percent. `src/ServerApi.cpp` joined the library and is the least-covered file
+in it (68.6% lines, 55.6% branches), which pulls the weighted total down. Its
+error paths — malformed request bodies and model-load failures — are the gap.
 
 Coverage builds live in their own directory and are never benchmarked.
 Instrumentation forces `-O0` and adds a counter update on every branch, so a
