@@ -102,13 +102,20 @@ jobs:
       - name: Committed glue is eval-free, as the CSP requires
         run: |
           set -euo pipefail
+          glue=web/public/wasm/fast_mnist.js
+          # `grep -q` is the presence test on purpose. Counting first —
+          # n=$(grep -o ... | wc -l) — makes this step exit 1 on a CLEAN file,
+          # because grep returns 1 when it matches nothing and `pipefail` then
+          # fails the whole pipeline before the count is ever compared. That is
+          # a gate that fires on success, and it went red here once before
+          # anyone read it. Inside `if`, a non-zero status is data, not a fault.
           for pat in 'new Function(' 'eval('; do
-            n=$(grep -o "$pat" web/public/wasm/fast_mnist.js | wc -l | tr -d ' ')
-            echo "$pat -> $n"
-            if [ "$n" != "0" ]; then
-              echo "::error title=CSP violation in committed glue::web/public/wasm/fast_mnist.js contains $n occurrence(s) of '$pat'. script-src in web/vercel.json allows 'wasm-unsafe-eval' only, so the Embind factory will throw EvalError and every visitor will get the JS fallback."
+            if grep -qF -- "$pat" "$glue"; then
+              n=$(grep -oF -- "$pat" "$glue" | wc -l | tr -d ' ')
+              echo "::error title=CSP violation in committed glue::$glue contains $n occurrence(s) of '$pat'. script-src in web/vercel.json allows 'wasm-unsafe-eval' only, so the Embind factory will throw EvalError and every visitor will get the JS fallback."
               exit 1
             fi
+            echo "$pat -> 0"
           done
 
       - name: Configure native (for export_weights)
