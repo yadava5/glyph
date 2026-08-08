@@ -3,8 +3,11 @@ updates:
   - package-ecosystem: npm
     directory: "/web"
     schedule:
-      interval: weekly
-      day: monday
+      # Monthly, not weekly: version-update PRs arrived faster than one
+      # maintainer could review them. Dependabot SECURITY updates are a
+      # separate mechanism, unaffected by `schedule` (which governs version
+      # updates only), so vulnerability patches still arrive immediately.
+      interval: monthly
       time: "09:00"
       timezone: America/New_York
     open-pull-requests-limit: 10
@@ -17,15 +20,14 @@ updates:
       - dependency-name: "@rolldown/binding-*"
     groups:
       minor-and-patch:
-        dependency-type: "development"
+        patterns: ["*"]
         update-types: ["minor", "patch"]
   # The System Card booklet is a second, independent npm project. It has no
   # lockfile, so dependabot resolves straight from package.json.
   - package-ecosystem: npm
     directory: "/booklet"
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
       time: "09:00"
       timezone: America/New_York
     open-pull-requests-limit: 3
@@ -37,26 +39,45 @@ updates:
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
     labels: ["type/chore", "area/hygiene"]
+    groups:
+      # github/codeql-action/{init,autobuild,analyze,upload-sarif} are four
+      # sub-actions of ONE action and must move in lockstep. A PR that bumps
+      # only one leaves the workflow mismatched and CodeQL hard-fails:
+      #   ##[error]Loaded a configuration file for version '4.36.2', but running version '4.37.6'
+      # NO update-types key here on purpose: this group takes ALL update types
+      # (majors too), so the sub-actions can never split into separate PRs at
+      # any level. Listed first so these land here, not in the general group
+      # (Dependabot assigns a dependency to the first group it matches).
+      codeql-action:
+        patterns: ["github/codeql-action*"]
+      actions-minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   # tools/requirements-bootstrap.txt pins the MNIST data-prep helpers used by
   # tools/prepare_mnist.py and tools/bootstrap_macos.sh.
   - package-ecosystem: pip
     directory: "/tools"
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
     open-pull-requests-limit: 3
     labels: ["type/chore", "area/hygiene"]
+    groups:
+      pip-minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   # .clusterfuzzlite/Dockerfile pins the oss-fuzz base-builder image that the
   # fuzzing workflow builds the harnesses in.
   - package-ecosystem: docker
     directory: "/.clusterfuzzlite"
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
     open-pull-requests-limit: 3
     labels: ["type/chore", "area/hygiene"]
+    groups:
+      docker-minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
