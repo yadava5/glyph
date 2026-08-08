@@ -9,6 +9,12 @@ updates:
       timezone: America/New_York
     open-pull-requests-limit: 10
     labels: ["type/chore", "area/hygiene"]
+    # @rolldown/binding-* are per-platform optional deps of a single package;
+    # Dependabot sees each platform as its own dependency and opens a separate
+    # PR per platform on every Rolldown release. Ignore the whole family; the
+    # bindings are hand-pinned in web/package.json.
+    ignore:
+      - dependency-name: "@rolldown/binding-*"
     groups:
       minor-and-patch:
         dependency-type: "development"
