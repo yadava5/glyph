@@ -14,7 +14,7 @@ dynamically. PyTorch, TensorFlow, tinygrad, and ggml all do this. A
 generic representation makes it trivial to swap 2-layer MLP for a 5-layer
 MLP or a small CNN.
 
-`fast-mnist-nn` only ever needs one architecture: a 784 → 100 → 10
+Glyph only ever needs one architecture: a 784 → 100 → 10
 fully-connected network with sigmoid activations. Given that, should
 `NeuralNet` still carry the generic-graph machinery?
 

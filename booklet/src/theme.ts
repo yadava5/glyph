@@ -1,9 +1,9 @@
 /**
- * fast-mnist System Card — design tokens (self-contained).
+ * Glyph System Card — design tokens (self-contained).
  *
  * This booklet ships standalone: every token is inlined here so
- * `fast-mnist-nn/booklet` builds with no external package. The palette is
- * fast-mnist's OWN identity — a low-level *systems / benchmark* register:
+ * `glyph/booklet` builds with no external package. The palette is
+ * Glyph's OWN identity — a low-level *systems / benchmark* register:
  * a deep blue-black ink ground (the workbench at night), cool-steel
  * hairlines, and five accents pulled straight from the web frontend's
  * "Register B" (experience / workbench / hero) so the printed card and the

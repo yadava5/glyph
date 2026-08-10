@@ -1,13 +1,13 @@
 # Contributing
 
-Thanks for your interest in `fast-mnist-nn`. This guide covers the workflow we follow on the repo.
+Thanks for your interest in `glyph`. This guide covers the workflow we follow on the repo.
 
 ## Quick start
 
 ```sh
 # one-time
-git clone git@github.com:yadava5/fast-mnist-nn.git
-cd fast-mnist-nn
+git clone git@github.com:yadava5/glyph.git
+cd glyph
 
 # C++ build + tests
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON

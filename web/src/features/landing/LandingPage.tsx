@@ -29,7 +29,7 @@ import {
 import { Decode, MagneticButton, RollingNumber, Spotlight, Tilt } from './interactions';
 import styles from './LandingPage.module.css';
 
-const REPO_URL = 'https://github.com/yadava5/fast-mnist-nn';
+const REPO_URL = 'https://github.com/yadava5/glyph';
 const SYSTEM_CARD_URL = '/system-card';
 const KERNEL_URL = `${REPO_URL}/blob/main/src/NeuralNet.cpp`;
 

@@ -2,8 +2,8 @@
 
 ## Where to ask
 
-- **Questions, ideas, discussions** — open a [Discussion](https://github.com/yadava5/fast-mnist-nn/discussions).
-- **Bugs and unexpected behavior** — open an [Issue](https://github.com/yadava5/fast-mnist-nn/issues/new/choose) using the bug report template.
+- **Questions, ideas, discussions** — open a [Discussion](https://github.com/yadava5/glyph/discussions).
+- **Bugs and unexpected behavior** — open an [Issue](https://github.com/yadava5/glyph/issues/new/choose) using the bug report template.
 - **Feature requests** — open an Issue using the feature request template.
 - **Performance regressions** — open an Issue using the performance regression template.
 - **Security vulnerabilities** — see `SECURITY.md`. Report privately via GitHub Security Advisories. **Do not** file public issues for security problems.

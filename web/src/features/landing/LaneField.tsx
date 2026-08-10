@@ -3,7 +3,7 @@ import { useReducedMotion } from 'motion/react';
 import styles from './LaneField.module.css';
 
 /*
- * The living ground: fast-mnist's own domain rendered as a background. Faint
+ * The living ground: Glyph's own domain rendered as a background. Faint
  * vertical VECTOR LANES with light "carriers" streaming down them — work
  * flowing through SIMD lanes / MNIST ink streaming past. The lanes near the
  * cursor brighten (the machine notices you). It is deliberately dim so text

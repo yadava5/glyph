@@ -14,7 +14,7 @@ A neural-network library needs fast matrix primitives — `dot`, `transpose`,
 library like Eigen. Those are faster than anything we will write in a
 weekend, and they are production-grade.
 
-`fast-mnist-nn` has different priorities: it is a showcase project where
+Glyph has different priorities: it is a showcase project where
 every performance claim needs to be auditable from the `src/` tree in one
 reading, it ships as a self-contained binary, and it targets three
 operating systems plus WebAssembly. How should the core matrix kernels be

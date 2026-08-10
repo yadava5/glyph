@@ -1,7 +1,7 @@
 /**
  * Glyph System Card — copy + verified data (self-contained).
  *
- * Every number here is verified against the fast-mnist-nn repo and carries a
+ * Every number here is verified against the Glyph repo and carries a
  * SOURCE note with a file:line rail. Nothing is invented. Two deliberate
  * scoping calls, grounded in the code rather than a single ambiguous
  * "speedup":

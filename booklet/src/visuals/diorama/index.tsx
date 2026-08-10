@@ -4,7 +4,7 @@ import { COLORS } from "../../theme";
 import { SceneFrame } from "./primitives";
 
 /**
- * SectionKey → chapter-divider line-art. fast-mnist's five signatures, all
+ * SectionKey → chapter-divider line-art. Glyph's five signatures, all
  * near-white engineering linework on the dark divider ground, each carrying
  * its own single accent:
  *

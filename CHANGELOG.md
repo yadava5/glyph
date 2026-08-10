@@ -57,6 +57,6 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - Published benchmark JSON runs + bench_summary.csv + light/dark SVG charts under `docs/benchmarks/`.
 - Doxygen config + docs target.
 
-[Unreleased]: https://github.com/yadava5/fast-mnist-nn/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/yadava5/fast-mnist-nn/releases/tag/v1.0.0
-[0.1.0]: https://github.com/yadava5/fast-mnist-nn/releases/tag/v0.1.0
+[Unreleased]: https://github.com/yadava5/glyph/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/yadava5/glyph/releases/tag/v1.0.0
+[0.1.0]: https://github.com/yadava5/glyph/releases/tag/v0.1.0

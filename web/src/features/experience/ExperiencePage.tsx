@@ -220,16 +220,12 @@ function EvidenceSection() {
           <article>
             <h3>Sources</h3>
             <div className={styles.linkStack}>
-              <a href="https://github.com/yadava5/fast-mnist-nn" target="_blank" rel="noreferrer">
+              <a href="https://github.com/yadava5/glyph" target="_blank" rel="noreferrer">
                 <GitPullRequest size={16} strokeWidth={1.8} aria-hidden />
                 Source repository
                 <ExternalLink size={13} strokeWidth={1.8} aria-hidden />
               </a>
-              <a
-                href="https://github.com/yadava5/fast-mnist-nn/releases"
-                target="_blank"
-                rel="noreferrer"
-              >
+              <a href="https://github.com/yadava5/glyph/releases" target="_blank" rel="noreferrer">
                 <Terminal size={16} strokeWidth={1.8} aria-hidden />
                 Release artifacts
                 <ExternalLink size={13} strokeWidth={1.8} aria-hidden />

@@ -51,7 +51,7 @@
   --amber: #f59e0b;
   --red: #f87171;
 
-  /* Systems / ISA accents — fast-mnist's OWN register (mirrored in the
+  /* Systems / ISA accents — Glyph's OWN register (mirrored in the
      booklet's theme.ts). The page stays mostly monochrome; these only ever
      *signal*: steel = the scalar baseline, amber = the SIMD lanes, sky =
      the wasm128 kernel + the live in-browser bench, green = verified/live,

@@ -141,7 +141,7 @@ export function CommandPalette({
       icon: GitPullRequest,
       keywords: ['github', 'repo', 'source'],
       run: () => {
-        window.open('https://github.com/yadava5/fast-mnist-nn', '_blank', 'noopener');
+        window.open('https://github.com/yadava5/glyph', '_blank', 'noopener');
       },
     },
     {

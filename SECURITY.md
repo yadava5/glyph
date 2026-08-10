@@ -14,7 +14,7 @@ Security patches target the `main` branch and the latest tagged release. Older t
 
 **Do not open a public issue for security problems.** Use GitHub's private reporting channel:
 
-- <https://github.com/yadava5/fast-mnist-nn/security/advisories/new>
+- <https://github.com/yadava5/glyph/security/advisories/new>
 
 Please include:
 

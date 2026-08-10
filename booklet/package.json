@@ -1,9 +1,9 @@
 {
-  "name": "fast-mnist-booklet",
+  "name": "glyph-booklet",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "fast-mnist System Card — a printed 8.5×11 booklet exported to PDF via Puppeteer.",
+  "description": "Glyph System Card — a printed 8.5×11 booklet exported to PDF via Puppeteer.",
   "scripts": {
     "dev": "vite --port 5182",
     "build": "tsc --noEmit && vite build",

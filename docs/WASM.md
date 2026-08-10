@@ -47,7 +47,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --target export_weights
 
 # then build + stage the WASM artifacts
-cd /path/to/fast-mnist-nn
+cd /path/to/glyph
 ./tools/build_wasm.sh
 ```
 
