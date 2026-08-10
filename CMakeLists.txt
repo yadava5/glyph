@@ -8,6 +8,28 @@ option(FAST_MNIST_ENABLE_BENCHMARKS "Enable Google Benchmark" OFF)
 option(FAST_MNIST_ENABLE_COVERAGE "Instrument for source-based coverage" OFF)
 option(FAST_MNIST_ENABLE_DOXYGEN "Enable Doxygen docs target" OFF)
 
+# The build-system entry point for the documentation fact-checker:
+#
+#   cmake --build build --target readme-facts
+#
+# Deliberately a target with no dependencies. tools/readme_facts.py reads
+# source files and the committed run artifacts under docs/benchmarks/runs/ and
+# benchmarks/mnist_eval.json — never build output — so it is meaningful before
+# a single object file exists, and adding a dependency on the library would
+# make a documentation check cost a compile. Recording the figures that DO need
+# a run (coverage, the OpenSSF Scorecard) is `tools/readme_facts.py --record`,
+# which is not wired here on purpose: it rebuilds instrumented and reaches the
+# network, and neither belongs behind an innocuous-looking build target.
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(Python3_Interpreter_FOUND)
+  add_custom_target(readme-facts
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/tools/readme_facts.py --check
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Checking every documented number against the code"
+    VERBATIM)
+endif()
+
 # Sanitizer selection. Accepts: OFF, asan, ubsan, asan-ubsan, tsan, msan.
 # Must be a cache STRING (not BOOL) because CMake's `option()` only
 # supports ON/OFF. The flags are applied PUBLIC on the fast_mnist

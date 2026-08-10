@@ -8,6 +8,25 @@ permissions:
   contents: read
 
 jobs:
+  # The cheapest job in this file, and deliberately first: checkout plus one
+  # stdlib-only python3 command, no compiler, no npm install, no network. It
+  # verifies that every number README.md / BENCHMARKS.md / ENVIRONMENT.md
+  # assert still equals what the source and the committed run artifacts say.
+  #
+  # It does NOT build, does NOT run CTest and does NOT fetch the OpenSSF
+  # Scorecard. Coverage and the Scorecard live in docs/readme-facts.json,
+  # refreshed on purpose by `tools/readme_facts.py --record`. A checker that
+  # compiles becomes slow, then flaky, then disabled — and a disabled checker
+  # is how the numbers drifted in the first place.
+  readme-facts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Verify every documented number against the code
+        run: python3 tools/readme_facts.py --check
+
   build-test:
     runs-on: ${{ matrix.os }}
     strategy:

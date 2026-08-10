@@ -1,0 +1,96 @@
+{
+  "$comment": "Recorded facts for README.md -- the figures that require executing something not in git. Regenerate with `python3 tools/readme_facts.py --record`, then apply with `--write`. Do not hand-edit: the point of this file is that these numbers have a command behind them. Figures that DO have a committed artifact (benchmarks/mnist_eval.json, docs/benchmarks/runs/*.json) are deliberately absent -- they are read from those files directly, so there is only ever one place for them to drift.",
+  "recordedAt": "2026-08-10",
+  "machine": "darwin-arm64, python 3.9.6",
+  "facts": {
+    "coverageMatrix.cppRegions": {
+      "value": 89.76,
+      "command": "tools/coverage.sh (src/Matrix.cpp, regions)"
+    },
+    "coverageMatrix.cppLines": {
+      "value": 92.36,
+      "command": "tools/coverage.sh (src/Matrix.cpp, lines)"
+    },
+    "coverageMatrix.cppBranches": {
+      "value": 78.81,
+      "command": "tools/coverage.sh (src/Matrix.cpp, branches)"
+    },
+    "coverageNeuralNet.cppRegions": {
+      "value": 89.78,
+      "command": "tools/coverage.sh (src/NeuralNet.cpp, regions)"
+    },
+    "coverageNeuralNet.cppLines": {
+      "value": 91.93,
+      "command": "tools/coverage.sh (src/NeuralNet.cpp, lines)"
+    },
+    "coverageNeuralNet.cppBranches": {
+      "value": 86.54,
+      "command": "tools/coverage.sh (src/NeuralNet.cpp, branches)"
+    },
+    "coverageServerApi.cppRegions": {
+      "value": 73.08,
+      "command": "tools/coverage.sh (src/ServerApi.cpp, regions)"
+    },
+    "coverageServerApi.cppLines": {
+      "value": 68.57,
+      "command": "tools/coverage.sh (src/ServerApi.cpp, lines)"
+    },
+    "coverageServerApi.cppBranches": {
+      "value": 55.56,
+      "command": "tools/coverage.sh (src/ServerApi.cpp, branches)"
+    },
+    "coverageNeuralNetHRegions": {
+      "value": 100.0,
+      "command": "tools/coverage.sh (include/fast_mnist/NeuralNet.h, regions)"
+    },
+    "coverageNeuralNetHLines": {
+      "value": 100.0,
+      "command": "tools/coverage.sh (include/fast_mnist/NeuralNet.h, lines)"
+    },
+    "coverageMatrixHRegions": {
+      "value": 72.58,
+      "command": "tools/coverage.sh (include/fast_mnist/Matrix.h, regions)"
+    },
+    "coverageMatrixHLines": {
+      "value": 69.64,
+      "command": "tools/coverage.sh (include/fast_mnist/Matrix.h, lines)"
+    },
+    "coverageMatrixHBranches": {
+      "value": 77.27,
+      "command": "tools/coverage.sh (include/fast_mnist/Matrix.h, branches)"
+    },
+    "coverageTotalRegions": {
+      "value": 86.05,
+      "command": "tools/coverage.sh (the weighted total, regions)"
+    },
+    "coverageTotalLines": {
+      "value": 87.23,
+      "command": "tools/coverage.sh (the weighted total, lines)"
+    },
+    "coverageTotalBranches": {
+      "value": 78.57,
+      "command": "tools/coverage.sh (the weighted total, branches)"
+    },
+    "scorecardScore": {
+      "value": 6.6,
+      "command": "GET https://api.scorecard.dev/projects/github.com/yadava5/glyph",
+      "readAt": "2026-08-10",
+      "note": "Third-party, recomputed weekly. --check NEVER fetches this; a checker that reddens because someone else re-scored the repo is a checker you learn to ignore."
+    },
+    "scorecardVersion": {
+      "value": "5.3.0",
+      "command": "GET https://api.scorecard.dev/projects/github.com/yadava5/glyph",
+      "readAt": "2026-08-10"
+    }
+  },
+  "suiteOutcome": {
+    "command": "tools/coverage.sh",
+    "ctest": {
+      "passedPct": 100,
+      "failed": 0,
+      "total": 37
+    },
+    "allGreen": true,
+    "coverageExitCode": 0
+  }
+}
