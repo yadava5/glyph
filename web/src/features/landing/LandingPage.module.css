@@ -1138,6 +1138,26 @@
   font-weight: 650;
   letter-spacing: -0.03em;
   line-height: 1;
+  white-space: nowrap;
+}
+
+/* A losing case still gets the display figure, but "slower" is a word, not a
+   number — it is set at label size under the ratio so the three cards keep one
+   headline rhythm instead of one card shouting. */
+.benchQualifier {
+  display: block;
+  margin-top: 0.28rem;
+  color: var(--amber);
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.benchCard[data-lost] header b {
+  color: var(--amber);
 }
 
 /* The speedup, drawn to scale — not just stated. */
@@ -1191,6 +1211,13 @@
 
 .benchFillOpt {
   background: linear-gradient(90deg, var(--green), var(--sky));
+}
+
+/* A case where threading LOSES must not be painted in the win gradient. The
+   bar is already longer than the baseline (the track scales to whichever is
+   longer); this makes the reading unambiguous at a glance. */
+.benchBars[data-lost] .benchFillOpt {
+  background: linear-gradient(90deg, var(--amber), color-mix(in oklab, var(--amber) 55%, #000));
 }
 
 /* Bars fill from zero only under the reveal enhancement; by default they
@@ -1270,6 +1297,22 @@
 .benchHonesty p b {
   color: var(--text-soft);
   font-weight: 600;
+}
+
+/* The ENVIRONMENT.md reference was added as an <a> with no rule to match, so
+   it rendered as prose — a citation nobody could tell was clickable. */
+.benchHonesty p a {
+  color: var(--text-soft);
+  text-decoration: underline;
+  text-decoration-color: var(--amber);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color 0.18s var(--ease-out-quart);
+}
+
+.benchHonesty p a:hover,
+.benchHonesty p a:focus-visible {
+  color: var(--text-strong);
 }
 
 .codeline {
@@ -1811,6 +1854,29 @@
 
 .heroMetricsTilt {
   width: min(100%, 880px);
+}
+
+/* One machine line for the whole tile row. The machine used to be stamped
+   into two of the four tiles and omitted from the other two, which read as
+   though only those two were measured somewhere. */
+.heroMetricsSource {
+  width: min(100%, 880px);
+  margin: 0.75rem 0 0;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.heroMetricsSource a {
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+}
+
+.heroMetricsSource a:hover {
+  color: var(--text-strong);
 }
 
 /* proof — live instrument row */

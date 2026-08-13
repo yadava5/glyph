@@ -6,13 +6,18 @@ import {
   classifyThroughput,
   crossoverLosses,
   crossoverPragma,
+  decemberRecord,
   isaLadder,
   kernelBenchmarks,
   kernelSource,
+  referenceRecord,
+  referenceRun,
   reproduceBenchmarkCommand,
   scalarIdle,
+  signFlip,
   wasmRuntimeFacts,
 } from '../performance/benchmarkData';
+import { formatRunDate } from '../performance/benchDerive';
 import type { MnistDemoController } from '../mnist/useMnistDemoController';
 import { NetworkDiagram } from './NetworkDiagram';
 import { Workbench } from './Workbench';
@@ -238,6 +243,9 @@ function TitleWords({ text, offset = 0 }: { text: string; offset?: number }) {
   );
 }
 
+/** The headline card, looked up rather than re-typed. */
+const matmul256 = kernelBenchmarks.find((k) => k.caseKey === 'benchDot/256')!;
+
 function Hero() {
   const reduced = useReducedMotion();
   const subhead =
@@ -326,18 +334,18 @@ function Hero() {
       <Tilt className={styles.heroMetricsTilt} max={4}>
         <motion.dl
           className={styles.heroMetrics}
-          aria-label="Verified numbers from the committed benchmark run"
+          aria-label="Verified numbers from the reference benchmark run"
           initial={reduced ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.7, delay: 1.5 }}
         >
           <div>
-            <dt>matmul 256 · M2</dt>
-            <dd className="tabular">3.50× omp+native vs 1-thread</dd>
+            <dt>matmul 256</dt>
+            <dd className="tabular">{matmul256.speedup} omp+native vs 1-thread</dd>
           </div>
           <div>
-            <dt>native classify</dt>
-            <dd className="tabular">81,628 img/s (M2)</dd>
+            <dt>classify, single thread</dt>
+            <dd className="tabular">{classifyThroughput.baseline}</dd>
           </div>
           <div>
             <dt>isa ladder</dt>
@@ -349,6 +357,18 @@ function Hero() {
           </div>
         </motion.dl>
       </Tilt>
+      <p className={styles.heroMetricsSource}>
+        Measured on {referenceRun.machine}, {formatRunDate(referenceRun.dateISO)} —{' '}
+        {referenceRun.reps} repetitions per case, medians. The records are in the repository as{' '}
+        <a
+          href={`${REPO_URL}/tree/main/docs/benchmarks/runs`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          bench-{referenceRun.stamp}-*.json
+        </a>
+        .
+      </p>
     </Spotlight>
   );
 }
@@ -639,7 +659,15 @@ function BenchIntro() {
   );
 }
 
-/** Proportional baseline-vs-optimized bars: the speedup, drawn to scale. */
+/**
+ * Proportional baseline-vs-optimized bars, drawn to scale.
+ *
+ * The longer of the two bars is the full track and the other is scaled against
+ * it, so a case where threading LOSES draws a longer optimized bar rather than
+ * silently overflowing. The earlier version pinned baseline at 100% and sized
+ * the optimized bar as a percentage of it — which for `axpy 1024` on the
+ * reference run asks for 108% of the track, i.e. a loss that renders as a tie.
+ */
 function BenchBars({
   baselineMs,
   optimizedMs,
@@ -655,20 +683,22 @@ function BenchBars({
   baselineLabel: string;
   optimizedLabel: string;
 }) {
-  const optPct = Math.max(4, (optimizedMs / baselineMs) * 100);
+  const longest = Math.max(baselineMs, optimizedMs);
+  const pct = (v: number) => Math.max(4, (v / longest) * 100);
+  const optimizedLost = optimizedMs > baselineMs;
   return (
-    <div className={styles.benchBars}>
+    <div className={styles.benchBars} data-lost={optimizedLost || undefined}>
       <div className={styles.benchBarRow}>
         <span>{baselineLabel}</span>
         <div className={styles.benchTrack}>
-          <i className={styles.benchFillBase} style={{ width: '100%' }} />
+          <i className={styles.benchFillBase} style={{ width: `${pct(baselineMs)}%` }} />
         </div>
         <b className="tabular">{baseline}</b>
       </div>
       <div className={styles.benchBarRow}>
         <span>{optimizedLabel}</span>
         <div className={styles.benchTrack}>
-          <i className={styles.benchFillOpt} style={{ width: `${optPct}%` }} />
+          <i className={styles.benchFillOpt} style={{ width: `${pct(optimizedMs)}%` }} />
         </div>
         <b className="tabular">{optimized}</b>
       </div>
@@ -698,20 +728,25 @@ function ProofAct({ controller }: { controller: MnistDemoController }) {
         <div className={styles.liveInstrumentNote}>
           <span className={styles.miniLabel}>the one live number</span>
           <p>
-            Everything else on this page is a <b>committed</b> M2 run you can reproduce. This dial
-            is the exception — it is <em>your</em> machine, timing the wasm simd128 kernel against
-            scalar as you draw in the bench above. The committed bars below measure threading and
-            native codegen; the dial measures SIMD itself.
+            Everything else on this page is the <b>committed</b> {referenceRun.machine} run, which
+            you can re-run. This dial is the exception — it is <em>your</em> machine, timing the
+            wasm simd128 kernel against scalar as you draw in the bench above. The committed bars
+            below measure threading and native codegen; the dial measures SIMD itself.
           </p>
         </div>
       </div>
 
       <div className={styles.benchGrid}>
         {kernelBenchmarks.map((k) => (
-          <article key={k.id} className={styles.benchCard}>
+          <article key={k.id} className={styles.benchCard} data-lost={!k.wins || undefined}>
             <header>
               <span>{k.operation}</span>
-              <b className="tabular">{k.speedup}</b>
+              <b className="tabular">
+                {k.speedup}
+                {k.speedupQualifier && (
+                  <em className={styles.benchQualifier}>{k.speedupQualifier}</em>
+                )}
+              </b>
             </header>
             <BenchBars
               baselineMs={k.baselineMs}
@@ -751,11 +786,19 @@ function ProofAct({ controller }: { controller: MnistDemoController }) {
 
       <div className={styles.benchHonesty}>
         <p>
-          <b>Which run these bars are:</b> the December M2 Air run named in the footer. The
-          repository&rsquo;s reference run is a later one on an M1 Pro, and it is <em>harsher</em>{' '}
-          on threading, not kinder — <b className="tabular">axpy 512</b> and{' '}
-          <b className="tabular">axpy 1024</b> are wins here and losses there. Both runs are
-          committed;{' '}
+          <b>The record, in full:</b> across the twelve sized matrix cases in this run, threading
+          wins <b className="tabular">{referenceRecord.wins}</b> and loses{' '}
+          <b className="tabular">{referenceRecord.losses}</b>. The three cards above are the two
+          largest wins and the one that flipped — they are not a selection. Every case is plotted in
+          the crossover chart, losses included.
+        </p>
+        <p>
+          <b>And this is the harsher machine.</b> The page used to draw a December MacBook Air run,
+          where threading won <b className="tabular">{decemberRecord.wins}</b> of{' '}
+          {decemberRecord.total} and <b className="tabular">{signFlip.op}</b> was a{' '}
+          <b className="tabular">{signFlip.december}</b> win rather than the{' '}
+          <b className="tabular">{signFlip.reference}</b> it is here. That run is still committed —
+          it is history, not the reference, and{' '}
           <a
             href={`${REPO_URL}/blob/main/docs/benchmarks/ENVIRONMENT.md`}
             target="_blank"
@@ -763,14 +806,15 @@ function ProofAct({ controller }: { controller: MnistDemoController }) {
           >
             ENVIRONMENT.md
           </a>{' '}
-          says which is the reference and why, and the System Card and README quote that one.
+          says which is which and why. The README and the System Card quote this one, so now so does
+          the page.
         </p>
         <p>
           <b>The honest row:</b> full classify throughput is{' '}
           <b className="tabular">{classifyThroughput.baseline}</b> single-threaded and{' '}
-          <b className="tabular">{classifyThroughput.openmpNative}</b> with OpenMP.{' '}
-          {classifyThroughput.conclusion} — threads pay off in kernels, not in a{' '}
-          {classifyThroughput.benchParams} forward pass (bench topology{' '}
+          <b className="tabular">{classifyThroughput.openmpNative}</b> with OpenMP —{' '}
+          {classifyThroughput.delta}. {classifyThroughput.conclusion}: threads pay off in kernels,
+          not in a {classifyThroughput.benchParams} forward pass (bench topology{' '}
           <b className="tabular">{classifyThroughput.benchTopology}</b>).
         </p>
         <pre className={styles.codeline}>
@@ -901,7 +945,7 @@ function Footer() {
           </a>
         </span>
         <span className={styles.footerLegal}>
-          MIT license · benchmarks from committed M2 run 20251226-154121
+          MIT license · benchmarks from committed run {referenceRun.stamp} ({referenceRun.machine})
         </span>
       </div>
       <FlowMark />

@@ -1,10 +1,45 @@
 /*
- * Display data for the landing page. Every number here is copied from
- * the committed benchmark run (BENCHMARKS.md, run 20251226-154121,
- * local Apple M2, clang 17, Release builds via Google Benchmark) or
- * from `ls -l web/public/wasm/` on the shipped artifacts. Nothing on
- * the page may claim a number that is not reproducible from the repo.
+ * Display data for the landing page.
+ *
+ * Benchmark figures are NOT typed here. They are derived, at build time, from
+ * `benchRuns.generated.ts` — which `tools/gen_bench_display.py` writes out of
+ * the Google Benchmark JSON committed in `docs/benchmarks/runs/`, and which CI
+ * regenerates and diffs on every push. If a run record changes and this page
+ * is not rebuilt from it, the build goes red.
+ *
+ * That machinery exists because the alternative failed. Until 2026-08-13 every
+ * number below was a hand-typed copy of a December 2025 MacBook Air run, and
+ * it stayed that way for months after `docs/benchmarks/ENVIRONMENT.md` named a
+ * different machine as the repository's reference — quietly leaving the
+ * most-visited surface on the record where threading looks best.
+ *
+ * The display run is now the reference: the 2026-08-02 Apple M1 Pro pair, ten
+ * repetitions per case, medians. Artifact sizes still come from `ls -l` on the
+ * shipped build, and source-derived facts (lane widths, intrinsics) from
+ * `src/NeuralNet.cpp`. Nothing on the page may claim a number that is not
+ * reproducible from the repository.
  */
+
+import {
+  caseRow,
+  caseRows,
+  december,
+  dot20x,
+  formatGflops,
+  formatImagesPerSecond,
+  formatNs,
+  formatRunDate,
+  formatSlowdown,
+  formatSpeedup,
+  gflops,
+  imagesPerSecond,
+  parseCase,
+  reference,
+  speedup,
+  winRecord,
+} from './benchDerive';
+
+export { reference as referenceRun, december as decemberRun, dot20x as dot20xRun };
 
 export const architectureMetrics = {
   topology: '784 -> 100 -> 10',
@@ -14,83 +49,133 @@ export const architectureMetrics = {
   outputs: '10 outputs',
 } as const;
 
-/*
- * Kernel cards. IMPORTANT LABELING: the committed "baseline" config is
- * single-threaded WITHOUT -march=native, but the hand-written SIMD
- * kernels (NEON on the M2 that produced this run) are compiled in for
- * ALL THREE configs — so these speedups measure threading + native
- * codegen on top of SIMD, not SIMD vs scalar. The rows are labeled
- * accordingly. The scalar-vs-SIMD comparison is the live one in the
- * workbench (wasm simd128 kernel vs vectorization-disabled scalar).
- */
-export const kernelBenchmarks = [
-  {
-    id: 'matmul-256',
-    operation: 'matmul 256×256',
-    baselineLabel: 'single thread',
-    optimizedLabel: 'openmp + native',
-    baseline: '4.835ms',
-    optimized: '1.380ms',
-    baselineMs: 4.835,
-    optimizedMs: 1.38,
-    speedup: '3.50x',
-    gflops: '6.9 → 24.3 GFLOP/s',
-    note: 'OpenMP wins once the matrix is large enough to amortize thread startup.',
-  },
-  {
-    id: 'transpose-1024',
-    operation: 'transpose 1024',
-    baselineLabel: 'single thread',
-    optimizedLabel: 'openmp + native',
-    baseline: '978µs',
-    optimized: '502µs',
-    baselineMs: 0.978,
-    optimizedMs: 0.502,
-    speedup: '1.95x',
-    gflops: null,
-    note: 'Memory-bound: cache-friendly blocking amortizes thread overhead at this size.',
-  },
-  {
-    id: 'axpy-1024',
-    operation: 'axpy 1024',
-    baselineLabel: 'single thread',
-    optimizedLabel: 'openmp + native',
-    baseline: '231µs',
-    optimized: '115µs',
-    baselineMs: 0.231,
-    optimizedMs: 0.115,
-    speedup: '2.01x',
-    gflops: null,
-    note: 'Vector lanes and larger buffers make the parallel path useful.',
-  },
-] as const;
+/** Every sized matrix case in the reference run, in family/size order. */
+export const referenceRows = caseRows(reference);
+
+/** How threading does across the whole matrix suite: 4 wins, 8 losses of 12. */
+export const referenceRecord = winRecord(reference);
+
+/** The same tally on the December Air, which is kinder to threading: 6 of 12. */
+export const decemberRecord = winRecord(december);
+
+/** `axpy 1024` is the case that changes sign between the two machines. */
+export const signFlip = {
+  op: 'axpy 1024',
+  caseKey: 'benchAxpy/1024',
+  december: formatSpeedup(speedup(december.cases['benchAxpy/1024'])),
+  reference: formatSlowdown(speedup(reference.cases['benchAxpy/1024'])),
+} as const;
 
 /*
- * The crossover: below a per-op size threshold, OpenMP actively LOSES.
- * Committed numbers, single-thread vs openmp+native. This is the
- * threshold-tuning story — the pragma below is the receipt.
+ * Kernel cards. IMPORTANT LABELING: the "baseline" config is single-threaded
+ * WITHOUT -march=native, but the hand-written SIMD kernels (NEON on the M1 Pro
+ * that produced this run) are compiled in for BOTH configs — so these ratios
+ * measure threading + native codegen on top of SIMD, not SIMD vs scalar. The
+ * rows are labeled accordingly. The scalar-vs-SIMD comparison is the live one
+ * in the workbench (wasm simd128 kernel vs vectorization-disabled scalar).
+ *
+ * The three cases are chosen to span the result, not to flatter it: the two
+ * largest wins and the case that loses. `axpy 1024` was a 2.01× win on the
+ * December Air and is a loss here — it is on the page because it changed sign,
+ * not in spite of it.
  */
-export const crossoverLosses = [
-  { op: 'transpose 128', single: '5.4µs', omp: '23.7µs', factor: '4.3× worse' },
-  { op: 'axpy 256', single: '13.9µs', omp: '26.3µs', factor: '1.9× worse' },
-] as const;
+const CARD_CASES = ['benchDot/256', 'benchTranspose/1024', 'benchAxpy/1024'] as const;
+
+const CARD_NOTES: Record<(typeof CARD_CASES)[number], string> = {
+  'benchDot/256':
+    'Threading pays once the matrix is large enough to amortize thread startup. This is the headline, and it is the steadiest number in the suite.',
+  'benchTranspose/1024':
+    'Memory-bound, but the working set is large enough that cache-friendly blocking still outruns the fork-join cost.',
+  'benchAxpy/1024':
+    'Bandwidth-bound: every lane waits on memory, so more threads add scheduling and no arithmetic. A 2.01× win on the December Air, a loss here — same code, different machine.',
+};
+
+export const kernelBenchmarks = CARD_CASES.map((key) => {
+  const id = parseCase(key)!;
+  const row = caseRow(reference, id);
+  return {
+    id: key.toLowerCase().replace('bench', '').replace('/', '-'),
+    operation: id.family === 'matmul' ? `matmul ${id.size}×${id.size}` : id.label,
+    /** The Google Benchmark case name, so the figure is findable in the JSON. */
+    caseKey: key,
+    baselineLabel: 'single thread',
+    optimizedLabel: 'openmp + native',
+    baseline: formatNs(row.baselineNs),
+    optimized: formatNs(row.ompNs),
+    baselineMs: row.baselineNs / 1e6,
+    optimizedMs: row.ompNs / 1e6,
+    speedupValue: row.speedup,
+    wins: row.wins,
+    /* A loss is stated as the ratio a reader can act on — 0.92× is arithmetic,
+     * "1.08× slower" is the finding. The two parts are separate so the card can
+     * set the figure at display size and the qualifier at label size, rather
+     * than rendering the word "slower" three centimetres tall. */
+    speedup: row.wins
+      ? formatSpeedup(row.speedup)
+      : formatSlowdown(row.speedup).replace(' slower', ''),
+    speedupQualifier: row.wins ? null : 'slower',
+    spread: row.cvOmp === null ? null : `±${row.cvOmp.toFixed(1)}% over ${reference.reps} runs`,
+    gflops:
+      id.family === 'matmul'
+        ? `${gflops(id.size, row.baselineNs).toFixed(1)} → ${formatGflops(id.size, row.ompNs)}`
+        : null,
+    note: CARD_NOTES[key],
+  };
+});
+
+/*
+ * The crossover: below a per-op size threshold, OpenMP actively LOSES. These
+ * are the two worst cases in the reference run, picked by ratio rather than by
+ * hand, so the page names the losses it would least like to name.
+ */
+export const crossoverLosses = [...referenceRows]
+  .sort((a, b) => a.speedup - b.speedup)
+  .slice(0, 2)
+  .map((row) => ({
+    op: row.label,
+    single: formatNs(row.baselineNs),
+    omp: formatNs(row.ompNs),
+    factor: formatSlowdown(row.speedup).replace('slower', 'worse'),
+  }));
 
 /** Verbatim from src/Matrix.cpp — the tuned threshold in the code. */
 export const crossoverPragma =
   '#pragma omp parallel for schedule(static) if (rows_ * rhs.cols_ >= 4096)';
 
+/*
+ * Whole-network throughput. Images per second is 1e9 ÷ ns/op, the derivation
+ * BENCHMARKS.md's throughput table uses. The reference run measured two
+ * configs; the December run's third (`native`, no OpenMP) has no counterpart
+ * here, so it is not shown rather than quietly carried over from another
+ * machine.
+ */
 export const classifyThroughput = {
-  baseline: '81,628 img/s',
-  native: '80,712 img/s',
-  openmpNative: '69,994 img/s',
+  baseline: formatImagesPerSecond(reference.cases.benchClassify.baselineNs),
+  openmpNative: formatImagesPerSecond(reference.cases.benchClassify.ompNs),
+  /* Stated as a signed word rather than a signed number: "−0.5%" invites a
+   * reader to wonder which way it points, and a hyphen-minus in prose reads as
+   * a dash. */
+  delta: (() => {
+    const ratio =
+      imagesPerSecond(reference.cases.benchClassify.ompNs) /
+      imagesPerSecond(reference.cases.benchClassify.baselineNs);
+    const pct = Math.abs(ratio - 1) * 100;
+    return `${pct.toFixed(1)}% ${ratio < 1 ? 'slower' : 'faster'}`;
+  })(),
   // Bench topology per BENCHMARKS.md — smaller than the shipped model.
   benchTopology: '784 → 30 → 10',
   benchParams: '~24K parameters',
-  conclusion: 'Classify is small enough that OpenMP hurts',
+  conclusion: 'Classify is small enough that OpenMP buys nothing',
 } as const;
 
-export const benchMethodology =
-  'Google Benchmark · ≥0.5s CPU per case · mean ns/op · 3 clean Release configs · run 20251226-154121 · Apple M2, clang 17';
+export const benchMethodology = [
+  'Google Benchmark',
+  '≥0.5s CPU per case',
+  `${reference.reps} repetitions · median ns/op`,
+  `${reference.configs.length} clean Release configs`,
+  `run ${reference.stamp}`,
+  `${reference.machine}, load_avg ${reference.loadAvg?.[0] ?? '—'}`,
+].join(' · ');
 
 /*
  * Shipped artifact sizes, measured with ls -l / gzip -c | wc -c on the
@@ -107,11 +192,32 @@ export const wasmRuntimeFacts = [
 
 export const benchmarkMethodology = [
   'Google Benchmark drives the matrix kernels and full classify workload.',
-  'Runs are Release builds across baseline, native, and openmp+native configurations.',
-  'The committed local M2 run is the display source for this frontend pass.',
+  `Runs are Release builds across ${reference.configs.join(' and ')} configurations.`,
+  `The display source is the reference run — ${reference.machine}, ${formatRunDate(reference.dateISO)}.`,
 ] as const;
 
 export const reproduceBenchmarkCommand = 'python3 tools/run_benchmarks.py --openmp --native';
+
+/*
+ * THE SAME NUMBER, MEASURED THREE TIMES. matmul 256 is the headline, so it is
+ * the one figure the repository has measured on two machines at three
+ * repetition counts. The values agree to within 2%, which is the actual
+ * argument that it is a property of the code rather than of one afternoon.
+ */
+export const headlineConvergence = [
+  { id: 'december', run: december },
+  { id: 'reference', run: reference },
+  { id: 'dot20x', run: dot20x },
+].map(({ id, run }) => {
+  const value = speedup(run.cases['benchDot/256']);
+  return {
+    id,
+    run,
+    label: `${run.machine.split(' · ')[0]} · ${run.reps} rep${run.reps === 1 ? '' : 's'}`,
+    value,
+    display: formatSpeedup(value),
+  };
+});
 
 /*
  * The AVX-512 kernel, verbatim from src/NeuralNet.cpp (dot512_rowvec).
@@ -183,7 +289,7 @@ export const isaLadder = [
     lanes: 2,
     intrinsic: 'vfmaq_f64',
     where: 'server · arm64 (M-series)',
-    note: 'Two doubles per register. This is the rung the M2 run used.',
+    note: 'Two doubles per register. This is the rung the reference run used.',
   },
   {
     id: 'wasm',
@@ -197,73 +303,61 @@ export const isaLadder = [
 ] as const;
 
 /*
- * FULL CROSSOVER SERIES — every committed matmul / transpose / axpy size,
- * expressed as single-thread ÷ openmp+native speedup. Values are computed
- * directly from the two committed runs:
- *   docs/benchmarks/runs/bench-20251226-154121-baseline.json      (single thread)
- *   docs/benchmarks/runs/bench-20251226-154121-openmp-native.json (openmp+native)
- * speedup = single_ns / omp_ns. A value BELOW 1.0 means OpenMP actively
- * LOSES at that size — the honest crossover the page keeps on the record.
- * This is the source for the crossover scatter/line on the landing.
+ * FULL CROSSOVER SERIES — every sized matmul / transpose / axpy case in the
+ * reference run, expressed as single-thread ÷ openmp+native. A value BELOW 1.0
+ * means OpenMP actively LOSES at that size, which is true of eight of the
+ * twelve. This is the source for the crossover chart on the landing.
  */
-export const crossoverSeries = [
-  {
-    id: 'matmul',
-    label: 'matmul N×N',
-    unit: 'N',
-    accent: 'sky',
-    points: [
-      { size: 32, singleNs: 6164.7, ompNs: 6286.8, speedup: 0.98 },
-      { size: 64, singleNs: 65252.1, ompNs: 89130.1, speedup: 0.73 },
-      { size: 128, singleNs: 575280.7, ompNs: 374400.2, speedup: 1.54 },
-      { size: 256, singleNs: 4835359.6, ompNs: 1379834.7, speedup: 3.5 },
-    ],
-  },
-  {
-    id: 'transpose',
-    label: 'transpose',
-    unit: 'rows',
-    accent: 'amber',
-    points: [
-      { size: 128, singleNs: 5440.9, ompNs: 23661.8, speedup: 0.23 },
-      { size: 256, singleNs: 23097.5, ompNs: 31108.0, speedup: 0.74 },
-      { size: 512, singleNs: 198735.4, ompNs: 87913.6, speedup: 2.26 },
-      { size: 1024, singleNs: 978383.0, ompNs: 502426.0, speedup: 1.95 },
-    ],
-  },
-  {
-    id: 'axpy',
-    label: 'axpy',
-    unit: 'len',
-    accent: 'steel',
-    points: [
-      { size: 128, singleNs: 3486.0, ompNs: 23916.7, speedup: 0.15 },
-      { size: 256, singleNs: 13886.0, ompNs: 26335.3, speedup: 0.53 },
-      { size: 512, singleNs: 55847.8, ompNs: 35845.5, speedup: 1.56 },
-      { size: 1024, singleNs: 230626.4, ompNs: 114909.6, speedup: 2.01 },
-    ],
-  },
-] as const;
+const SERIES_ACCENT: Record<string, string> = {
+  matmul: 'sky',
+  transpose: 'amber',
+  axpy: 'steel',
+};
+
+const SERIES_UNIT: Record<string, string> = {
+  matmul: 'N',
+  transpose: 'rows',
+  axpy: 'len',
+};
+
+export const crossoverSeries = (['matmul', 'transpose', 'axpy'] as const).map((family) => ({
+  id: family,
+  label: family === 'matmul' ? 'matmul N×N' : family,
+  unit: SERIES_UNIT[family],
+  accent: SERIES_ACCENT[family],
+  points: referenceRows
+    .filter((r) => r.family === family)
+    .map((r) => ({
+      size: r.size,
+      singleNs: r.baselineNs,
+      ompNs: r.ompNs,
+      speedup: r.speedup,
+      cvOmp: r.cvOmp,
+    })),
+}));
 
 /*
  * GFLOP/s SLOPE for the matmul kernel. A matmul of N×N is 2·N³ FLOPs, so
- * GFLOP/s = 2·N³ / real_time_ns (FLOPs per ns == GFLOP/s). single = baseline
- * run, omp = openmp+native run, both from the committed JSONs above. The
- * story: single-thread throughput is flat/cache-bound (~7–10), while
- * openmp+native climbs to 24.3 GFLOP/s once the matrix is large enough to
- * amortize thread startup. Same run as the 3.50× matmul card.
+ * GFLOP/s = 2·N³ / real_time_ns (FLOPs per ns == GFLOP/s). The story:
+ * single-thread throughput is flat and cache-bound while openmp+native climbs
+ * once the matrix is large enough to amortize thread startup.
  */
+const matmulRows = referenceRows.filter((r) => r.family === 'matmul');
+
 export const gflopsSeries = {
   op: 'matmul N×N',
   flops: '2·N³ FLOPs',
-  peak: '24.3 GFLOP/s',
-  points: [
-    { size: 32, single: 10.63, omp: 10.42 },
-    { size: 64, single: 8.03, omp: 5.88 },
-    { size: 128, single: 7.29, omp: 11.2 },
-    { size: 256, single: 6.94, omp: 24.32 },
-  ],
-} as const;
+  peakValue: Math.max(...matmulRows.map((r) => gflops(r.size, r.ompNs))),
+  peak: formatGflops(
+    matmulRows[matmulRows.length - 1].size,
+    matmulRows[matmulRows.length - 1].ompNs,
+  ),
+  points: matmulRows.map((r) => ({
+    size: r.size,
+    single: gflops(r.size, r.baselineNs),
+    omp: gflops(r.size, r.ompNs),
+  })),
+};
 
 /*
  * PER-ISA LANE SCALE — the same dual-accumulator dot product, and how many

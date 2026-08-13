@@ -240,10 +240,12 @@ including the part where OpenBLAS would win large `dot` by roughly 2–3×.
 | **E2E** | Playwright 1.59 |
 
 The landing page ships no WebGL. `web/scripts/check-bundle-budget.mjs` holds the
-entry chunk to 460 KiB raw / 150 KiB gzip and fails the build if a `three-vendor`
-chunk ever reappears. `three` and `@react-three/*` are still in `package.json`
-and still back `web/src/components/NeuralNetHero.*`, but nothing imports that
-component into the routed app — it is dead code the budget check keeps dead.
+entry chunk to 472 KiB raw / 150 KiB gzip and fails the build if a `three-vendor`
+chunk ever reappears. `three` and `@react-three/*` used to sit in `package.json`
+backing an unrouted `NeuralNetHero` component; that component and the rest of the
+unreachable `features/experience/` tree were deleted on 2026-08-13, along with the
+six dependencies only it used. Dead code is bad enough on its own, but this
+particular tree also carried a second, ungated copy of the benchmark figures.
 
 ---
 

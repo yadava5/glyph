@@ -1,4 +1,19 @@
 import { expect, test, type Page } from '@playwright/test';
+import { classifyThroughput, kernelBenchmarks } from '../../src/features/performance/benchmarkData';
+
+/*
+ * Benchmark figures are imported, never re-typed. The numbers themselves are
+ * gated where they belong — `tools/gen_bench_display.py --check` proves the
+ * data layer still matches the committed run records. These assertions prove
+ * the page actually renders what the data layer holds, which is the part a
+ * unit check cannot see. Hard-coding them here meant that re-sourcing the page
+ * onto a different run turned three real tests red for no reason.
+ */
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const rendered = (s: string) => new RegExp(escapeRe(s), 'i');
+
+const matmul256 = kernelBenchmarks.find((k) => k.caseKey === 'benchDot/256')!;
+const transpose1024 = kernelBenchmarks.find((k) => k.caseKey === 'benchTranspose/1024')!;
 
 interface InstrumentedPage extends Page {
   __consoleIssues?: string[];
@@ -116,7 +131,7 @@ test.describe('Glyph landing experience', () => {
     await expect(page.getByRole('heading', { name: /Handed a neural network/i })).toBeVisible();
     await expect(page.getByText(/benchmarked live|Live SIMD benchmark/i).first()).toBeVisible();
     await expect(page.getByText(/97\.01% \/ 10,000/i)).toBeVisible();
-    await expect(page.getByText(/81,628 img\/s/i).first()).toBeVisible();
+    await expect(page.getByText(rendered(classifyThroughput.baseline)).first()).toBeVisible();
 
     // The redesign is WebGL-free: no three.js canvas may exist in the hero.
     await expect(page.locator('#hero canvas')).toHaveCount(0);
@@ -211,15 +226,13 @@ test.describe('Glyph landing experience', () => {
     await page.goto('/index.html');
     await scrollToId(page, 'proof');
 
-    await expect(page.getByText(/4\.835ms/i).first()).toBeVisible();
-    await expect(page.getByText(/1\.380ms/i).first()).toBeVisible();
-    await expect(page.getByText(/978µs/i).first()).toBeVisible();
-    await expect(page.getByText(/502µs/i).first()).toBeVisible();
-    await expect(page.getByText(/81,628 img\/s/i).first()).toBeVisible();
-    await expect(page.getByText(/69,994 img\/s/i).first()).toBeVisible();
-    await expect(
-      page.getByText(/classify is small enough that openmp hurts/i).first(),
-    ).toBeVisible();
+    await expect(page.getByText(rendered(matmul256.baseline)).first()).toBeVisible();
+    await expect(page.getByText(rendered(matmul256.optimized)).first()).toBeVisible();
+    await expect(page.getByText(rendered(transpose1024.baseline)).first()).toBeVisible();
+    await expect(page.getByText(rendered(transpose1024.optimized)).first()).toBeVisible();
+    await expect(page.getByText(rendered(classifyThroughput.baseline)).first()).toBeVisible();
+    await expect(page.getByText(rendered(classifyThroughput.openmpNative)).first()).toBeVisible();
+    await expect(page.getByText(rendered(classifyThroughput.conclusion)).first()).toBeVisible();
 
     await scrollToId(page, 'build');
     await expect(page.getByRole('heading', { name: /four instruction sets/i })).toBeVisible();

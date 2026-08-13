@@ -27,6 +27,15 @@ jobs:
       - name: Verify every documented number against the code
         run: python3 tools/readme_facts.py --check
 
+      # Same idea, aimed at the web frontend. The landing page derives its
+      # benchmark figures from web/src/features/performance/benchRuns.generated.ts,
+      # which is written out of docs/benchmarks/runs/*.json. This proves the
+      # generated file still matches those artifacts, so the page cannot go on
+      # quoting a run the repository has moved off — which is exactly what it
+      # did for months while every number on it was hand-typed.
+      - name: Verify the landing page's numbers still match the run records
+        run: python3 tools/gen_bench_display.py --check
+
   build-test:
     runs-on: ${{ matrix.os }}
     strategy:

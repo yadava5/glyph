@@ -43,7 +43,7 @@ interface Hovered {
  * per-op size, on a log-size axis. The break-even line is 1.0×; everything in
  * the shaded band below it is where OpenMP LOSES — kept on the record, not
  * hidden. Hover or focus any point for its exact op + timings. Every value is
- * from the committed M2 run.
+ * derived from the committed reference run.
  */
 export function CrossoverChart() {
   const reduced = useReducedMotion();
@@ -57,14 +57,18 @@ export function CrossoverChart() {
   const plotH = H - m.t - m.b;
   const xMin = 5; // log2(32)
   const xMax = 10; // log2(1024)
-  const yMax = 3.7;
+  /* Scaled to the data, not to a remembered maximum. A literal here (3.7) had
+     already been outgrown by the reference run's transpose 1024 at 3.92×, so
+     the best result in the suite would have been clamped onto the frame. */
+  const peak = Math.max(...crossoverSeries.flatMap((s) => s.points.map((p) => p.speedup)));
+  const yMax = Math.ceil((peak + 0.25) * 2) / 2;
 
   const xOf = (size: number) => m.l + ((log2(size) - xMin) / (xMax - xMin)) * plotW;
   const yOf = (v: number) => m.t + (1 - clamp(v, 0, yMax) / yMax) * plotH;
 
   const yBreak = yOf(1);
   const xTicks = [32, 64, 128, 256, 512, 1024];
-  const yTicks = [0, 1, 2, 3];
+  const yTicks = Array.from({ length: Math.floor(yMax) + 1 }, (_, i) => i);
 
   return (
     <figure className={styles.chartCard} ref={ref} data-draw={inView && !reduced ? '' : undefined}>
@@ -265,7 +269,8 @@ export function GflopsSlope() {
   const m = { l: 38, r: 16, t: 20, b: 40 };
   const plotW = W - m.l - m.r;
   const plotH = H - m.t - m.b;
-  const yMax = 26;
+  /* Same rule as the crossover chart: the frame follows the data. */
+  const yMax = Math.ceil((gflopsSeries.peakValue + 1.5) / 2) * 2;
   const xOf = (size: number) => m.l + ((log2(size) - 5) / (8 - 5)) * plotW;
   const yOf = (v: number) => m.t + (1 - v / yMax) * plotH;
 
@@ -287,7 +292,7 @@ export function GflopsSlope() {
           role="img"
           aria-label={`matmul GFLOP/s: single-thread stays near 7-10 while openmp+native climbs to ${gflopsSeries.peak}`}
         >
-          {[0, 8, 16, 24].map((v) => (
+          {Array.from({ length: Math.floor(yMax / 8) + 1 }, (_, i) => i * 8).map((v) => (
             <g key={v}>
               <line x1={m.l} y1={yOf(v)} x2={W - m.r} y2={yOf(v)} className={styles.grid} />
               <text x={m.l - 8} y={yOf(v) + 4} className={styles.axisText} textAnchor="end">
@@ -355,8 +360,8 @@ export function GflopsSlope() {
             )),
           )}
           <text
-            x={xOf(256)}
-            y={yOf(gflopsSeries.points[3].omp) - 12}
+            x={xOf(pts[pts.length - 1].size)}
+            y={yOf(pts[pts.length - 1].omp) - 12}
             className={styles.peakLabel}
             textAnchor="end"
           >
