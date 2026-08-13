@@ -71,7 +71,6 @@
 
 .word {
   color: var(--text-strong);
-  font-family: var(--font-mono);
   font-size: 0.95rem;
   font-weight: 600;
   letter-spacing: 0.04em;

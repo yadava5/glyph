@@ -172,7 +172,6 @@ canvas {
   place-items: center;
   color: var(--text-dim);
   border: 1px solid var(--line-soft);
-  font-family: var(--font-mono);
   font-size: 0.7rem;
 }
 
@@ -191,7 +190,6 @@ canvas {
 .command-panel [cmdk-group-heading] {
   padding: 0.7rem 0.6rem 0.45rem;
   color: var(--text-dim);
-  font-family: var(--font-mono);
   font-size: 0.68rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;

@@ -45,7 +45,6 @@
   align-items: center;
   gap: 0.45rem;
   color: var(--cyan);
-  font-family: var(--font-mono);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -133,7 +132,6 @@
   min-height: 2rem;
   margin-bottom: 1rem;
   color: var(--text-soft);
-  font-family: var(--font-mono);
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -162,7 +160,6 @@
   width: fit-content;
   min-height: 2rem;
   color: var(--text-soft);
-  font-family: var(--font-mono);
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -327,7 +324,6 @@
 
 .workbench :global(.predicted-digit) {
   color: var(--green);
-  font-family: var(--font-mono);
   font-size: clamp(4rem, 10vw, 7.5rem);
   font-weight: 800;
   line-height: 0.9;
@@ -356,7 +352,6 @@
   gap: 0.45rem;
   margin: 0 0 0.75rem;
   color: var(--text-soft);
-  font-family: var(--font-mono);
   font-size: 0.74rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -381,7 +376,6 @@
   gap: 0.5rem;
   align-items: center;
   color: var(--text-muted);
-  font-family: var(--font-mono);
   font-size: 0.76rem;
 }
 
@@ -418,7 +412,6 @@
   color: var(--green);
   border: 1px solid rgb(34 197 94 / 0.35);
   background: rgb(34 197 94 / 0.08);
-  font-family: var(--font-mono);
   font-size: 0.78rem;
 }
 
@@ -439,7 +432,6 @@
   display: block;
   margin-bottom: 0.6rem;
   color: var(--text-dim);
-  font-family: var(--font-mono);
   font-size: 0.68rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -460,7 +452,6 @@
   grid-template-columns: 1rem minmax(0, 1fr) 2.4rem;
   gap: 0.4rem;
   align-items: center;
-  font-family: var(--font-mono);
   font-size: 0.68rem;
 }
 

@@ -199,6 +199,23 @@ interface RollingProps {
   suffix?: string;
   className?: string;
   duration?: number;
+  /**
+   * Where the roll starts. Defaults to 0, but a figure that is the complement
+   * of another must count DOWN from the total, or the two disagree with each
+   * other on screen for the length of the animation: the accuracy card read
+   * "0.00% correct · 299 missed" for about a second, a pair that cannot both be
+   * true. Two rolls sharing a duration and an easing, one 0 → correct and one
+   * total → missed, sum to the total on every frame by construction.
+   */
+  from?: number;
+  /**
+   * Eased progress 0→1 supplied by the caller instead of run internally. Several
+   * readouts of the SAME measurement have to move as one: three independent rAF
+   * loops drift apart within a frame or two, and the accuracy card showed
+   * "3,965 correct" beside "22.46% correct" — two views of one number
+   * disagreeing. Pass one progress and they cannot.
+   */
+  progress?: number;
   /** Re-roll when the element is hovered (a stat that "recomputes"). */
   rerollOnHover?: boolean;
   /** Opt-in: a left-to-right highlight that sweeps across the digits. */
@@ -222,6 +239,8 @@ function formatGrouped(value: number, decimals: number) {
  */
 export function RollingNumber({
   value,
+  from = 0,
+  progress,
   decimals = 0,
   prefix = '',
   suffix = '',
@@ -232,7 +251,8 @@ export function RollingNumber({
 }: RollingProps) {
   const reduced = useReducedMotion();
   const { ref, inView } = useInView<HTMLSpanElement>();
-  const [display, setDisplay] = useState(reduced ? value : 0);
+  const [display, setDisplay] = useState(reduced ? value : from);
+  const driven = progress !== undefined;
   const [runId, setRunId] = useState(0);
   const raf = useRef(0);
 
@@ -240,7 +260,7 @@ export function RollingNumber({
   // handler) — never synchronously in the effect body — so the count-up can
   // never cascade renders. Reduced-motion just settles on the value.
   useEffect(() => {
-    if (!inView) return;
+    if (driven || !inView) return;
     if (reduced) {
       raf.current = requestAnimationFrame(() => setDisplay(value));
       return () => cancelAnimationFrame(raf.current);
@@ -249,14 +269,15 @@ export function RollingNumber({
     const tick = (now: number) => {
       if (!startTs) startTs = now;
       const p = Math.min(1, (now - startTs) / duration);
-      setDisplay(p >= 1 ? value : value * easeOutExpo(p));
+      setDisplay(p >= 1 ? value : from + (value - from) * easeOutExpo(p));
       if (p < 1) raf.current = requestAnimationFrame(tick);
     };
     raf.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf.current);
-  }, [inView, value, reduced, duration, runId]);
+  }, [driven, inView, value, from, reduced, duration, runId]);
 
-  const rolling = !reduced && display < value;
+  const shown = driven && !reduced ? from + (value - from) * progress! : display;
+  const rolling = !reduced && shown !== value;
   return (
     <span
       ref={ref}

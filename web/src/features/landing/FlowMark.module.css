@@ -109,7 +109,6 @@
 
 .caption b {
   color: var(--text-soft);
-  font-family: var(--font-mono);
   font-size: 0.92rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -117,7 +116,6 @@
 
 .caption em {
   color: var(--text-dim);
-  font-family: var(--font-mono);
   font-size: 0.72rem;
   font-style: normal;
   letter-spacing: 0.02em;

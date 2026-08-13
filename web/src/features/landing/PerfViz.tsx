@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
-import { crossoverSeries, gflopsSeries, laneScale } from '../performance/benchmarkData';
+import {
+  accuracyWaffle,
+  crossoverSeries,
+  gflopsSeries,
+  laneScale,
+} from '../performance/benchmarkData';
 import type { MnistDemoController } from '../mnist/useMnistDemoController';
 import { RollingNumber } from './interactions';
 import { useInView } from './interactionHooks';
@@ -598,8 +603,19 @@ export function LaneScale() {
 
 /* ─────────────── 5 · accuracy waffle ─────────────── */
 
-/** The model's real MNIST test-set result — matches the hero's 97.01%. */
-const TEST_SET_RESULT = { correct: 9701, missed: 299, pct: 97.01 };
+/**
+ * The model's real MNIST test-set result. This was a second hand-typed copy of
+ * the figures in benchmarkData.ts — the same defect, three lines long, that the
+ * whole benchRuns.generated.ts pipeline exists to stop. It reads the one record
+ * now, and the percentage is derived from the counts rather than stated beside
+ * them, so the three numbers cannot disagree.
+ */
+const TEST_SET_RESULT = {
+  total: accuracyWaffle.total,
+  correct: accuracyWaffle.correct,
+  missed: accuracyWaffle.errors,
+  pct: (accuracyWaffle.correct / accuracyWaffle.total) * 100,
+};
 
 /**
  * The MNIST test-set result, as a single count-up on the model's real 97.01%
@@ -649,7 +665,17 @@ export function AccuracyWaffle() {
         </div>
         <p className={styles.wafflePct}>
           <RollingNumber key={`p${run}`} value={TEST_SET_RESULT.pct} decimals={2} suffix="%" glow />{' '}
-          correct · <b>{TEST_SET_RESULT.missed.toLocaleString('en-US')}</b> missed
+          correct ·{' '}
+          <b>
+            {/* Counts DOWN from the total so the pair is never self-contradictory
+                mid-roll — see RollingNumber's `from`. */}
+            <RollingNumber
+              key={`m${run}`}
+              value={TEST_SET_RESULT.missed}
+              from={TEST_SET_RESULT.total}
+            />
+          </b>{' '}
+          missed
         </p>
       </div>
     </div>
