@@ -50,261 +50,271 @@ export interface BenchRun {
 }
 
 export const referenceRun: BenchRun = {
-  id: 'reference',
-  stamp: '20260802-aggregated',
-  dateISO: '2026-08-02T21:01:44-04:00',
-  machine: 'Apple M1 Pro \u00b7 MacBook Pro 16\u2033',
+  id: "reference",
+  stamp: "20260802-aggregated",
+  dateISO: "2026-08-02T21:01:44-04:00",
+  machine: "Apple M1 Pro \u00b7 MacBook Pro 16\u2033",
   cores: 10,
   reps: 10,
   loadAvg: [9.8, 7.6, 5.15],
   l1dBytes: 65536,
   l2Bytes: 4194304,
-  benchmarkVersion: 'v1.9.1',
-  configs: ['baseline', 'openmp-native'],
+  benchmarkVersion: "v1.9.1",
+  configs: [
+    "baseline",
+    "openmp-native"
+  ],
   artifacts: [
-    'docs/benchmarks/runs/bench-20260802-aggregated-baseline.json',
-    'docs/benchmarks/runs/bench-20260802-aggregated-openmp-native.json',
+    "docs/benchmarks/runs/bench-20260802-aggregated-baseline.json",
+    "docs/benchmarks/runs/bench-20260802-aggregated-openmp-native.json"
   ],
   cases: {
-    'benchAxpy/1024': {
+    "benchAxpy/1024": {
       baselineNs: 273175.1,
       nativeNs: null,
       ompNs: 296140.3,
       cvBaseline: 3.9,
-      cvOmp: 0.58,
+      cvOmp: 0.58
     },
-    'benchAxpy/128': {
+    "benchAxpy/128": {
       baselineNs: 3762.8,
       nativeNs: null,
       ompNs: 40364.3,
       cvBaseline: 1.54,
-      cvOmp: 0.79,
+      cvOmp: 0.79
     },
-    'benchAxpy/256': {
+    "benchAxpy/256": {
       baselineNs: 14920.2,
       nativeNs: null,
       ompNs: 49397.6,
       cvBaseline: 4.27,
-      cvOmp: 0.95,
+      cvOmp: 0.95
     },
-    'benchAxpy/512': {
+    "benchAxpy/512": {
       baselineNs: 60556.6,
       nativeNs: null,
       ompNs: 68558.3,
       cvBaseline: 2.54,
-      cvOmp: 0.38,
+      cvOmp: 0.38
     },
     benchClassify: {
       baselineNs: 14226.1,
       nativeNs: null,
       ompNs: 14299.5,
       cvBaseline: 1.64,
-      cvOmp: 1.63,
+      cvOmp: 1.63
     },
-    'benchDot/128': {
+    "benchDot/128": {
       baselineNs: 610624.3,
       nativeNs: null,
       ompNs: 406369.6,
       cvBaseline: 0.19,
-      cvOmp: 2.58,
+      cvOmp: 2.58
     },
-    'benchDot/256': {
+    "benchDot/256": {
       baselineNs: 4897084.2,
       nativeNs: null,
       ompNs: 1371684.1,
       cvBaseline: 0.35,
-      cvOmp: 1.55,
+      cvOmp: 1.55
     },
-    'benchDot/32': {
+    "benchDot/32": {
       baselineNs: 6400.2,
       nativeNs: null,
       ompNs: 6489.9,
       cvBaseline: 0.89,
-      cvOmp: 1.55,
+      cvOmp: 1.55
     },
-    'benchDot/64': {
+    "benchDot/64": {
       baselineNs: 56801.9,
       nativeNs: null,
       ompNs: 120384.6,
       cvBaseline: 0.29,
-      cvOmp: 0.66,
+      cvOmp: 0.66
     },
     benchLearn: {
       baselineNs: 22756.1,
       nativeNs: null,
       ompNs: 22770.7,
       cvBaseline: 1.06,
-      cvOmp: 1.27,
+      cvOmp: 1.27
     },
-    'benchTranspose/1024': {
+    "benchTranspose/1024": {
       baselineNs: 876146.8,
       nativeNs: null,
       ompNs: 223513.2,
       cvBaseline: 4.0,
-      cvOmp: 0.49,
+      cvOmp: 0.49
     },
-    'benchTranspose/128': {
+    "benchTranspose/128": {
       baselineNs: 5720.2,
       nativeNs: null,
       ompNs: 44967.6,
       cvBaseline: 0.31,
-      cvOmp: 1.41,
+      cvOmp: 1.41
     },
-    'benchTranspose/256': {
+    "benchTranspose/256": {
       baselineNs: 23614.5,
       nativeNs: null,
       ompNs: 56503.5,
       cvBaseline: 0.19,
-      cvOmp: 0.23,
+      cvOmp: 0.23
     },
-    'benchTranspose/512': {
+    "benchTranspose/512": {
       baselineNs: 112172.7,
       nativeNs: null,
       ompNs: 79477.4,
       cvBaseline: 0.71,
-      cvOmp: 0.66,
-    },
-  },
+      cvOmp: 0.66
+    }
+  }
 };
 
 export const dot20xRun: BenchRun = {
-  id: 'dot20x',
-  stamp: '20260802-dot20x',
-  dateISO: '2026-08-02T21:28:35-04:00',
-  machine: 'Apple M1 Pro \u00b7 MacBook Pro 16\u2033',
+  id: "dot20x",
+  stamp: "20260802-dot20x",
+  dateISO: "2026-08-02T21:28:35-04:00",
+  machine: "Apple M1 Pro \u00b7 MacBook Pro 16\u2033",
   cores: 10,
   reps: 20,
   loadAvg: [4.7, 5.03, 4.48],
   l1dBytes: 65536,
   l2Bytes: 4194304,
-  benchmarkVersion: 'v1.9.1',
-  configs: ['baseline', 'openmp-native'],
+  benchmarkVersion: "v1.9.1",
+  configs: [
+    "baseline",
+    "openmp-native"
+  ],
   artifacts: [
-    'docs/benchmarks/runs/bench-20260802-dot20x-baseline.json',
-    'docs/benchmarks/runs/bench-20260802-dot20x-openmp-native.json',
+    "docs/benchmarks/runs/bench-20260802-dot20x-baseline.json",
+    "docs/benchmarks/runs/bench-20260802-dot20x-openmp-native.json"
   ],
   cases: {
-    'benchDot/128': {
+    "benchDot/128": {
       baselineNs: 602286.0,
       nativeNs: null,
       ompNs: 395094.4,
       cvBaseline: 0.22,
-      cvOmp: 0.13,
+      cvOmp: 0.13
     },
-    'benchDot/256': {
+    "benchDot/256": {
       baselineNs: 4818901.4,
       nativeNs: null,
       ompNs: 1362717.1,
       cvBaseline: 0.16,
-      cvOmp: 0.28,
+      cvOmp: 0.28
     },
-    'benchDot/32': {
+    "benchDot/32": {
       baselineNs: 6415.9,
       nativeNs: null,
       ompNs: 6412.4,
       cvBaseline: 0.13,
-      cvOmp: 0.4,
+      cvOmp: 0.4
     },
-    'benchDot/64': {
+    "benchDot/64": {
       baselineNs: 56740.9,
       nativeNs: null,
       ompNs: 117711.7,
       cvBaseline: 0.89,
-      cvOmp: 0.23,
-    },
-  },
+      cvOmp: 0.23
+    }
+  }
 };
 
 export const decemberRun: BenchRun = {
-  id: 'december',
-  stamp: '20251226-154121',
-  dateISO: '2025-12-26T15:41:22-05:00',
-  machine: 'Apple M2 \u00b7 MacBook Air (fanless)',
+  id: "december",
+  stamp: "20251226-154121",
+  dateISO: "2025-12-26T15:41:22-05:00",
+  machine: "Apple M2 \u00b7 MacBook Air (fanless)",
   cores: 8,
   reps: 1,
   loadAvg: [3.64, 3.88, 3.18],
   l1dBytes: 65536,
   l2Bytes: 4194304,
-  benchmarkVersion: 'v1.9.1',
-  configs: ['baseline', 'native', 'openmp-native'],
+  benchmarkVersion: "v1.9.1",
+  configs: [
+    "baseline",
+    "native",
+    "openmp-native"
+  ],
   artifacts: [
-    'docs/benchmarks/runs/bench-20251226-154121-baseline.json',
-    'docs/benchmarks/runs/bench-20251226-154121-native.json',
-    'docs/benchmarks/runs/bench-20251226-154121-openmp-native.json',
+    "docs/benchmarks/runs/bench-20251226-154121-baseline.json",
+    "docs/benchmarks/runs/bench-20251226-154121-native.json",
+    "docs/benchmarks/runs/bench-20251226-154121-openmp-native.json"
   ],
   cases: {
-    'benchAxpy/1024': {
+    "benchAxpy/1024": {
       baselineNs: 230626.4,
       nativeNs: 229230.0,
-      ompNs: 114909.6,
+      ompNs: 114909.6
     },
-    'benchAxpy/128': {
+    "benchAxpy/128": {
       baselineNs: 3486.0,
       nativeNs: 3477.2,
-      ompNs: 23916.7,
+      ompNs: 23916.7
     },
-    'benchAxpy/256': {
+    "benchAxpy/256": {
       baselineNs: 13886.0,
       nativeNs: 13896.1,
-      ompNs: 26335.3,
+      ompNs: 26335.3
     },
-    'benchAxpy/512': {
+    "benchAxpy/512": {
       baselineNs: 55847.8,
       nativeNs: 55441.4,
-      ompNs: 35845.5,
+      ompNs: 35845.5
     },
     benchClassify: {
       baselineNs: 12250.8,
       nativeNs: 12389.7,
-      ompNs: 14287.0,
+      ompNs: 14287.0
     },
-    'benchDot/128': {
+    "benchDot/128": {
       baselineNs: 575280.7,
       nativeNs: 587767.2,
-      ompNs: 374400.2,
+      ompNs: 374400.2
     },
-    'benchDot/256': {
+    "benchDot/256": {
       baselineNs: 4835359.6,
       nativeNs: 4759131.8,
-      ompNs: 1379834.7,
+      ompNs: 1379834.7
     },
-    'benchDot/32': {
+    "benchDot/32": {
       baselineNs: 6164.7,
       nativeNs: 6229.3,
-      ompNs: 6286.8,
+      ompNs: 6286.8
     },
-    'benchDot/64': {
+    "benchDot/64": {
       baselineNs: 65252.1,
       nativeNs: 57221.6,
-      ompNs: 89130.1,
+      ompNs: 89130.1
     },
     benchLearn: {
       baselineNs: 20510.5,
       nativeNs: 20243.2,
-      ompNs: 20560.9,
+      ompNs: 20560.9
     },
-    'benchTranspose/1024': {
+    "benchTranspose/1024": {
       baselineNs: 978383.0,
       nativeNs: 861078.1,
-      ompNs: 502426.0,
+      ompNs: 502426.0
     },
-    'benchTranspose/128': {
+    "benchTranspose/128": {
       baselineNs: 5440.9,
       nativeNs: 5291.8,
-      ompNs: 23661.8,
+      ompNs: 23661.8
     },
-    'benchTranspose/256': {
+    "benchTranspose/256": {
       baselineNs: 23097.5,
       nativeNs: 22104.3,
-      ompNs: 31108.0,
+      ompNs: 31108.0
     },
-    'benchTranspose/512': {
+    "benchTranspose/512": {
       baselineNs: 198735.4,
       nativeNs: 178676.2,
-      ompNs: 87913.6,
-    },
-  },
+      ompNs: 87913.6
+    }
+  }
 };
 
 /** The run the repository designates canonical — see docs/benchmarks/ENVIRONMENT.md. */
-export const referenceRunId = 'reference' as const;
+export const referenceRunId = "reference" as const;

@@ -3,3 +3,10 @@ node_modules
 public
 *.lock
 package-lock.json
+
+# Written by tools/gen_bench_display.py, and gated by re-running that script and
+# diffing. Formatting it here breaks the gate: prettier rewrote the generated
+# quotes on commit, the committed file stopped matching a fresh generation, and
+# `--check` went permanently red on a clean tree. A generated file has exactly
+# one correct formatter, which is its generator.
+src/features/performance/benchRuns.generated.ts
