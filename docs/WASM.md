@@ -122,21 +122,46 @@ and nobody had measured it. It has now been measured, and it holds:
 Reproduce with `./build/fast_mnist_eval --f32-weights`, which is opt-in and
 writes only the comparison artifact.
 
-**What this does NOT establish.** Quantisation is one of three ways the browser
-can disagree with the native evaluator, and it is the one now known to be
-harmless. The other two are unmeasured:
+Quantisation is only one of three ways the browser can disagree with the native
+evaluator. The other two are:
 
 1. **Reduction order.** The native arm64 path takes `dot_neon_rowvec` — one
    `f64x2` accumulator, two-lane horizontal reduction. The wasm kernel runs two
    accumulators and reduces four lanes.
 2. **FMA contraction.** NEON's `vfmaq_f64` never rounds the intermediate
-   product; wasm simd128 has no FMA, so every multiply rounds.
+   product; wasm simd128 has no FMA, so every multiply rounds. This is plausibly
+   the larger of the two, because it changes rounding at every multiply rather
+   than only in the reduction tree.
 
-(2) is plausibly the larger of the two, because it changes rounding at every
-multiply rather than only in the reduction tree. **So the true browser-versus-native
-difference may be larger than the figure above and is not bounded by it.**
-Closing that needs the wasm module itself run over the same 10,000 images, which
-has not been done. Nothing may claim exact in-browser reproduction until it has.
+Neither is bounded by the quantisation result, so both were measured directly —
+by running **the shipped module itself**, `fast_mnist.wasm` loaded read-only in
+Node from the exact committed bytes, over the same 10,000 images.
+
+## The browser reproduces the committed figure exactly
+
+**9,701 / 10,000. All ten thousand predictions identical to the native run** —
+zero disagreements, `delta_correct: 0`. Recorded in
+`benchmarks/mnist_eval_wasm.json`; reproduce with `node tools/wasm_eval.mjs`.
+
+Agreement is below the decision, not merely at it. `confidence` is L1-normalised
+by the binding, but ratios are scale-free, so the top1/top2 ratios can be
+compared against the committed record directly. On the tightest cases the
+relative difference is **5.1e-8 to 1.4e-6** — the precision floor of the record
+itself, whose activations are stored to six decimals. All ten tightest margins in
+the test set agree, index 9858's 6.49e-4 included.
+
+The reason to expect this is not the spec alone. Every operation on the path is
+compiled *into* the module, including the `std::exp` behind the sigmoid, which is
+emscripten's libm rather than anything the host provides. Wasm f64 opcodes are
+IEEE-754 and deterministic, and the rest is the same bytes — so a conforming
+engine has to produce these bits. The residual risk is engine bugs, not
+arithmetic. What has **not** been shown is that every browser agrees: this is one
+host and one engine.
+
+The null was positive-controlled rather than trusted. `loadWeightsFromBinary`
+accepts an arbitrary buffer, so nudging the class-6 output bias by 0.01 in an
+in-memory copy — touching no file — produces exactly **one** disagreement, index
+9858, 8 → 6, and 9,702 / 10,000. The detector fires.
 
 ## What is actually in the module
 

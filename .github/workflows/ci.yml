@@ -58,6 +58,13 @@ jobs:
       - name: Verify the misclassified-digit pack matches the evaluation record
         run: python3 tools/export_failures.py --check
 
+      # The two evaluation studies each record the sha256 of every file they
+      # consumed. Recording a digest is half a gate; this is the half that
+      # compares it, so rebuilding the wasm cannot leave their conclusions
+      # quietly describing a binary that no longer exists.
+      - name: Verify the evaluation studies still describe their inputs
+        run: python3 tools/check_eval_artifacts.py
+
   build-test:
     runs-on: ${{ matrix.os }}
     strategy:

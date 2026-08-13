@@ -856,6 +856,39 @@ add("f32Correct", "float32 correct count in benchmarks/mnist_f32_flips.json", "s
     lambda: f32_field("accuracy", "float32", "correct"))
 
 
+# -- the in-browser reproduction, read out of its own artifact ------------
+#
+# docs/WASM.md states that the shipped wasm module reproduces the committed
+# accuracy figure exactly. These come from benchmarks/mnist_eval_wasm.json, so a
+# re-run that disagrees fails the build instead of leaving the prose confident.
+
+
+def wasm_eval_field(*path: str):
+    p = os.path.join(REPO, "benchmarks/mnist_eval_wasm.json")
+    try:
+        with open(p, encoding="utf-8") as fh:
+            node = json.load(fh)
+    except FileNotFoundError:
+        die("benchmarks/mnist_eval_wasm.json is missing. Regenerate with "
+            "`node tools/wasm_eval.mjs`.")
+    for key in path:
+        if key not in node:
+            die(f"benchmarks/mnist_eval_wasm.json has no `{'.'.join(path)}` — the "
+                f"schema changed and docs/WASM.md still quotes it.")
+        node = node[key]
+    return node
+
+
+add("wasmEvalCorrect", "wasm_float32 correct count in benchmarks/mnist_eval_wasm.json",
+    "static",
+    [site(r"\*\*([\d,]+) / 10,000\. All ten thousand predictions", file=WASM_MD)],
+    lambda: wasm_eval_field("accuracy", "wasm_float32", "correct"))
+
+add("wasmEvalCompared", "images_compared in benchmarks/mnist_eval_wasm.json", "static",
+    [site(r"over the same ([\d,]+) images", file=WASM_MD)],
+    lambda: wasm_eval_field("agreement", "images_compared"))
+
+
 # -- the wasm SIMD census, read out of the committed census artifact ------
 #
 # docs/WASM.md quotes four counts from docs/benchmarks/wasm-simd-census.json.
