@@ -37,11 +37,13 @@ import {
   parseCase,
   reference,
   shippedArtifacts,
+  simdCensus,
   speedup,
   winRecord,
 } from './benchDerive';
 
 export { reference as referenceRun, december as decemberRun, dot20x as dot20xRun };
+export { simdCensus };
 
 export const architectureMetrics = {
   topology: '784 -> 100 -> 10',

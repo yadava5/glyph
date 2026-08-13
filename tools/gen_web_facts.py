@@ -38,6 +38,7 @@ from typing import Any
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 RUNS = ROOT / "docs/benchmarks/runs"
 WASM = ROOT / "web/public/wasm"
+CENSUS = ROOT / "docs/benchmarks/wasm-simd-census.json"
 OUT = ROOT / "web/src/features/performance/benchRuns.generated.ts"
 
 # The three files the browser actually downloads to run the network, in the
@@ -164,6 +165,27 @@ def build_shipped() -> list[dict[str, Any]]:
     return out
 
 
+def build_census() -> dict[str, Any]:
+    """The vector-instruction census of the shipped module.
+
+    Written by tools/wasm_census.py, which needs wabt; this only reads it. The
+    fields carried through are the ones the page can state without overclaiming
+    — counts and opcode shape, never a source-level function name, because the
+    module is stripped and has none.
+    """
+    c = json.loads(CENSUS.read_text())
+    return {
+        "moduleSha256": c["moduleSha256"],
+        "totalFunctions": c["totalFunctions"],
+        "vectorFunctions": c["functionsWithVectorInstructions"],
+        "vectorInstructions": c["totalVectorInstructions"],
+        "signature": c["signature"],
+        "signatureHits": c["signatureHits"],
+        "opcodes": [{"op": k, "count": v} for k, v in c["opcodes"].items()],
+        "namesStripped": c["namesStripped"],
+    }
+
+
 def ts_value(v: Any, indent: int) -> str:
     pad = "  " * indent
     if v is None:
@@ -188,7 +210,7 @@ def ts_value(v: Any, indent: int) -> str:
     raise TypeError(type(v))
 
 
-def render(runs: list[dict[str, Any]], shipped: list[dict[str, Any]]) -> str:
+def render(runs: list[dict[str, Any]], shipped: list[dict[str, Any]], census: dict[str, Any]) -> str:
     head = '''/*
  * GENERATED FILE — do not edit by hand.
  *
@@ -269,6 +291,28 @@ export interface BenchRun {
         "/** The files the browser downloads to run the network, measured on disk. */\n"
         "export const shippedArtifacts: ShippedArtifact[] = "
         + ts_value(shipped, 0)
+        + ";\n\n"
+        "export interface SimdCensus {\n"
+        "  /** Digest of the exact module this census was taken from. */\n"
+        "  moduleSha256: string;\n"
+        "  totalFunctions: number;\n"
+        "  /** How many of them contain any 128-bit vector instruction. */\n"
+        "  vectorFunctions: number;\n"
+        "  vectorInstructions: number;\n"
+        "  /** The dual-accumulator inner loop, as a mnemonic sequence. */\n"
+        "  signature: string[];\n"
+        "  signatureHits: number;\n"
+        "  opcodes: { op: string; count: number }[];\n"
+        "  /** True at -O3: the module carries no source-level function names. */\n"
+        "  namesStripped: boolean;\n"
+        "}\n\n"
+        "/**\n"
+        " * What is actually inside the .wasm the visitor just ran. Counts and opcode\n"
+        " * shape only — the module is stripped, so nothing here names a source\n"
+        " * function, and the page must not claim one.\n"
+        " */\n"
+        "export const simdCensus: SimdCensus = "
+        + ts_value(census, 0)
         + ";\n"
     )
     return head + "\n".join(body) + "\n" + tail
@@ -281,7 +325,7 @@ def main() -> int:
 
     runs = [build_run(rid, stamp, cfgs) for rid, stamp, cfgs in WANTED]
     shipped = build_shipped()
-    text = render(runs, shipped)
+    text = render(runs, shipped, build_census())
 
     if args.check:
         if not OUT.exists():

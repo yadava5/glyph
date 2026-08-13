@@ -364,3 +364,107 @@ export const shippedArtifacts: ShippedArtifact[] = [
     sha256: "cbbb2b7b57120fff98982510423d3894a3dceeb3db0f005d040b7389ad442786"
   }
 ];
+
+export interface SimdCensus {
+  /** Digest of the exact module this census was taken from. */
+  moduleSha256: string;
+  totalFunctions: number;
+  /** How many of them contain any 128-bit vector instruction. */
+  vectorFunctions: number;
+  vectorInstructions: number;
+  /** The dual-accumulator inner loop, as a mnemonic sequence. */
+  signature: string[];
+  signatureHits: number;
+  opcodes: { op: string; count: number }[];
+  /** True at -O3: the module carries no source-level function names. */
+  namesStripped: boolean;
+}
+
+/**
+ * What is actually inside the .wasm the visitor just ran. Counts and opcode
+ * shape only — the module is stripped, so nothing here names a source
+ * function, and the page must not claim one.
+ */
+export const simdCensus: SimdCensus = {
+  moduleSha256: "e681d2f76d41305aa3b8c250799f898bd1139497f60580ed59000d49cf5d6360",
+  totalFunctions: 89,
+  vectorFunctions: 5,
+  vectorInstructions: 154,
+  signature: [
+    "v128.load",
+    "f64x2.mul",
+    "f64x2.add"
+  ],
+  signatureHits: 12,
+  opcodes: [
+    {
+      op: "v128.load",
+      count: 40
+    },
+    {
+      op: "v128.store",
+      count: 23
+    },
+    {
+      op: "f64x2.add",
+      count: 20
+    },
+    {
+      op: "v128.const",
+      count: 17
+    },
+    {
+      op: "f64x2.mul",
+      count: 14
+    },
+    {
+      op: "f64x2.extract_lane",
+      count: 10
+    },
+    {
+      op: "f64x2.splat",
+      count: 7
+    },
+    {
+      op: "f64x2.div",
+      count: 4
+    },
+    {
+      op: "i32x4.add",
+      count: 4
+    },
+    {
+      op: "f64x2.neg",
+      count: 3
+    },
+    {
+      op: "f64x2.replace_lane",
+      count: 3
+    },
+    {
+      op: "i8x16.shuffle",
+      count: 2
+    },
+    {
+      op: "v128.load64_zero",
+      count: 2
+    },
+    {
+      op: "f64x2.promote_low_f32x4",
+      count: 2
+    },
+    {
+      op: "f64x2.sub",
+      count: 1
+    },
+    {
+      op: "i32x4.mul",
+      count: 1
+    },
+    {
+      op: "i32x4.extract_lane",
+      count: 1
+    }
+  ],
+  namesStripped: true
+};

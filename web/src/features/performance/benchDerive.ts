@@ -18,13 +18,15 @@ import {
   referenceRun,
   referenceRunId,
   shippedArtifacts,
+  simdCensus,
   type BenchCase,
   type BenchRun,
   type ShippedArtifact,
+  type SimdCensus,
 } from './benchRuns.generated';
 
-export type { BenchCase, BenchRun, ShippedArtifact };
-export { referenceRunId, shippedArtifacts };
+export type { BenchCase, BenchRun, ShippedArtifact, SimdCensus };
+export { referenceRunId, shippedArtifacts, simdCensus };
 
 /** The run every figure on the landing page comes from. */
 export const reference: BenchRun = referenceRun;
