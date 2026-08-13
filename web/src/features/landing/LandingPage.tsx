@@ -339,9 +339,13 @@ function Hero() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.7, delay: 1.5 }}
         >
+          {/* "matmul 256 · 3.57×" under a headline about a hand-written SIMD
+              kernel reads as though SIMD bought the 3.57×. It did not: the SIMD
+              kernels are compiled into BOTH configs, so this measures threading
+              and native codegen on top of them. The label says so. */}
           <div>
-            <dt>matmul 256</dt>
-            <dd className="tabular">{matmul256.speedup} omp+native vs 1-thread</dd>
+            <dt>matmul 256 · threads + native</dt>
+            <dd className="tabular">{matmul256.speedup} — SIMD in both sides</dd>
           </div>
           <div>
             <dt>classify, single thread</dt>

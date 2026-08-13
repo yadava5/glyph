@@ -677,6 +677,14 @@ export function AccuracyWaffle() {
           </b>{' '}
           missed
         </p>
+        {/* The caveat lived in README.md, the System Card and a source comment,
+            but not on the page that shows the number to the most people. */}
+        <p className={styles.waffleCaveat}>
+          Read this as the <b>best epoch</b>, not a clean held-out estimate.{' '}
+          <code>apps/train_model.cpp</code> scores the network on this same set after every epoch
+          and keeps the checkpoint only when that score improves, and the repository ships no
+          validation split — so the set reporting the figure also selected the weights.
+        </p>
       </div>
     </div>
   );
