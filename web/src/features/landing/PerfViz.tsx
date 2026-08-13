@@ -594,7 +594,7 @@ export function LaneScale() {
 /* ─────────────── 5 · accuracy waffle ─────────────── */
 
 /** The model's real MNIST test-set result — matches the hero's 97.01%. */
-const HELD_OUT = { correct: 9701, missed: 299, pct: 97.01 };
+const TEST_SET_RESULT = { correct: 9701, missed: 299, pct: 97.01 };
 
 /**
  * The MNIST test-set result, as a single count-up on the model's real 97.01%
@@ -636,15 +636,15 @@ export function AccuracyWaffle() {
         <div className={styles.waffleBig}>
           <RollingNumber
             key={`c${run}`}
-            value={HELD_OUT.correct}
+            value={TEST_SET_RESULT.correct}
             className={styles.waffleCount}
             glow
           />
           <span className={styles.waffleSlash}>/ 10,000</span>
         </div>
         <p className={styles.wafflePct}>
-          <RollingNumber key={`p${run}`} value={HELD_OUT.pct} decimals={2} suffix="%" glow />{' '}
-          correct · <b>{HELD_OUT.missed.toLocaleString('en-US')}</b> missed
+          <RollingNumber key={`p${run}`} value={TEST_SET_RESULT.pct} decimals={2} suffix="%" glow />{' '}
+          correct · <b>{TEST_SET_RESULT.missed.toLocaleString('en-US')}</b> missed
         </p>
       </div>
     </div>

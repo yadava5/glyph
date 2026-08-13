@@ -303,10 +303,13 @@ export const laneScale = [
 ] as const;
 
 /*
- * ACCURACY WAFFLE — the 97.01% test result drawn honestly as ten thousand
- * MNIST test digits: 9,701 classified correctly, 299 missed. Not a confusion
- * matrix (the repo commits no per-class breakdown, so the page invents
- * none) — just the one verified figure, made countable.
+ * ACCURACY — the 97.01% test result as a count: 9,701 of 10,000 MNIST test
+ * digits classified correctly, 299 missed. Not a confusion matrix (the repo
+ * commits no per-class breakdown, so the page invents none) — just the one
+ * verified figure. The name is historical: the landing card draws the numbers,
+ * NOT a waffle grid. The 100-square waffle lives on System Card page 20, where
+ * each square is 1% rather than one digit; nothing here has ever drawn ten
+ * thousand of anything, and this comment claimed it did until 2026-08-13.
  *
  * NOT "held-out", which this said until 2026-08-13. apps/train_model.cpp
  * assesses the net on this same set every epoch and rewrites the checkpoint
