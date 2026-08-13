@@ -103,9 +103,40 @@ offset  size    field
 
 Weights are stored row-major per layer (each output neuron's
 incoming weights contiguous). The format intentionally uses float32
-even though the internal C++ storage is `double` — the ~1e-7
-round-trip error is well below the precision at which a sigmoid
-MLP's predictions change.
+even though the internal C++ storage is `double`.
+
+That used to be followed by an assertion that the round-trip error "is well
+below the precision at which a sigmoid MLP's predictions change" — plausible,
+and nobody had measured it. It has now been measured, and it holds:
+
+- **Zero prediction changes in 10,000.** Loading the shipped `.bin` and
+  evaluating gives 9,701 / 10,000 — the same label on every single image as the
+  double checkpoint. `benchmarks/mnist_f32_flips.json` records the run.
+- All **79,510** parameters in the `.bin` equal `static_cast<double>(static_cast<float>(w))`
+  of the ASCII value, with zero mismatches, so the export layout is verified too.
+- Largest output-activation difference **1.28e-7**, mean **5.4e-10**.
+- The tightest decision in the whole test set — index 9858, an 8-vs-6 margin of
+  **6.49e-4** — moves by **5.6e-9** under f32. Five orders of magnitude of
+  headroom on the closest call there is.
+
+Reproduce with `./build/fast_mnist_eval --f32-weights`, which is opt-in and
+writes only the comparison artifact.
+
+**What this does NOT establish.** Quantisation is one of three ways the browser
+can disagree with the native evaluator, and it is the one now known to be
+harmless. The other two are unmeasured:
+
+1. **Reduction order.** The native arm64 path takes `dot_neon_rowvec` — one
+   `f64x2` accumulator, two-lane horizontal reduction. The wasm kernel runs two
+   accumulators and reduces four lanes.
+2. **FMA contraction.** NEON's `vfmaq_f64` never rounds the intermediate
+   product; wasm simd128 has no FMA, so every multiply rounds.
+
+(2) is plausibly the larger of the two, because it changes rounding at every
+multiply rather than only in the reduction tree. **So the true browser-versus-native
+difference may be larger than the figure above and is not bounded by it.**
+Closing that needs the wasm module itself run over the same 10,000 images, which
+has not been done. Nothing may claim exact in-browser reproduction until it has.
 
 ## What is actually in the module
 

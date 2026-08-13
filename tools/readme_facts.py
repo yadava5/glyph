@@ -823,6 +823,39 @@ add("viteVersion",
     [site(r"`npm:rolldown-vite@([\d.]+)`")],
     lambda: grep1("web/package.json", r"npm:rolldown-vite@([\d.]+)"))
 
+# -- the f32-vs-double comparison, read out of its own artifact -----------
+#
+# docs/WASM.md states that quantising the weights to float32 changes no
+# predictions. That was an unmeasured assertion until 2026-08-13; these numbers
+# come from benchmarks/mnist_f32_flips.json so the prose cannot drift from the
+# measurement, and a re-run that changes the answer fails the build.
+
+
+def f32_field(*path: str):
+    p = os.path.join(REPO, "benchmarks/mnist_f32_flips.json")
+    try:
+        with open(p, encoding="utf-8") as fh:
+            node = json.load(fh)
+    except FileNotFoundError:
+        die("benchmarks/mnist_f32_flips.json is missing. Regenerate with "
+            "`./build/fast_mnist_eval --f32-weights`.")
+    for key in path:
+        if key not in node:
+            die(f"benchmarks/mnist_f32_flips.json has no `{'.'.join(path)}` — the "
+                f"schema changed and docs/WASM.md still quotes it.")
+        node = node[key]
+    return node
+
+
+add("f32ParamsCompared", "params_compared in benchmarks/mnist_f32_flips.json", "static",
+    [site(r"All \*\*([\d,]+)\*\* parameters in the `\.bin`", file=WASM_MD)],
+    lambda: f32_field("parameter_check", "params_compared"))
+
+add("f32Correct", "float32 correct count in benchmarks/mnist_f32_flips.json", "static",
+    [site(r"evaluating gives ([\d,]+) / 10,000", file=WASM_MD)],
+    lambda: f32_field("accuracy", "float32", "correct"))
+
+
 # -- the wasm SIMD census, read out of the committed census artifact ------
 #
 # docs/WASM.md quotes four counts from docs/benchmarks/wasm-simd-census.json.
