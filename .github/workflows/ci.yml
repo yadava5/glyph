@@ -36,6 +36,14 @@ jobs:
       - name: Verify the landing page's numbers still match the run records
         run: python3 tools/gen_web_facts.py --check
 
+      # Catches "Missing: X from lock file" before the frontend job spends two
+      # minutes reaching the same conclusion. A macOS `npm install` can prune
+      # top-level entries that only Linux needs — six pushes went red that way
+      # on 2026-08-13 — and no local check sees it, because locally the tree
+      # resolves. This walks every dependency edge in the lock instead.
+      - name: Verify web/package-lock.json is self-consistent
+        run: python3 tools/check_lockfile.py
+
   build-test:
     runs-on: ${{ matrix.os }}
     strategy:
