@@ -1,0 +1,85 @@
+{
+  "$comment": [
+    "How many of the 10,000 MNIST test predictions change when the committed double",
+    "checkpoint is replaced by the float32 export the browser actually downloads?",
+    "benchmarks/mnist_eval.json records 9701/10000 = 97.01% from model.weights, the",
+    "800,678-byte ASCII checkpoint at full double precision. The landing page's wasm",
+    "path fetches web/public/wasm/model.weights.bin instead -- the 318,064-byte float32",
+    "export written by apps/export_weights.cpp -- and widens it back to double on load.",
+    "If those two disagree, re-running the accuracy claim in a visitor's browser is not",
+    "a reproduction of the claim.",
+    "",
+    "Produced by: fast_mnist_eval model.weights data TestingSetList.txt benchmarks --f32-weights",
+    "after: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --target fast_mnist_eval. The f32",
+    "network is loaded from the shipped .bin through NeuralNet::loadBinary, not re-derived;",
+    "parameter_check below verifies element by element that those bytes are exactly",
+    "static_cast<double>(static_cast<float>(w)) of the ASCII checkpoint.",
+    "",
+    "LIMITATION -- this is the QUANTISATION difference only, and it does not bound the",
+    "true browser-vs-native delta. Both columns here were computed by the same native",
+    "kernel, so two further differences are unmeasured: (1) reduction order -- the arm64",
+    "NEON path in src/NeuralNet.cpp accumulates in one f64x2 accumulator and reduces two",
+    "lanes, while the wasm simd128 path uses two independent f64x2 accumulators and",
+    "reduces four; and (2) FMA contraction -- the NEON kernel uses vfmaq_f64, so products",
+    "are never rounded, while wasm simd128 has no FMA and rounds every product. (2) is",
+    "plausibly the larger of the two, since it changes rounding at every multiply rather",
+    "than only in the reduction tree. The real browser-vs-native delta can therefore be",
+    "larger than the number below, and is not bounded by it. Measuring it requires",
+    "running the emscripten build itself and diffing against this native run."
+  ],
+  "schema": "glyph.mnist_f32_flips/1",
+  "generator": "apps/eval_model.cpp (fast_mnist_eval --f32-weights)",
+  "weights": {
+    "double": { "path": "model.weights", "bytes": 800678, "sha256": "dddc925062c6a918e094652df7a0393692a66f9d90568cc1ec4a5e4072a884e8" },
+    "float32": { "path": "web/public/wasm/model.weights.bin", "bytes": 318064, "sha256": "cbbb2b7b57120fff98982510423d3894a3dceeb3db0f005d040b7389ad442786" }
+  },
+  "parameter_check": {
+    "note": "every weight and bias in the .bin equals static_cast<double>(static_cast<float>(w)) of the ASCII value",
+    "params_compared": 79510,
+    "mismatches": 0,
+    "max_abs_weight_delta": 2.172852e-07
+  },
+  "dataset": { "list": "TestingSetList.txt", "root": "data", "images": 10000 },
+  "accuracy": {
+    "double": { "correct": 9701, "accuracy_pct": 97.0100 },
+    "float32": { "correct": 9701, "accuracy_pct": 97.0100 },
+    "delta_correct": 0
+  },
+  "flips": {
+    "note": "images whose argmax differs between the two weight precisions; helpful = f32 right where double was wrong",
+    "count": 0,
+    "helpful": 0,
+    "harmful": 0,
+    "neutral": 0,
+    "indices": [],
+    "records": [
+    ]
+  },
+  "activation_delta": {
+    "note": "|a_double - a_f32| over all 100000 output activations",
+    "max_abs": 1.278698e-07,
+    "mean_abs": 5.401477e-10
+  },
+  "tightest_margins": {
+    "note": "the 10 smallest double-regime argmax margins (top1 - top2) in the test set -- the images most exposed to f32 rounding",
+    "records": [
+      { "index": 9858, "file": "TestingSet/digit_9858_6.pgm", "true": 6, "top1": 8, "top2": 6, "margin_double": 6.493207e-04, "margin_f32": 6.493152e-04, "margin_shift": -5.573957e-09, "pred_f32": 8, "flipped": false },
+      { "index": 882, "file": "TestingSet/digit_882_9.pgm", "true": 9, "top1": 9, "top2": 7, "margin_double": 1.481620e-03, "margin_f32": 1.481634e-03, "margin_shift": 1.398593e-08, "pred_f32": 9, "flipped": false },
+      { "index": 151, "file": "TestingSet/digit_151_9.pgm", "true": 9, "top1": 0, "top2": 9, "margin_double": 2.318129e-03, "margin_f32": 2.318097e-03, "margin_shift": -3.209691e-08, "pred_f32": 0, "flipped": false },
+      { "index": 2560, "file": "TestingSet/digit_2560_3.pgm", "true": 3, "top1": 3, "top2": 1, "margin_double": 2.526546e-03, "margin_f32": 2.526540e-03, "margin_shift": -5.648960e-09, "pred_f32": 3, "flipped": false },
+      { "index": 4966, "file": "TestingSet/digit_4966_7.pgm", "true": 7, "top1": 8, "top2": 1, "margin_double": 2.575885e-03, "margin_f32": 2.575885e-03, "margin_shift": -9.083767e-11, "pred_f32": 8, "flipped": false },
+      { "index": 1469, "file": "TestingSet/digit_1469_3.pgm", "true": 3, "top1": 5, "top2": 3, "margin_double": 2.974056e-03, "margin_f32": 2.974037e-03, "margin_shift": -1.883367e-08, "pred_f32": 5, "flipped": false },
+      { "index": 629, "file": "TestingSet/digit_629_2.pgm", "true": 2, "top1": 2, "top2": 3, "margin_double": 4.290292e-03, "margin_f32": 4.290289e-03, "margin_shift": -2.447540e-09, "pred_f32": 2, "flipped": false },
+      { "index": 3838, "file": "TestingSet/digit_3838_7.pgm", "true": 7, "top1": 1, "top2": 7, "margin_double": 4.754122e-03, "margin_f32": 4.754094e-03, "margin_shift": -2.801241e-08, "pred_f32": 1, "flipped": false },
+      { "index": 6651, "file": "TestingSet/digit_6651_0.pgm", "true": 0, "top1": 5, "top2": 2, "margin_double": 4.865399e-03, "margin_f32": 4.865401e-03, "margin_shift": 1.552372e-09, "pred_f32": 5, "flipped": false },
+      { "index": 717, "file": "TestingSet/digit_717_0.pgm", "true": 0, "top1": 6, "top2": 0, "margin_double": 5.049865e-03, "margin_f32": 5.049866e-03, "margin_shift": 3.632685e-10, "pred_f32": 6, "flipped": false }
+    ]
+  },
+  "spot_checks": {
+    "note": "indices named by hand as knife-edge errors; margin here is top1 - top2, which is not always pred - true",
+    "records": [
+      { "index": 151, "file": "TestingSet/digit_151_9.pgm", "true": 9, "top1": 0, "top2": 9, "margin_double": 2.318129e-03, "margin_f32": 2.318097e-03, "margin_shift": -3.209691e-08, "pred_f32": 0, "flipped": false },
+      { "index": 9858, "file": "TestingSet/digit_9858_6.pgm", "true": 6, "top1": 8, "top2": 6, "margin_double": 6.493207e-04, "margin_f32": 6.493152e-04, "margin_shift": -5.573957e-09, "pred_f32": 8, "flipped": false }
+    ]
+  }
+}

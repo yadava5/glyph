@@ -18,13 +18,28 @@
  * draw the real errors rather than stand-ins.
  *
  * Usage:
- *   fast_mnist_eval [model] [dataDir] [listFile] [outDir]
+ *   fast_mnist_eval [model] [dataDir] [listFile] [outDir] [--f32-weights[=bin]]
  * Defaults:
  *   model.weights  data  TestingSetList.txt  benchmarks
+ *
+ * --f32-weights switches the tool into a second, strictly opt-in mode
+ * that answers a different question: the browser does NOT run the ASCII
+ * checkpoint. It fetches web/public/wasm/model.weights.bin, the float32
+ * export produced by apps/export_weights.cpp, and widens it back to
+ * double. So the landing page's "re-run the claim in your browser"
+ * promise is only honest if the f32 export predicts the same 10,000
+ * labels as the double checkpoint. This mode measures that: it loads
+ * both networks, classifies every image with each, and writes
+ *
+ *   benchmarks/mnist_f32_flips.json    every prediction that changed
+ *
+ * and nothing else -- the three artifacts above are left untouched, so
+ * the committed 97.01% record can never be clobbered by this mode.
  */
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
@@ -275,13 +290,467 @@ struct ErrorRecord {
     double trueActivation;
 };
 
+// ---------------------------------------------------------------------------
+// --f32-weights mode: double checkpoint vs float32 browser export
+// ---------------------------------------------------------------------------
+
+/** Scientific formatting, for quantities that live near 1e-8. */
+std::string sci(double v, int precision = 6) {
+    std::ostringstream os;
+    os << std::scientific << std::setprecision(precision) << v;
+    return os.str();
+}
+
+/**
+ * Argmax and runner-up of an output column, using the same tie-break as
+ * the main evaluation loop (strict >, scanning upward, so the lowest
+ * index wins a tie).
+ */
+void top2Of(const Matrix& out, int& best, int& second) {
+    best = 0;
+    for (int i = 1; i < kClasses; ++i) {
+        if (out[i][0] > out[best][0]) best = i;
+    }
+    second = -1;
+    for (int i = 0; i < kClasses; ++i) {
+        if (i == best) continue;
+        if (second < 0 || out[i][0] > out[second][0]) second = i;
+    }
+}
+
+/** An image whose argmax differs between the two weight precisions. */
+struct FlipRecord {
+    long index;
+    std::string file;
+    int trueLabel;
+    int predDouble;
+    int predF32;
+    double dblActPredDouble;  // a_double[predDouble]
+    double dblActPredF32;     // a_double[predF32]
+    double f32ActPredDouble;  // a_f32[predDouble]
+    double f32ActPredF32;     // a_f32[predF32]
+};
+
+/**
+ * Per-image argmax margin. \c top1/\c top2 are chosen in the double
+ * regime; the f32 activations are read from those same two neurons so
+ * the margin is directly comparable.
+ */
+struct MarginRecord {
+    long index;
+    std::string file;
+    int trueLabel;
+    int top1;
+    int top2;
+    double a1Double, a2Double;
+    double a1F32, a2F32;
+    int predF32;
+
+    double marginDouble() const { return a1Double - a2Double; }
+    double marginF32() const { return a1F32 - a2F32; }
+};
+
+/** Emit one margin record as a JSON object (no trailing comma). */
+void writeMarginJson(std::ostream& j, const MarginRecord& m,
+                     const char* indent) {
+    j << indent << "{ \"index\": " << m.index << ", \"file\": \"" << m.file
+      << "\", \"true\": " << m.trueLabel << ", \"top1\": " << m.top1
+      << ", \"top2\": " << m.top2
+      << ", \"margin_double\": " << sci(m.marginDouble())
+      << ", \"margin_f32\": " << sci(m.marginF32())
+      << ", \"margin_shift\": " << sci(m.marginF32() - m.marginDouble())
+      << ", \"pred_f32\": " << m.predF32
+      << ", \"flipped\": " << (m.predF32 != m.top1 ? "true" : "false") << " }";
+}
+
+/**
+ * Compare the committed double checkpoint against the float32 binary
+ * export over the whole test set and write benchmarks/mnist_f32_flips.json.
+ *
+ * The f32 network is not re-derived here: it is loaded from the exact
+ * bytes the browser downloads, through the same NeuralNet::loadBinary
+ * the wasm module uses. A parameter-by-parameter check then proves that
+ * those bytes are bit-identical to static_cast<double>(static_cast<float>(w))
+ * of the ASCII checkpoint, so "load the shipped .bin" and "round every
+ * weight through float" are provably the same experiment.
+ *
+ * \return process exit status.
+ */
+int runF32Compare(const NeuralNet& netDouble, const std::string& modelPath,
+                  std::uintmax_t modelBytes, const std::string& modelSha,
+                  const std::string& binPath, const std::string& dataPath,
+                  const std::string& listPath, const std::string& outDir) {
+    std::uintmax_t binBytes = 0;
+    const std::string binSha = sha256File(binPath, binBytes);
+    if (binSha.empty()) {
+        std::cerr << "Error: cannot read binary weights: " << binPath << "\n";
+        return 1;
+    }
+
+    std::vector<unsigned char> blob;
+    {
+        std::ifstream in(binPath, std::ios::binary);
+        if (!in) {
+            std::cerr << "Error: cannot open " << binPath << "\n";
+            return 1;
+        }
+        blob.assign(std::istreambuf_iterator<char>(in),
+                    std::istreambuf_iterator<char>());
+    }
+
+    NeuralNet netF32({784, 100, 10});
+    try {
+        netF32.loadBinary(blob.data(), blob.size());
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << binPath << ": " << e.what() << "\n";
+        return 1;
+    }
+    std::cout << "F32    : " << binPath << " (" << binBytes << " bytes, sha256 "
+              << binSha.substr(0, 16) << "...)\n";
+
+    // ---- parameter equivalence: is the .bin exactly the f32 rounding? -----
+    std::size_t params = 0, mismatches = 0;
+    double maxAbsWeightDelta = 0.0;
+    {
+        const MatrixVec& wd = netDouble.getWeights();
+        const MatrixVec& wf = netF32.getWeights();
+        const MatrixVec& bd = netDouble.getBiases();
+        const MatrixVec& bf = netF32.getBiases();
+        if (wd.size() != wf.size() || bd.size() != bf.size()) {
+            std::cerr << "Error: layer count differs between " << modelPath
+                      << " and " << binPath << "\n";
+            return 1;
+        }
+        auto compare = [&](const MatrixVec& a, const MatrixVec& b) -> bool {
+            for (std::size_t l = 0; l < a.size(); ++l) {
+                if (a[l].height() != b[l].height() ||
+                    a[l].width() != b[l].width()) {
+                    return false;
+                }
+                for (std::size_t r = 0; r < a[l].height(); ++r) {
+                    for (std::size_t c = 0; c < a[l].width(); ++c) {
+                        const double ref = static_cast<double>(
+                            static_cast<float>(a[l][r][c]));
+                        ++params;
+                        if (b[l][r][c] != ref) ++mismatches;
+                        maxAbsWeightDelta = std::max(
+                            maxAbsWeightDelta, std::fabs(a[l][r][c] - b[l][r][c]));
+                    }
+                }
+            }
+            return true;
+        };
+        if (!compare(bd, bf) || !compare(wd, wf)) {
+            std::cerr << "Error: weight/bias shapes differ between "
+                      << modelPath << " and " << binPath << "\n";
+            return 1;
+        }
+    }
+    std::cout << "Params : " << params << " compared, " << mismatches
+              << " differ from static_cast<double>(static_cast<float>(w))\n";
+    if (mismatches != 0) {
+        std::cerr << "Error: " << binPath << " is not the float32 rounding of "
+                  << modelPath << "; the two files are out of sync.\n";
+        return 1;
+    }
+
+    // ---- classify every image with both networks ---------------------------
+    std::ifstream testList(listPath);
+    if (!testList) {
+        std::cerr << "Error: cannot open list file: " << listPath << "\n"
+                  << "The MNIST test set is gitignored; run tools/bootstrap "
+                     "to fetch it.\n";
+        return 1;
+    }
+
+    std::vector<FlipRecord> flips;
+    std::vector<MarginRecord> margins;
+    margins.reserve(10000);
+    long total = 0, correctDouble = 0, correctF32 = 0;
+    double maxAbsActDelta = 0.0, sumAbsActDelta = 0.0;
+    std::size_t actSamples = 0;
+
+    std::string line;
+    while (std::getline(testList, line)) {
+        stripCr(line);
+        if (line.empty()) continue;
+
+        long ordinal = -1;
+        int expected = -1;
+        if (!parseNameFields(line, ordinal, expected)) {
+            std::cerr << "Error: cannot parse label from '" << line << "'\n";
+            return 1;
+        }
+
+        const Matrix img = loadPGM((fs::path(dataPath) / line).string());
+        // Both networks are 784->100->10 and both go through classify(),
+        // so the two forward passes differ only in the weight values.
+        const Matrix outD = netDouble.classify(img);
+        const Matrix outF = netF32.classify(img);
+
+        int top1D = 0, top2D = 0, top1F = 0, top2F = 0;
+        top2Of(outD, top1D, top2D);
+        top2Of(outF, top1F, top2F);
+
+        for (int c = 0; c < kClasses; ++c) {
+            const double d = std::fabs(outD[c][0] - outF[c][0]);
+            maxAbsActDelta = std::max(maxAbsActDelta, d);
+            sumAbsActDelta += d;
+            ++actSamples;
+        }
+
+        if (top1D == expected) ++correctDouble;
+        if (top1F == expected) ++correctF32;
+        if (top1D != top1F) {
+            flips.push_back({total, line, expected, top1D, top1F,
+                             outD[top1D][0], outD[top1F][0], outF[top1D][0],
+                             outF[top1F][0]});
+        }
+        margins.push_back({total, line, expected, top1D, top2D, outD[top1D][0],
+                           outD[top2D][0], outF[top1D][0], outF[top2D][0],
+                           top1F});
+        ++total;
+    }
+
+    if (total == 0) {
+        std::cerr << "Error: list file " << listPath << " yielded 0 images.\n";
+        return 1;
+    }
+
+    // Tightest double-regime argmax margins: the images where f32 rounding
+    // had the best chance of flipping the decision.
+    constexpr std::size_t kTightest = 10;
+    std::vector<MarginRecord> tightest = margins;
+    const std::size_t nTight = std::min(kTightest, tightest.size());
+    std::partial_sort(tightest.begin(), tightest.begin() + nTight,
+                      tightest.end(),
+                      [](const MarginRecord& a, const MarginRecord& b) {
+                          return a.marginDouble() < b.marginDouble();
+                      });
+    tightest.resize(nTight);
+
+    // Indices called out by hand as knife-edge cases in mnist_eval.json.
+    const std::array<long, 2> spotIdx{151, 9858};
+
+    long helpful = 0, harmful = 0, neutral = 0;
+    for (const FlipRecord& f : flips) {
+        if (f.predF32 == f.trueLabel) {
+            ++helpful;
+        } else if (f.predDouble == f.trueLabel) {
+            ++harmful;
+        } else {
+            ++neutral;
+        }
+    }
+
+    const double accD = static_cast<double>(correctDouble) / total;
+    const double accF = static_cast<double>(correctF32) / total;
+    const double meanAbsActDelta =
+        actSamples ? sumAbsActDelta / static_cast<double>(actSamples) : 0.0;
+
+    std::cout << "Images : " << total << "\n"
+              << "double : " << correctDouble << " correct ("
+              << fixed(accD * 100.0, 4) << "%)\n"
+              << "f32    : " << correctF32 << " correct ("
+              << fixed(accF * 100.0, 4) << "%)\n"
+              << "Flips  : " << flips.size() << "  (helpful " << helpful
+              << ", harmful " << harmful << ", neutral " << neutral << ")\n"
+              << "Tightest double-regime margin: "
+              << (tightest.empty() ? std::string("n/a")
+                                   : sci(tightest.front().marginDouble()))
+              << "\nMax |activation delta|: " << sci(maxAbsActDelta) << "\n";
+
+    fs::create_directories(outDir);
+    const std::string jsonPath =
+        (fs::path(outDir) / "mnist_f32_flips.json").string();
+    std::ofstream j(jsonPath);
+    if (!j) {
+        std::cerr << "Error: cannot write " << jsonPath << "\n";
+        return 1;
+    }
+
+    j << "{\n";
+    j << "  \"$comment\": [\n"
+      << "    \"How many of the 10,000 MNIST test predictions change when the "
+         "committed double\",\n"
+      << "    \"checkpoint is replaced by the float32 export the browser "
+         "actually downloads?\",\n"
+      << "    \"benchmarks/mnist_eval.json records 9701/10000 = 97.01% from "
+         "model.weights, the\",\n"
+      << "    \"800,678-byte ASCII checkpoint at full double precision. The "
+         "landing page's wasm\",\n"
+      << "    \"path fetches web/public/wasm/model.weights.bin instead -- the "
+         "318,064-byte float32\",\n"
+      << "    \"export written by apps/export_weights.cpp -- and widens it "
+         "back to double on load.\",\n"
+      << "    \"If those two disagree, re-running the accuracy claim in a "
+         "visitor's browser is not\",\n"
+      << "    \"a reproduction of the claim.\",\n"
+      << "    \"\",\n"
+      << "    \"Produced by: fast_mnist_eval " << modelPath << " " << dataPath
+      << " " << listPath << " " << outDir << " --f32-weights\",\n"
+      << "    \"after: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && "
+         "cmake --build build --target fast_mnist_eval. The f32\",\n"
+      << "    \"network is loaded from the shipped .bin through "
+         "NeuralNet::loadBinary, not re-derived;\",\n"
+      << "    \"parameter_check below verifies element by element that those "
+         "bytes are exactly\",\n"
+      << "    \"static_cast<double>(static_cast<float>(w)) of the ASCII "
+         "checkpoint.\",\n"
+      << "    \"\",\n"
+      << "    \"LIMITATION -- this is the QUANTISATION difference only, and it "
+         "does not bound the\",\n"
+      << "    \"true browser-vs-native delta. Both columns here were computed "
+         "by the same native\",\n"
+      << "    \"kernel, so two further differences are unmeasured: (1) "
+         "reduction order -- the arm64\",\n"
+      << "    \"NEON path in src/NeuralNet.cpp accumulates in one f64x2 "
+         "accumulator and reduces two\",\n"
+      << "    \"lanes, while the wasm simd128 path uses two independent f64x2 "
+         "accumulators and\",\n"
+      << "    \"reduces four; and (2) FMA contraction -- the NEON kernel uses "
+         "vfmaq_f64, so products\",\n"
+      << "    \"are never rounded, while wasm simd128 has no FMA and rounds "
+         "every product. (2) is\",\n"
+      << "    \"plausibly the larger of the two, since it changes rounding at "
+         "every multiply rather\",\n"
+      << "    \"than only in the reduction tree. The real browser-vs-native "
+         "delta can therefore be\",\n"
+      << "    \"larger than the number below, and is not bounded by it. "
+         "Measuring it requires\",\n"
+      << "    \"running the emscripten build itself and diffing against this "
+         "native run.\"\n"
+      << "  ],\n";
+    j << "  \"schema\": \"glyph.mnist_f32_flips/1\",\n";
+    j << "  \"generator\": \"apps/eval_model.cpp (fast_mnist_eval "
+         "--f32-weights)\",\n";
+    j << "  \"weights\": {\n"
+      << "    \"double\": { \"path\": \"" << modelPath << "\", \"bytes\": "
+      << modelBytes << ", \"sha256\": \"" << modelSha << "\" },\n"
+      << "    \"float32\": { \"path\": \"" << binPath << "\", \"bytes\": "
+      << binBytes << ", \"sha256\": \"" << binSha << "\" }\n"
+      << "  },\n";
+    j << "  \"parameter_check\": {\n"
+      << "    \"note\": \"every weight and bias in the .bin equals "
+         "static_cast<double>(static_cast<float>(w)) of the ASCII value\",\n"
+      << "    \"params_compared\": " << params << ",\n"
+      << "    \"mismatches\": " << mismatches << ",\n"
+      << "    \"max_abs_weight_delta\": " << sci(maxAbsWeightDelta) << "\n"
+      << "  },\n";
+    j << "  \"dataset\": { \"list\": \"" << listPath << "\", \"root\": \""
+      << dataPath << "\", \"images\": " << total << " },\n";
+    j << "  \"accuracy\": {\n"
+      << "    \"double\": { \"correct\": " << correctDouble
+      << ", \"accuracy_pct\": " << fixed(accD * 100.0, 4) << " },\n"
+      << "    \"float32\": { \"correct\": " << correctF32
+      << ", \"accuracy_pct\": " << fixed(accF * 100.0, 4) << " },\n"
+      << "    \"delta_correct\": " << (correctF32 - correctDouble) << "\n"
+      << "  },\n";
+    j << "  \"flips\": {\n"
+      << "    \"note\": \"images whose argmax differs between the two weight "
+         "precisions; helpful = f32 right where double was wrong\",\n"
+      << "    \"count\": " << flips.size() << ",\n"
+      << "    \"helpful\": " << helpful << ",\n"
+      << "    \"harmful\": " << harmful << ",\n"
+      << "    \"neutral\": " << neutral << ",\n"
+      << "    \"indices\": [";
+    for (std::size_t i = 0; i < flips.size(); ++i) {
+        j << flips[i].index << (i + 1 == flips.size() ? "" : ", ");
+    }
+    j << "],\n";
+    j << "    \"records\": [\n";
+    for (std::size_t i = 0; i < flips.size(); ++i) {
+        const FlipRecord& f = flips[i];
+        const char* verdict = (f.predF32 == f.trueLabel) ? "helpful"
+                              : (f.predDouble == f.trueLabel) ? "harmful"
+                                                              : "neutral";
+        j << "      { \"index\": " << f.index << ", \"file\": \"" << f.file
+          << "\", \"true\": " << f.trueLabel
+          << ", \"pred_double\": " << f.predDouble
+          << ", \"pred_f32\": " << f.predF32
+          << ", \"double_activation_of_pred_double\": "
+          << fixed(f.dblActPredDouble, 12)
+          << ", \"double_activation_of_pred_f32\": "
+          << fixed(f.dblActPredF32, 12)
+          << ", \"f32_activation_of_pred_double\": "
+          << fixed(f.f32ActPredDouble, 12)
+          << ", \"f32_activation_of_pred_f32\": " << fixed(f.f32ActPredF32, 12)
+          << ", \"margin_double\": "
+          << sci(f.dblActPredDouble - f.dblActPredF32)
+          << ", \"margin_f32\": " << sci(f.f32ActPredF32 - f.f32ActPredDouble)
+          << ", \"verdict\": \"" << verdict << "\" }"
+          << (i + 1 == flips.size() ? "\n" : ",\n");
+    }
+    j << "    ]\n  },\n";
+    j << "  \"activation_delta\": {\n"
+      << "    \"note\": \"|a_double - a_f32| over all " << actSamples
+      << " output activations\",\n"
+      << "    \"max_abs\": " << sci(maxAbsActDelta) << ",\n"
+      << "    \"mean_abs\": " << sci(meanAbsActDelta) << "\n"
+      << "  },\n";
+    j << "  \"tightest_margins\": {\n"
+      << "    \"note\": \"the " << nTight
+      << " smallest double-regime argmax margins (top1 - top2) in the test "
+         "set -- the images most exposed to f32 rounding\",\n"
+      << "    \"records\": [\n";
+    for (std::size_t i = 0; i < tightest.size(); ++i) {
+        writeMarginJson(j, tightest[i], "      ");
+        j << (i + 1 == tightest.size() ? "\n" : ",\n");
+    }
+    j << "    ]\n  },\n";
+    j << "  \"spot_checks\": {\n"
+      << "    \"note\": \"indices named by hand as knife-edge errors; margin "
+         "here is top1 - top2, which is not always pred - true\",\n"
+      << "    \"records\": [\n";
+    for (std::size_t s = 0; s < spotIdx.size(); ++s) {
+        const auto it = std::find_if(margins.begin(), margins.end(),
+                                     [&](const MarginRecord& m) {
+                                         return m.index == spotIdx[s];
+                                     });
+        if (it == margins.end()) continue;
+        writeMarginJson(j, *it, "      ");
+        j << (s + 1 == spotIdx.size() ? "\n" : ",\n");
+    }
+    j << "    ]\n  }\n}\n";
+
+    if (!j) {
+        std::cerr << "Error: write failed for " << jsonPath << "\n";
+        return 1;
+    }
+    std::cout << "Wrote " << jsonPath << "\n";
+    return 0;
+}
+
 }  // namespace
 
 int main(int argc, char* argv[]) {
-    const std::string modelPath = (argc > 1) ? argv[1] : "model.weights";
-    const std::string dataPath  = (argc > 2) ? argv[2] : "data";
-    const std::string listPath  = (argc > 3) ? argv[3] : "TestingSetList.txt";
-    const std::string outDir    = (argc > 4) ? argv[4] : "benchmarks";
+    // Flags are pulled out first so the positional argument order
+    // documented in the header comment is unchanged.
+    std::vector<std::string> positional;
+    bool f32Mode = false;
+    std::string binPath = "web/public/wasm/model.weights.bin";
+    for (int i = 1; i < argc; ++i) {
+        const std::string arg = argv[i];
+        if (arg.rfind("--f32-weights", 0) == 0) {
+            f32Mode = true;
+            const std::size_t eq = arg.find('=');
+            if (eq != std::string::npos) binPath = arg.substr(eq + 1);
+        } else if (arg.rfind("--", 0) == 0) {
+            std::cerr << "Error: unknown flag " << arg << "\n"
+                      << "Usage: fast_mnist_eval [model] [dataDir] [listFile] "
+                         "[outDir] [--f32-weights[=bin]]\n";
+            return 2;
+        } else {
+            positional.push_back(arg);
+        }
+    }
+    const auto at = [&](std::size_t i, const char* fallback) {
+        return i < positional.size() ? positional[i] : std::string(fallback);
+    };
+    const std::string modelPath = at(0, "model.weights");
+    const std::string dataPath  = at(1, "data");
+    const std::string listPath  = at(2, "TestingSetList.txt");
+    const std::string outDir    = at(3, "benchmarks");
 
     std::uintmax_t modelBytes = 0;
     const std::string modelSha = sha256File(modelPath, modelBytes);
@@ -301,6 +770,13 @@ int main(int argc, char* argv[]) {
     }
     std::cout << "Model  : " << modelPath << " (" << modelBytes
               << " bytes, sha256 " << modelSha.substr(0, 16) << "...)\n";
+
+    // Opt-in second mode. Writes only benchmarks/mnist_f32_flips.json;
+    // the committed accuracy artifacts below are never reached.
+    if (f32Mode) {
+        return runF32Compare(net, modelPath, modelBytes, modelSha, binPath,
+                             dataPath, listPath, outDir);
+    }
 
     std::ifstream testList(listPath);
     if (!testList) {
