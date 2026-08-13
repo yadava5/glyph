@@ -21,7 +21,13 @@ fonts and fails if any required character is absent, and that runs in CI.
     python3 tools/subset_fonts.py --write    # subset in place, print savings
     python3 tools/subset_fonts.py --check    # fail if a needed glyph is missing
 
-Requires fonttools with the woff2 extra (`pip install 'fonttools[woff2]'`).
+Requires fontTools and brotli:
+
+    pip install 'fonttools==4.63.0' 'brotli>=1.1.0'
+
+`fonttools[woff2]` looks right and is not: pip accepts the unknown extra,
+installs nothing additional, and the woff2 reader fails later with
+"No module named brotli". The extra that exists is spelled `woff`.
 """
 
 from __future__ import annotations
@@ -37,6 +43,8 @@ FONT_DIR = ROOT / "web/public/fonts"
 SOURCE_DIRS = [ROOT / "web/src"]
 SOURCE_FILES = [ROOT / "web/index.html"]
 SOURCE_SUFFIXES = {".ts", ".tsx", ".css", ".html"}
+
+FONTTOOLS_PIN = "4.63.0"
 
 FONTS = [
     "Geist-Variable.woff2",
@@ -105,7 +113,15 @@ def required() -> set[int]:
 def installed_coverage(path: pathlib.Path) -> set[int]:
     from fontTools.ttLib import TTFont
 
-    font = TTFont(path, fontNumber=0)
+    try:
+        font = TTFont(path, fontNumber=0)
+    except ImportError as exc:  # woff2 needs brotli, and fontTools says so late
+        raise SystemExit(
+            f"cannot read {path.name}: {exc}. Install brotli — "
+            f"`pip install 'fonttools=={FONTTOOLS_PIN}' 'brotli>=1.1.0'`. Note that "
+            f"`fonttools[woff2]` is NOT a real extra: pip accepts the name, installs "
+            f"nothing extra, and this fails at read time instead of install time."
+        ) from exc
     covered: set[int] = set()
     for table in font["cmap"].tables:
         covered |= set(table.cmap.keys())
