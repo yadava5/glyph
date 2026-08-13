@@ -87,3 +87,15 @@ jobs:
 
       - name: Lint
         run: npm run lint --if-present
+
+      # The self-hosted fonts are subset to the characters this site sets. A
+      # missing glyph is a tofu box in production and nothing else in the build
+      # notices, so the subset is checked against a character set derived from
+      # web/src rather than trusted. This lives in the frontend job, not the
+      # stdlib-only readme-facts job, because it needs fontTools.
+      - name: Install fontTools
+        run: pip install --quiet 'fonttools[woff2]==4.63.0'
+
+      - name: Verify the font subset still covers every character the site sets
+        working-directory: .
+        run: python3 tools/subset_fonts.py --check
