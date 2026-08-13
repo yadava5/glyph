@@ -17,12 +17,14 @@ import {
   dot20xRun,
   referenceRun,
   referenceRunId,
+  shippedArtifacts,
   type BenchCase,
   type BenchRun,
+  type ShippedArtifact,
 } from './benchRuns.generated';
 
-export type { BenchCase, BenchRun };
-export { referenceRunId };
+export type { BenchCase, BenchRun, ShippedArtifact };
+export { referenceRunId, shippedArtifacts };
 
 /** The run every figure on the landing page comes from. */
 export const reference: BenchRun = referenceRun;
@@ -124,6 +126,15 @@ export function formatImagesPerSecond(ns: number): string {
 
 export function formatGflops(n: number, ns: number): string {
   return `${gflops(n, ns).toFixed(1)} GFLOP/s`;
+}
+
+/**
+ * Bytes → kB, decimal, matching docs/WASM.md's stated convention (bytes ÷ 1000,
+ * not ÷ 1024). Stating which one is meant is the difference between a figure a
+ * reader can check and a figure that is 2.4% off for reasons nobody can see.
+ */
+export function formatKb(bytes: number): string {
+  return `${(bytes / 1000).toFixed(1)} kB`;
 }
 
 /** 2026-08-02T21:01:44-04:00 → "2 August 2026". */

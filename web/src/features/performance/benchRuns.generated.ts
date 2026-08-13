@@ -1,14 +1,16 @@
 /*
  * GENERATED FILE — do not edit by hand.
  *
- * Written by `tools/gen_bench_display.py` from the Google Benchmark JSON
- * committed under `docs/benchmarks/runs/`. Every number below is a
- * `real_time` median read straight out of one of those files, and every
- * figure the page displays is derived from these by `benchDerive.ts` — so a
- * displayed number cannot drift from the artifact it claims to come from.
+ * Written by `tools/gen_web_facts.py` from the Google Benchmark JSON in
+ * `docs/benchmarks/runs/` and the shipped WebAssembly artifacts in
+ * `web/public/wasm/`. Every benchmark number below is a `real_time` median
+ * read straight out of one of those files, every artifact size is `len()` of
+ * the file on disk, and every figure the page displays is derived from these
+ * by `benchDerive.ts` — so a displayed number cannot drift from the artifact
+ * it claims to come from.
  *
- * Regenerate:  python3 tools/gen_bench_display.py
- * CI gate:     python3 tools/gen_bench_display.py --check
+ * Regenerate:  python3 tools/gen_web_facts.py
+ * CI gate:     python3 tools/gen_web_facts.py --check
  *
  * `ns` values are wall-clock nanoseconds per iteration. `cv*` values are the
  * coefficient of variation as a percentage, reported by Google Benchmark for
@@ -318,3 +320,42 @@ export const decemberRun: BenchRun = {
 
 /** The run the repository designates canonical — see docs/benchmarks/ENVIRONMENT.md. */
 export const referenceRunId = "reference" as const;
+
+export interface ShippedArtifact {
+  id: string;
+  file: string;
+  /** Repo-relative path, so a reader can check the size themselves. */
+  path: string;
+  what: string;
+  bytes: number;
+  /** Canonical gzip stream, no filename header — what a server sends. */
+  gzipBytes: number;
+}
+
+/** The files the browser downloads to run the network, measured on disk. */
+export const shippedArtifacts: ShippedArtifact[] = [
+  {
+    id: "glue",
+    file: "fast_mnist.js",
+    path: "web/public/wasm/fast_mnist.js",
+    what: "Emscripten ES-module glue",
+    bytes: 47839,
+    gzipBytes: 12580
+  },
+  {
+    id: "wasm",
+    file: "fast_mnist.wasm",
+    path: "web/public/wasm/fast_mnist.wasm",
+    what: "compiled Matrix + NeuralNet + Embind",
+    bytes: 43751,
+    gzipBytes: 22816
+  },
+  {
+    id: "weights",
+    file: "model.weights.bin",
+    path: "web/public/wasm/model.weights.bin",
+    what: "float32 weights, exported for the browser",
+    bytes: 318064,
+    gzipBytes: 299144
+  }
+];

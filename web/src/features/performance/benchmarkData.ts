@@ -2,7 +2,7 @@
  * Display data for the landing page.
  *
  * Benchmark figures are NOT typed here. They are derived, at build time, from
- * `benchRuns.generated.ts` — which `tools/gen_bench_display.py` writes out of
+ * `benchRuns.generated.ts` — which `tools/gen_web_facts.py` writes out of
  * the Google Benchmark JSON committed in `docs/benchmarks/runs/`, and which CI
  * regenerates and diffs on every push. If a run record changes and this page
  * is not rebuilt from it, the build goes red.
@@ -14,10 +14,10 @@
  * most-visited surface on the record where threading looks best.
  *
  * The display run is now the reference: the 2026-08-02 Apple M1 Pro pair, ten
- * repetitions per case, medians. Artifact sizes still come from `ls -l` on the
- * shipped build, and source-derived facts (lane widths, intrinsics) from
- * `src/NeuralNet.cpp`. Nothing on the page may claim a number that is not
- * reproducible from the repository.
+ * repetitions per case, medians. Shipped artifact sizes are measured off the
+ * committed files in `web/public/wasm/`, and source-derived facts (lane widths,
+ * intrinsics) come from `src/NeuralNet.cpp`. Nothing on the page may claim a
+ * number that is not reproducible from the repository.
  */
 
 import {
@@ -27,6 +27,7 @@ import {
   dot20x,
   formatGflops,
   formatImagesPerSecond,
+  formatKb,
   formatNs,
   formatRunDate,
   formatSlowdown,
@@ -35,6 +36,7 @@ import {
   imagesPerSecond,
   parseCase,
   reference,
+  shippedArtifacts,
   speedup,
   winRecord,
 } from './benchDerive';
@@ -178,14 +180,25 @@ export const benchMethodology = [
 ].join(' · ');
 
 /*
- * Shipped artifact sizes, measured with ls -l / gzip -c | wc -c on the
- * staged build. The float32 weights barely compress — say so rather
- * than pretend otherwise.
+ * Shipped artifact sizes, measured off the committed files in web/public/wasm/
+ * by tools/gen_web_facts.py. These were typed by hand until 2026-08-13 and two
+ * of the three were wrong: the glue bundle was stated at 43.6 kB against an
+ * actual 47.8 kB, and the wasm module at 40.0 kB against an actual 43.8 kB —
+ * drift from an earlier build that nobody could have caught by reading, since
+ * nothing tied the prose to the file. kB is decimal, matching docs/WASM.md.
+ *
+ * The float32 weights barely compress. That stays on the page: a 6% saving on
+ * the largest download is the honest number, not an embarrassing one.
  */
+const artifact = (id: string) => shippedArtifacts.find((a) => a.id === id)!;
+
 export const wasmRuntimeFacts = [
-  { label: 'Glue bundle', value: '43.6KB' },
-  { label: 'WASM module', value: '40.0KB' },
-  { label: 'Weights', value: '318KB raw / 299KB gz' },
+  { label: 'Glue bundle', value: formatKb(artifact('glue').bytes) },
+  { label: 'WASM module', value: formatKb(artifact('wasm').bytes) },
+  {
+    label: 'Weights',
+    value: `${formatKb(artifact('weights').bytes)} raw / ${formatKb(artifact('weights').gzipBytes)} gz`,
+  },
   { label: 'Warm forward pass', value: '~0.02ms (measured live)' },
   { label: 'Parallelism', value: 'no threads — f64x2 simd128' },
 ] as const;

@@ -34,7 +34,7 @@ jobs:
       # quoting a run the repository has moved off — which is exactly what it
       # did for months while every number on it was hand-typed.
       - name: Verify the landing page's numbers still match the run records
-        run: python3 tools/gen_bench_display.py --check
+        run: python3 tools/gen_web_facts.py --check
 
   build-test:
     runs-on: ${{ matrix.os }}

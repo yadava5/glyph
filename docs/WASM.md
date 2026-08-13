@@ -9,14 +9,24 @@ browser-only template classifier as a demo fallback instead of breaking.
 
 ## Artifacts
 
-Sizes below are **measured from the committed artifacts** (`git cat-file -s`),
-not estimated. kB is decimal (bytes ÷ 1000); gzip is `gzip -9`.
+Sizes below are **measured from the committed artifacts**, not estimated. kB is
+decimal (bytes ÷ 1000). Gzip figures are the canonical stream a web server
+sends — no filename in the header; `gzip -9 -c <file>` reports 14–18 bytes more
+than these because it stores the original filename, which is header, not
+payload.
+
+`tools/readme_facts.py --check` now reads these three files off disk and fails
+CI if any figure below disagrees. It did not until 2026-08-13, and two of the
+three rows had drifted from an earlier build — the glue bundle was stated at
+44.9 kB against an actual 47.8 kB, and the wasm module at 46.5 kB against an
+actual 43.8 kB. The sentence above claiming they were measured had been true
+once.
 
 | File                                     | Size (measured) | Purpose                                        |
 | ---------------------------------------- | -------------- | ---------------------------------------------- |
-| `web/public/wasm/fast_mnist.js`          | 44.9 kB (44,948 B) | Emscripten ES-module glue (factory function). |
-| `web/public/wasm/fast_mnist.wasm`        | 46.5 kB (46,517 B) · 23.4 kB gzipped | Compiled `Matrix` + `NeuralNet` + Embind shim. |
-| `web/public/wasm/model.weights.bin`      | 318 kB raw (318,064 B) / 299 kB gzipped | Binary weights blob (float32). |
+| `web/public/wasm/fast_mnist.js`          | 47.8 kB (47,839 B) · 12.6 kB gzipped | Emscripten ES-module glue (factory function). |
+| `web/public/wasm/fast_mnist.wasm`        | 43.8 kB (43,751 B) · 22.8 kB gzipped | Compiled `Matrix` + `NeuralNet` + Embind shim. |
+| `web/public/wasm/model.weights.bin`      | 318.1 kB raw (318,064 B) / 299.1 kB gzipped | Binary weights blob (float32). |
 
 `web/public/wasm/` **is** checked into git: git-driven Vercel builds must ship
 the real simd128 artifacts rather than fall back to the JS classifier, so the

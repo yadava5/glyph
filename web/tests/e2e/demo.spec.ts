@@ -3,7 +3,7 @@ import { classifyThroughput, kernelBenchmarks } from '../../src/features/perform
 
 /*
  * Benchmark figures are imported, never re-typed. The numbers themselves are
- * gated where they belong — `tools/gen_bench_display.py --check` proves the
+ * gated where they belong — `tools/gen_web_facts.py --check` proves the
  * data layer still matches the committed run records. These assertions prove
  * the page actually renders what the data layer holds, which is the part a
  * unit check cannot see. Hard-coding them here meant that re-sourcing the page

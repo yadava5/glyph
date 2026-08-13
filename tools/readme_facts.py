@@ -89,6 +89,7 @@ USAGE
 
 from __future__ import annotations
 
+import gzip
 import json
 import os
 import platform
@@ -106,6 +107,7 @@ ARTIFACT_REL = "docs/readme-facts.json"
 README = "README.md"
 BENCHMARKS_MD = "BENCHMARKS.md"
 ENVIRONMENT_MD = "docs/benchmarks/ENVIRONMENT.md"
+WASM_MD = "docs/WASM.md"
 
 RUNS = "docs/benchmarks/runs"
 
@@ -819,6 +821,61 @@ add("viteVersion",
     "static",
     [site(r"`npm:rolldown-vite@([\d.]+)`")],
     lambda: grep1("web/package.json", r"npm:rolldown-vite@([\d.]+)"))
+
+# -- the shipped WASM artifacts, measured off the committed files ---------
+#
+# docs/WASM.md opened by promising these were measured rather than estimated,
+# and two of the three had drifted from an earlier build by 2026-08-13. The
+# files are tracked in git, so there is no excuse for the prose and the bytes
+# to disagree — this reads them.
+#
+# gzip is the canonical no-filename stream, which is what a server sends and
+# what tools/gen_web_facts.py records for the landing page. `gzip -9 -c <file>`
+# reports 14–18 bytes more because it stores the original filename.
+
+
+def wasm_bytes(name: str) -> int:
+    path = os.path.join(REPO, "web/public/wasm", name)
+    try:
+        with open(path, "rb") as fh:
+            return len(fh.read())
+    except FileNotFoundError:
+        die(f"web/public/wasm/{name} is missing. It is a committed artifact "
+            f"that docs/WASM.md quotes the size of directly.")
+
+
+def wasm_gzip_bytes(name: str) -> int:
+    path = os.path.join(REPO, "web/public/wasm", name)
+    try:
+        with open(path, "rb") as fh:
+            return len(gzip.compress(fh.read(), compresslevel=9, mtime=0))
+    except FileNotFoundError:
+        die(f"web/public/wasm/{name} is missing. It is a committed artifact "
+            f"that docs/WASM.md quotes the gzipped size of directly.")
+
+
+for _fid, _name, _byte_pat, _kb_pat, _gz_pat in [
+    ("wasmGlue", "fast_mnist.js",
+     r"`web/public/wasm/fast_mnist\.js`\s*\|[^|]*\(([\d,]+) B\)",
+     r"`web/public/wasm/fast_mnist\.js`\s*\|\s*([\d.]+) kB",
+     r"`web/public/wasm/fast_mnist\.js`\s*\|[^|]*· ([\d.]+) kB gzipped"),
+    ("wasmModule", "fast_mnist.wasm",
+     r"`web/public/wasm/fast_mnist\.wasm`\s*\|[^|]*\(([\d,]+) B\)",
+     r"`web/public/wasm/fast_mnist\.wasm`\s*\|\s*([\d.]+) kB",
+     r"`web/public/wasm/fast_mnist\.wasm`\s*\|[^|]*· ([\d.]+) kB gzipped"),
+    ("wasmWeights", "model.weights.bin",
+     r"`web/public/wasm/model\.weights\.bin`\s*\|[^|]*\(([\d,]+) B\)",
+     r"`web/public/wasm/model\.weights\.bin`\s*\|\s*([\d.]+) kB raw",
+     r"`web/public/wasm/model\.weights\.bin`\s*\|[^|]*/ ([\d.]+) kB gzipped"),
+]:
+    add(f"{_fid}Bytes", f"the byte length of web/public/wasm/{_name}", "static",
+        [site(_byte_pat, file=WASM_MD)], (lambda n=_name: wasm_bytes(n)))
+    add(f"{_fid}Kb", f"web/public/wasm/{_name} in decimal kB", "static",
+        [site(_kb_pat, file=WASM_MD)], (lambda n=_name: wasm_bytes(n) / 1000),
+        decimals=1)
+    add(f"{_fid}GzipKb", f"web/public/wasm/{_name} gzipped, decimal kB", "static",
+        [site(_gz_pat, file=WASM_MD)], (lambda n=_name: wasm_gzip_bytes(n) / 1000),
+        decimals=1)
 
 # -- the reference machine, sourced from ENVIRONMENT.md -------------------
 

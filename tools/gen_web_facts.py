@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
-"""Emit the web frontend's benchmark numbers from the committed run records.
+"""Emit the web frontend's measured facts from the artifacts they describe.
 
-The landing page used to carry hand-typed copies of benchmark figures. That is
-how it ended up quoting a December MacBook Air run months after
+The landing page used to carry hand-typed copies of every figure it showed.
+That is how it ended up quoting a December MacBook Air run months after
 `docs/benchmarks/ENVIRONMENT.md` designated a different machine as the
-reference: a typed number has no link back to the artifact it came from, so
-nothing notices when the artifact is superseded.
+reference, and how it came to state a glue-bundle size of 43.6 kB for a file
+that is 47,839 bytes: a typed number has no link back to the artifact it came
+from, so nothing notices when the artifact moves.
 
-This script is that link. It reads the Google Benchmark JSON in
-`docs/benchmarks/runs/` and writes `web/src/features/performance/benchRuns.generated.ts`,
-which the frontend imports. Every displayed figure is derived from those files
-at build time by `benchDerive.ts`, so the page cannot claim a number the
-repository does not contain.
+This script is that link. It reads
 
-    python3 tools/gen_bench_display.py            # rewrite the generated file
-    python3 tools/gen_bench_display.py --check    # fail if it would change
+  * the Google Benchmark JSON in `docs/benchmarks/runs/`, and
+  * the shipped WebAssembly artifacts in `web/public/wasm/`
+
+and writes `web/src/features/performance/benchRuns.generated.ts`, which the
+frontend imports. Every displayed figure is derived from those files by
+`benchDerive.ts`, so the page cannot claim a number the repository does not
+contain.
+
+    python3 tools/gen_web_facts.py            # rewrite the generated file
+    python3 tools/gen_web_facts.py --check    # fail if it would change
 
 `--check` runs in CI. It is the reason a stale figure becomes a red build
 rather than something a reader has to catch.
@@ -23,6 +28,7 @@ rather than something a reader has to catch.
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import pathlib
 import sys
@@ -30,7 +36,16 @@ from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 RUNS = ROOT / "docs/benchmarks/runs"
+WASM = ROOT / "web/public/wasm"
 OUT = ROOT / "web/src/features/performance/benchRuns.generated.ts"
+
+# The three files the browser actually downloads to run the network, in the
+# order the page lists them.
+SHIPPED = [
+    ("glue", "fast_mnist.js", "Emscripten ES-module glue"),
+    ("wasm", "fast_mnist.wasm", "compiled Matrix + NeuralNet + Embind"),
+    ("weights", "model.weights.bin", "float32 weights, exported for the browser"),
+]
 
 # The one thing the JSON does not record. Google Benchmark's `context` carries
 # core count, cache sizes and load average but not the CPU model, so the model
@@ -122,6 +137,31 @@ def build_run(run_id: str, stamp: str, configs: list[str]) -> dict[str, Any]:
     }
 
 
+def build_shipped() -> list[dict[str, Any]]:
+    """Measure the committed WASM artifacts the browser downloads.
+
+    `gzipBytes` is the canonical no-filename gzip stream, which is what a web
+    server sends. `gzip -9 -c <file>` reports 14–18 bytes more because it
+    embeds the original filename in the header; that difference is the header
+    field, not the payload.
+    """
+    out = []
+    for key, name, what in SHIPPED:
+        path = WASM / name
+        data = path.read_bytes()
+        out.append(
+            {
+                "id": key,
+                "file": name,
+                "path": f"web/public/wasm/{name}",
+                "what": what,
+                "bytes": len(data),
+                "gzipBytes": len(gzip.compress(data, compresslevel=9, mtime=0)),
+            }
+        )
+    return out
+
+
 def ts_value(v: Any, indent: int) -> str:
     pad = "  " * indent
     if v is None:
@@ -146,18 +186,20 @@ def ts_value(v: Any, indent: int) -> str:
     raise TypeError(type(v))
 
 
-def render(runs: list[dict[str, Any]]) -> str:
+def render(runs: list[dict[str, Any]], shipped: list[dict[str, Any]]) -> str:
     head = '''/*
  * GENERATED FILE — do not edit by hand.
  *
- * Written by `tools/gen_bench_display.py` from the Google Benchmark JSON
- * committed under `docs/benchmarks/runs/`. Every number below is a
- * `real_time` median read straight out of one of those files, and every
- * figure the page displays is derived from these by `benchDerive.ts` — so a
- * displayed number cannot drift from the artifact it claims to come from.
+ * Written by `tools/gen_web_facts.py` from the Google Benchmark JSON in
+ * `docs/benchmarks/runs/` and the shipped WebAssembly artifacts in
+ * `web/public/wasm/`. Every benchmark number below is a `real_time` median
+ * read straight out of one of those files, every artifact size is `len()` of
+ * the file on disk, and every figure the page displays is derived from these
+ * by `benchDerive.ts` — so a displayed number cannot drift from the artifact
+ * it claims to come from.
  *
- * Regenerate:  python3 tools/gen_bench_display.py
- * CI gate:     python3 tools/gen_bench_display.py --check
+ * Regenerate:  python3 tools/gen_web_facts.py
+ * CI gate:     python3 tools/gen_web_facts.py --check
  *
  * `ns` values are wall-clock nanoseconds per iteration. `cv*` values are the
  * coefficient of variation as a percentage, reported by Google Benchmark for
@@ -209,7 +251,21 @@ export interface BenchRun {
         "/** The run the repository designates canonical — see docs/benchmarks/ENVIRONMENT.md. */\n"
         "export const referenceRunId = "
         + json.dumps(runs[0]["id"])
-        + " as const;\n"
+        + " as const;\n\n"
+        "export interface ShippedArtifact {\n"
+        "  id: string;\n"
+        "  file: string;\n"
+        "  /** Repo-relative path, so a reader can check the size themselves. */\n"
+        "  path: string;\n"
+        "  what: string;\n"
+        "  bytes: number;\n"
+        "  /** Canonical gzip stream, no filename header — what a server sends. */\n"
+        "  gzipBytes: number;\n"
+        "}\n\n"
+        "/** The files the browser downloads to run the network, measured on disk. */\n"
+        "export const shippedArtifacts: ShippedArtifact[] = "
+        + ts_value(shipped, 0)
+        + ";\n"
     )
     return head + "\n".join(body) + "\n" + tail
 
@@ -220,17 +276,18 @@ def main() -> int:
     args = ap.parse_args()
 
     runs = [build_run(rid, stamp, cfgs) for rid, stamp, cfgs in WANTED]
-    text = render(runs)
+    shipped = build_shipped()
+    text = render(runs, shipped)
 
     if args.check:
         if not OUT.exists():
-            print(f"MISSING {OUT.relative_to(ROOT)} — run tools/gen_bench_display.py", file=sys.stderr)
+            print(f"MISSING {OUT.relative_to(ROOT)} — run tools/gen_web_facts.py", file=sys.stderr)
             return 1
         current = OUT.read_text()
         if current != text:
             print(
                 f"STALE {OUT.relative_to(ROOT)} — it no longer matches the committed run\n"
-                f"records. Run `python3 tools/gen_bench_display.py` and commit the result.",
+                f"records. Run `python3 tools/gen_web_facts.py` and commit the result.",
                 file=sys.stderr,
             )
             import difflib
