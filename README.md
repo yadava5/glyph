@@ -645,7 +645,7 @@ Code of conduct: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 - **[Ayush Yadav](https://github.com/yadava5)** — author. C++ kernels, build
   system, measurement apparatus, and the complete React/TypeScript web
   application.
-- **[Shree Chaturvedi](https://github.com/shreebatsa)** — kernel and
+- **[Shree Chaturvedi](https://github.com/ShreeChaturvedi)** — kernel and
   optimization contributions.
 
 ## Acknowledgments
