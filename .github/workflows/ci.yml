@@ -44,6 +44,13 @@ jobs:
       - name: Verify web/package-lock.json is self-consistent
         run: python3 tools/check_lockfile.py
 
+      # The SIMD census records what is actually inside the shipped .wasm. Only
+      # `--write` needs wabt; this check just proves the committed census still
+      # describes the committed binary, so a rebuilt module cannot leave a stale
+      # instruction count on the page.
+      - name: Verify the wasm SIMD census still describes the shipped module
+        run: python3 tools/wasm_census.py --check
+
   build-test:
     runs-on: ${{ matrix.os }}
     strategy:
