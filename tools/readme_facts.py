@@ -823,6 +823,41 @@ add("viteVersion",
     [site(r"`npm:rolldown-vite@([\d.]+)`")],
     lambda: grep1("web/package.json", r"npm:rolldown-vite@([\d.]+)"))
 
+# -- the wasm SIMD census, read out of the committed census artifact ------
+#
+# docs/WASM.md quotes four counts from docs/benchmarks/wasm-simd-census.json.
+# That JSON is itself gated against the module's sha256 by
+# tools/wasm_census.py --check, so this closes the loop: binary -> census ->
+# prose, with a check at each hop.
+
+
+def census_field(name: str) -> int:
+    path = os.path.join(REPO, "docs/benchmarks/wasm-simd-census.json")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)[name]
+    except FileNotFoundError:
+        die("docs/benchmarks/wasm-simd-census.json is missing. Run "
+            "`python3 tools/wasm_census.py --write` (needs wabt).")
+    except KeyError:
+        die(f"docs/benchmarks/wasm-simd-census.json has no `{name}` — the census "
+            f"schema changed and docs/WASM.md still quotes it.")
+
+
+for _fid, _key, _pat in [
+    ("wasmCensusFunctions", "totalFunctions",
+     r"\| Functions in the module \| \*\*(\d+)\*\* \|"),
+    ("wasmCensusVectorFunctions", "functionsWithVectorInstructions",
+     r"\| Functions containing any 128-bit vector instruction \| \*\*(\d+)\*\* \|"),
+    ("wasmCensusVectorInstructions", "totalVectorInstructions",
+     r"\| Vector instructions in total \| \*\*(\d+)\*\* \|"),
+    ("wasmCensusSignatureHits", "signatureHits",
+     r"sequences \| \*\*(\d+)\*\* \|"),
+]:
+    add(_fid, f"`{_key}` in docs/benchmarks/wasm-simd-census.json", "static",
+        [site(_pat, file=WASM_MD)], (lambda k=_key: census_field(k)))
+
+
 # -- the shipped WASM artifacts, measured off the committed files ---------
 #
 # docs/WASM.md opened by promising these were measured rather than estimated,

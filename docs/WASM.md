@@ -107,6 +107,43 @@ even though the internal C++ storage is `double` — the ~1e-7
 round-trip error is well below the precision at which a sigmoid
 MLP's predictions change.
 
+## What is actually in the module
+
+Every "SIMD made this faster" demo asks to be taken on trust twice: that the
+fast path really is vectorised, and that the baseline really is not. This
+repository's answer used to be a source comment. It is now a census of the
+shipped binary, in `docs/benchmarks/wasm-simd-census.json`, produced by
+`tools/wasm_census.py` from `wasm-objdump -d`:
+
+| | |
+|---|---|
+| Functions in the module | **89** |
+| Functions containing any 128-bit vector instruction | **5** |
+| Vector instructions in total | **154** |
+| `v128.load` → `f64x2.mul` → `f64x2.add` sequences | **12** |
+
+That last row is the dual-accumulator inner loop of `dot_wasm128_rowvec` in
+`src/NeuralNet.cpp`, unrolled by the compiler: load a vector of weights,
+multiply by a vector of inputs, accumulate — twice over independent chains so
+the multiply-add pipeline never waits on itself. The opcode histogram is f64x2
+throughout, which is the widest lane WebAssembly has.
+
+**What this cannot say.** Emscripten strips the name section at `-O3`, so the
+module carries no source-level function names — only 5 of the 89 functions have
+any name at all, and those are minified exports. The census reports function
+*indices* and the instruction shape. It never asserts "this count belongs to
+`dot_wasm128_rowvec`", because a stripped binary cannot support that claim.
+
+Reproduce it with `brew install wabt && python3 tools/wasm_census.py --write`.
+CI runs `--check`, which is stdlib-only: the census records the sha256 of the
+module it was taken from, so a rebuilt binary with a stale census fails the
+build without putting wabt on the runner.
+
+Together with `.github/workflows/wasm.yml` — which blocks CI unless this module
+rebuilds byte-for-byte from source at pinned emsdk on both linux/amd64 and
+macOS/arm64 — the chain from source to binary to browser is closed and checked
+at every link.
+
 ## Platform differences vs native
 
 The same C++ kernels target multiple ISAs via `#if defined(__AVX512F__)`
