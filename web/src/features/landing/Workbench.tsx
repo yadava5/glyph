@@ -208,7 +208,7 @@ export function Workbench({ controller }: WorkbenchProps) {
         <footer className={styles.statusline}>
           <span className="tabular">784 → 100 → 10</span>
           <span className="tabular">79,510 params</span>
-          <span className="tabular">318 KB weights</span>
+          <span className="tabular">318 kB weights</span>
           <span>f64x2 dual-accumulator</span>
         </footer>
       </div>

@@ -517,7 +517,7 @@ function ProblemAct() {
             </li>
             <li>
               <span>weights (float32)</span>
-              <b className="tabular">318 KB</b>
+              <b className="tabular">318 kB</b>
             </li>
             <li>
               <span>who wrote it</span>
