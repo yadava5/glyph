@@ -1,5 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
-import { classifyThroughput, kernelBenchmarks } from '../../src/features/performance/benchmarkData';
+import {
+  classifyThroughput,
+  kernelBenchmarks,
+  wasmRuntimeFacts,
+} from '../../src/features/performance/benchmarkData';
 
 /*
  * Benchmark figures are imported, never re-typed. The numbers themselves are
@@ -14,6 +18,8 @@ const rendered = (s: string) => new RegExp(escapeRe(s), 'i');
 
 const matmul256 = kernelBenchmarks.find((k) => k.caseKey === 'benchDot/256')!;
 const transpose1024 = kernelBenchmarks.find((k) => k.caseKey === 'benchTranspose/1024')!;
+const glueBundleFact = wasmRuntimeFacts.find((f) => f.label === 'Glue bundle')!;
+const weightsFact = wasmRuntimeFacts.find((f) => f.label === 'Weights')!;
 
 interface InstrumentedPage extends Page {
   __consoleIssues?: string[];
@@ -129,7 +135,9 @@ test.describe('Glyph landing experience', () => {
     await page.goto('/index.html');
 
     await expect(page.getByRole('heading', { name: /Handed a neural network/i })).toBeVisible();
-    await expect(page.getByText(/benchmarked live|Live SIMD benchmark/i).first()).toBeVisible();
+    await expect(
+      page.getByText(rendered('a hand-written simd128 kernel, timed on your silicon')).first(),
+    ).toBeVisible();
     await expect(page.getByText(/97\.01% \/ 10,000/i)).toBeVisible();
     await expect(page.getByText(rendered(classifyThroughput.baseline)).first()).toBeVisible();
 
@@ -218,7 +226,7 @@ test.describe('Glyph landing experience', () => {
 
     await expect(page.getByText(/79,510/).first()).toBeVisible();
     await expect(page.getByText(/matmul 256×256/i).first()).toBeVisible();
-    await expect(page.getByText(/3\.50x/i).first()).toBeVisible();
+    await expect(page.getByText(rendered(matmul256.speedup)).first()).toBeVisible();
     await saveScreenshot(page, 'chapters');
   });
 
@@ -236,8 +244,8 @@ test.describe('Glyph landing experience', () => {
 
     await scrollToId(page, 'build');
     await expect(page.getByRole('heading', { name: /four instruction sets/i })).toBeVisible();
-    await expect(page.getByText(/43\.6KB/i).first()).toBeVisible();
-    await expect(page.getByText(/318KB raw \/ 299KB gz/i).first()).toBeVisible();
+    await expect(page.getByText(rendered(glueBundleFact.value)).first()).toBeVisible();
+    await expect(page.getByText(rendered(weightsFact.value)).first()).toBeVisible();
   });
 
   test('@perf has no horizontal overflow, clipped visible controls, or a blank draw pad', async ({

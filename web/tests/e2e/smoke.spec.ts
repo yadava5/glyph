@@ -80,15 +80,16 @@ test.describe('Landing interaction smoke', () => {
     assertClean(page);
   });
 
-  test('hero CTAs resolve: live bench scroll + system card link', async ({ page }) => {
+  test('hero CTAs resolve: read the proof scroll + system card link', async ({ page }) => {
     await page.goto('/index.html');
 
-    // Primary CTA scrolls to the workbench (the hero one, first on the page).
+    // Primary CTA scrolls to the proof section — the bench itself already
+    // sits on the fold, so there is nothing left to "fire".
     await page
-      .getByRole('button', { name: /Fire the live bench/i })
+      .getByRole('button', { name: /Read the proof/i })
       .first()
       .click();
-    await expectScrolledTo(page, 'classifier');
+    await expectScrolledTo(page, 'proof');
 
     // The System Card CTA points at the canonical path and renders there.
     const cardLink = page.getByRole('link', { name: /Read the System Card/i }).first();
@@ -99,9 +100,9 @@ test.describe('Landing interaction smoke', () => {
   test('the live wasm benchmark runs and emits a measured number', async ({ page }) => {
     await page.goto('/index.html');
 
-    // Deterministic path: load the sample digit, which loads strokes and
-    // fires a real classify through the wasm module.
-    await page.getByRole('button', { name: /load a sample digit/i }).click();
+    // Deterministic path: click the canvas toolbar's reload-sample button,
+    // which loads strokes and fires a real classify through the wasm module.
+    await page.getByRole('button', { name: /reload sample digit/i }).click();
 
     // A numeric verdict must appear.
     const verdict = page.getByTestId('verdict-digit');
@@ -112,14 +113,30 @@ test.describe('Landing interaction smoke', () => {
     // JS demo fallback (the build enables wasm).
     await expect(page.getByLabel(/Prediction source:/i)).toHaveText(/wasm/i);
 
-    // The titlebar readout must show a measured timing (a real number with
-    // a ms/µs unit), proving the in-browser benchmark actually produced a
-    // figure rather than sitting idle.
-    const readout = page.locator(
-      'header [aria-label*="timing" i], header [aria-label*="kernel comparison" i]',
+    // The live proof-line readout — on the fold with the bench, not the
+    // titlebar — must show a measured timing (a real number with a ms/µs
+    // unit), proving the in-browser benchmark actually produced a figure
+    // rather than sitting idle. `Live kernel comparison` is the stable
+    // aria-label prefix; anchor on it rather than the numbers it carries.
+    const readout = page.locator('[aria-label*="kernel comparison" i]').first();
+
+    // These assertions must be able to FAIL on an idle bench. The obvious
+    // pair — /\d/ and /simd|ms|µs/i — cannot: the idle line still renders
+    // "scalar —→simd128 ——awaiting ink", whose "simd128" satisfies both.
+    // A check that passes whether or not the thing under test happened is
+    // not a check. Anchor instead on strings the idle branch cannot
+    // produce: it renders aria-label "Live kernel comparison, idle" and
+    // captions itself "awaiting ink".
+    await expect(readout).not.toHaveAttribute('data-idle', /.*/);
+    await expect(readout).toHaveAttribute(
+      'aria-label',
+      /Live kernel comparison: scalar .+ versus simd .+, [\d.]+ times faster/i,
     );
-    await expect(readout.first()).toContainText(/\d/);
-    await expect(readout.first()).toContainText(/simd|ms|µs/i);
+
+    // And the provenance caption must report a real run count. "p50" is
+    // deliberately NOT asserted — it is absent at n=1 by design, because a
+    // median of one sample is not a median.
+    await expect(readout.locator('small')).toHaveText(/^[\d,]+ timed runs · /);
     assertClean(page);
   });
 
