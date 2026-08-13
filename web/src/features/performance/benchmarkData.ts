@@ -411,9 +411,18 @@ export const laneScale = [
 
 /*
  * ACCURACY — the 97.01% test result as a count: 9,701 of 10,000 MNIST test
- * digits classified correctly, 299 missed. Not a confusion matrix (the repo
- * commits no per-class breakdown, so the page invents none) — just the one
- * verified figure. The name is historical: the landing card draws the numbers,
+ * digits classified correctly, 299 missed.
+ *
+ * This used to say the repository "commits no per-class breakdown, so the page
+ * invents none". That was wrong on the first half and right on the second.
+ * benchmarks/mnist_eval.json carries per-class precision, recall, F1, tp, fp and
+ * fn for all ten digits, and benchmarks/mnist_misclassified.csv carries every
+ * one of the 299 errors with its true label, prediction and both activations —
+ * from which the complete 10×10 confusion matrix reconstructs exactly (verified
+ * 2026-08-13: per-class row sums equal fn, column sums equal fp, 299 both ways).
+ * The page invents nothing, but it is also showing far less than it could.
+ *
+ * The name is historical: the landing card draws the numbers,
  * NOT a waffle grid. The 100-square waffle lives on System Card page 20, where
  * each square is 1% rather than one digit; nothing here has ever drawn ten
  * thousand of anything, and this comment claimed it did until 2026-08-13.
