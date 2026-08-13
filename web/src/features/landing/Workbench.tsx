@@ -36,6 +36,31 @@ function fmtMs(ms: number): string {
 }
 
 /*
+ * The provenance line under the two figures. This is a TWO-TIER
+ * measurement and the caption used to describe only the outer tier: it
+ * read "p50 · n=1" after the fold's auto-fired sample, i.e. a median of
+ * one sample, which is not a median of anything.
+ *
+ * What actually happens: each classification runs the C++ harness
+ * `timeMeanMs(fn, 3, 60, 5.0)` per variant, so every figure on this line
+ * is already a mean over dozens of forward passes; the page then takes a
+ * p50 across classifications. Reporting only "n=1" therefore also
+ * UNDERSOLD it — a reader saw one noisy sample where the module had run
+ * the kernel ~100 times.
+ *
+ * So: state the true total, and only claim a median once there is more
+ * than one thing to take it over. `kernelRuns` is summed over the window
+ * rather than extrapolated from the last call, because the harness is
+ * budget-adaptive and the per-call count varies with machine load.
+ */
+function provenance(n: number, kernelRuns: number): string {
+  const runs = kernelRuns.toLocaleString('en-US');
+  return n > 1
+    ? `${runs} timed runs · p50 of ${n} inputs · C++ on your silicon`
+    : `${runs} timed runs · each figure a mean · C++ on your silicon`;
+}
+
+/*
  * The proof line — the instrument's whole reason to be on the fold.
  * Scalar (vectorization disabled) vs the hand-written wasm simd128 kernel,
  * medians over the session, both measured in C++ on the visitor's own
@@ -54,7 +79,11 @@ function ProofLine({ controller }: WorkbenchProps) {
         <span className={styles.proofRatio} data-idle>
           <b className="tabular">—</b>
         </span>
-        <small>{t ? `p50 · n=${t.n} · arming scalar baseline` : 'awaiting ink'}</small>
+        <small>
+          {t
+            ? `${t.kernelRuns.toLocaleString('en-US')} timed runs · arming scalar baseline`
+            : 'awaiting ink'}
+        </small>
       </div>
     );
   }
@@ -76,7 +105,7 @@ function ProofLine({ controller }: WorkbenchProps) {
       <span className={styles.proofRatio}>
         <b className="tabular">{t.speedup.toFixed(1)}×</b>
       </span>
-      <small className="tabular">p50 · n={t.n} · timed in C++ on your silicon</small>
+      <small className="tabular">{provenance(t.n, t.kernelRuns)}</small>
     </div>
   );
 }

@@ -13,6 +13,19 @@ export interface PredictionResponse {
   baseline_time_ms: number;
   optimized_time_ms: number;
   /**
+   * How many times the C++ harness ran each variant to produce the means
+   * above. `timeMeanMs(fn, 3, 60, 5.0)` in wasm/wasm_bindings.cpp is
+   * budget-adaptive, so the two counts differ — the scalar path is slower
+   * and reaches the 5ms budget in fewer iterations than the simd path,
+   * which usually stops on the 60-iteration cap instead.
+   *
+   * Only the browser wasm path reports these. The HTTP server times one
+   * forward pass per variant and has no equivalent; readers must treat
+   * absent as "one run", not as zero.
+   */
+  timing_iters_simd?: number;
+  timing_iters_scalar?: number;
+  /**
    * Hidden-layer post-activation values (usually length 100, values in
    * [0, 1] after sigmoid). Present when the C++ server exposes
    * activation telemetry; omitted by older builds.

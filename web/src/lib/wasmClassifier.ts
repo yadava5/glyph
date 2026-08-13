@@ -134,6 +134,12 @@ export async function classifyInBrowser(pixels: number[]): Promise<PredictionRes
       confidence: toNumberArray(result.confidence),
       baseline_time_ms: Number(result.baseline_time_ms) || 0,
       optimized_time_ms: Number(result.optimized_time_ms) || 0,
+      // How many times the harness actually ran each variant to produce
+      // those means. The module has always reported these and this layer
+      // has always thrown them away, which left the page describing a
+      // mean of dozens of kernel runs as a single sample.
+      timing_iters_simd: Number(result.timing_iters_simd) || 0,
+      timing_iters_scalar: Number(result.timing_iters_scalar) || 0,
       hidden_activations: toNumberArray(result.hidden_activations),
       input_grad: toNumberArray(result.input_grad),
       source: 'browser-wasm',

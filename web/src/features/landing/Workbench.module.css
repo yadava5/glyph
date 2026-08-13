@@ -217,7 +217,14 @@
 
 .proofLine small {
   flex: 1;
-  min-width: 8rem;
+  /* Wide enough that the provenance line drops to its OWN flex row rather
+     than surviving as a sliver beside the figures. At 8rem it "fit" the
+     leftover 135px at 1024 and then wrapped internally to three lines —
+     a cramped block of 10px text under the numbers, which is the width
+     Ayush actually works at. Given a full row it sets on one line at every
+     width above the 350px container guard below, and the fold gets 32px
+     of vertical space back. */
+  min-width: 17rem;
   color: var(--text-dim);
   font-size: 0.66rem;
   letter-spacing: 0.03em;

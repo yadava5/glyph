@@ -564,14 +564,20 @@ export function ThroughputGauge({ controller }: { controller: MnistDemoControlle
           names the action instead of three cells inventing three phrasings. */}
       <dl className={styles.gaugeReadout}>
         <div>
-          <dt>median speedup</dt>
+          {/* "median" is only earned once there is more than one input to
+              take a median over. Before that the dial is showing a single
+              measurement — a real one, but not a median of anything. */}
+          <dt>{t && t.n > 1 ? 'median speedup' : 'speedup'}</dt>
           <dd className="tabular">{live ? `${speedup!.toFixed(2)}×` : '—'}</dd>
         </div>
         <div>
           <dt>simd128 forward pass</dt>
+          {/* n counts classifications; each is itself a mean over the C++
+              harness's adaptive iteration count, so the honest scale of the
+              evidence is the summed run count, not n. */}
           <dd className="tabular">
             {t
-              ? `${t.p50OptimizedMs < 0.1 ? Math.round(t.p50OptimizedMs * 1000) + 'µs' : t.p50OptimizedMs.toFixed(2) + 'ms'} · n=${t.n}`
+              ? `${t.p50OptimizedMs < 0.1 ? Math.round(t.p50OptimizedMs * 1000) + 'µs' : t.p50OptimizedMs.toFixed(2) + 'ms'} · ${t.kernelRuns.toLocaleString('en-US')} runs`
               : '—'}
           </dd>
         </div>

@@ -25,6 +25,18 @@ export interface InferenceTiming {
   p50BaselineMs: number | null;
   /** p50 baseline / p50 optimized, when a real baseline was measured. */
   speedup: number | null;
+  /**
+   * Total forward passes actually executed behind the figures above,
+   * summed over the window — not the last sample's count repeated `n`
+   * times. Each entry in the window is itself a mean over its own
+   * adaptive iteration count, so quoting one call's count as though it
+   * held for all of them would state a uniformity that isn't there.
+   *
+   * A sample with no reported count (the HTTP server, which times a
+   * single pass per variant) contributes exactly 1, which is what it
+   * measured.
+   */
+  kernelRuns: number;
 }
 
 export interface MnistDemoController {
@@ -72,7 +84,7 @@ export function useMnistDemoController(): MnistDemoController {
   const [inputPixels, setInputPixels] = useState<number[] | null>(null);
   const [timing, setTiming] = useState<InferenceTiming | null>(null);
   const [build, setBuild] = useState<string | null>(null);
-  const timingsRef = useRef<{ baseline: number | null; optimized: number }[]>([]);
+  const timingsRef = useRef<{ baseline: number | null; optimized: number; runs: number }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const backendConfigured = hasConfiguredBackend();
   const [serverStatus, setServerStatus] = useState<ServerStatus>(
@@ -142,6 +154,8 @@ export function useMnistDemoController(): MnistDemoController {
         window.push({
           baseline: result.baseline_time_ms > 0 ? result.baseline_time_ms : null,
           optimized: result.optimized_time_ms,
+          // Absent means one timed pass, not zero — see PredictionResponse.
+          runs: (result.timing_iters_simd || 1) + (result.timing_iters_scalar || 1),
         });
         if (window.length > 60) window.shift();
 
@@ -161,6 +175,7 @@ export function useMnistDemoController(): MnistDemoController {
           minOptimizedMs: Math.min(...optimizedAll),
           p50BaselineMs: p50Baseline,
           speedup: p50Baseline !== null && p50Optimized > 0 ? p50Baseline / p50Optimized : null,
+          kernelRuns: window.reduce((sum, t) => sum + t.runs, 0),
         });
       }
     } catch (error) {
