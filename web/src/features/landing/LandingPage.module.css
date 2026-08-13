@@ -679,6 +679,8 @@
   line-height: 1.72;
 }
 
+/* The chip treatment. The monospace itself now comes from the element rule in
+   base.css, so a <code> in a section added later cannot miss it. */
 .problemProse code,
 .solutionNotes code,
 .decisionCard code,
@@ -688,7 +690,6 @@
   border-radius: 5px;
   background: var(--surface-2);
   color: var(--text-soft);
-  font-family: var(--font-mono);
   font-size: 0.86em;
 }
 

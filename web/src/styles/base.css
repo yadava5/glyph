@@ -86,6 +86,22 @@ canvas {
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * Monospace means machine value: code identifiers, paths, flags, pragmas. It is
+ * declared here, once, on the element rather than on a list of parent
+ * selectors — `.problemProse code, .solutionNotes code, .decisionCard code`
+ * would have quietly stopped applying to a <code> in any section added later,
+ * which is the same shape as the bug that made this token inert in the first
+ * place. Prose, labels, captions and figures use the text face; figures get
+ * alignment from `.tabular` above, not from a monospaced grid.
+ */
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-mono);
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

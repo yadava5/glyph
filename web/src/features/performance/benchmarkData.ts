@@ -415,12 +415,18 @@ export const laneScale = [
  *
  * This used to say the repository "commits no per-class breakdown, so the page
  * invents none". That was wrong on the first half and right on the second.
- * benchmarks/mnist_eval.json carries per-class precision, recall, F1, tp, fp and
- * fn for all ten digits, and benchmarks/mnist_misclassified.csv carries every
- * one of the 299 errors with its true label, prediction and both activations —
- * from which the complete 10×10 confusion matrix reconstructs exactly (verified
- * 2026-08-13: per-class row sums equal fn, column sums equal fp, 299 both ways).
- * The page invents nothing, but it is also showing far less than it could.
+ * benchmarks/mnist_eval.json commits the complete 10×10 confusion matrix
+ * verbatim under `confusion_matrix.rows`, plus per-class precision, recall, F1,
+ * tp, fp and fn; benchmarks/mnist_misclassified.csv commits every one of the 299
+ * errors with its true label, prediction and both activations.
+ *
+ * I first claimed to have "reconstructed" the matrix from the per-class counts
+ * and the CSV. That reconstruction is real and agrees exactly — row sums equal
+ * fn, column sums equal fp, 299 both ways, worst cells 4→9 (16), 2→3 (15),
+ * 5→6 (13) — but it is a cross-check, not the source. The matrix was defined in
+ * the artifact all along and I found it by deriving it instead of reading it.
+ *
+ * The page invents nothing, but it is showing far less than it could.
  *
  * The name is historical: the landing card draws the numbers,
  * NOT a waffle grid. The 100-square waffle lives on System Card page 20, where

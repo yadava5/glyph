@@ -85,13 +85,23 @@ TimedMean timeMeanMs(F&& fn, int minIters, int maxIters, double minTotalMs) {
 
 /*
  * Scalar reference forward pass with loop vectorization explicitly
- * disabled. The whole module compiles with -O3 -msimd128, so the
- * regular path is LLVM-autovectorized to wasm simd128; this reference
- * runs the same math with vector lanes off (scalar unrolling and every
- * other -O3 optimization stay enabled). Timing the two on the same
- * input, same weights, same machine isolates exactly what SIMD buys —
- * mirroring apps/server.cpp's baseline_gemv_sigmoid, which is
- * "intentionally NOT optimized to provide a fair comparison".
+ * disabled. This reference runs the same math with vector lanes off
+ * (scalar unrolling and every other -O3 optimization stay enabled).
+ * Timing the two on the same input, same weights, same machine isolates
+ * exactly what SIMD buys — mirroring apps/server.cpp's
+ * baseline_gemv_sigmoid, which is "intentionally NOT optimized to
+ * provide a fair comparison".
+ *
+ * This used to say the regular path is "LLVM-autovectorized to wasm
+ * simd128". It is not, and the whole landing page argues the opposite:
+ * LLVM declines this reduction loop, which is why the kernel is
+ * hand-written. src/NeuralNet.cpp:28 selects `__wasm_simd128__` and
+ * line 238 dispatches to `dot_wasm128_rowvec` — the hand-written
+ * dual-accumulator f64x2 kernel. The module does compile with
+ * -O3 -msimd128, which is what lets that kernel's intrinsics exist;
+ * that is not the same as the compiler having vectorized the loop.
+ * Corrected 2026-08-13. It mattered because the page's own comments
+ * send a skeptical reader to this file.
  */
 void novec_gemv_sigmoid(const Matrix& W, const Matrix& b,
                         const std::vector<double>& x,
@@ -169,7 +179,8 @@ class WasmClassifier {
         // excludes Embind marshalling and the saliency backward pass
         // (which is documented below as "not timed"). Two variants run
         // on the same input and weights:
-        //   simd   — the module's regular path (-O3 -msimd128 autovec)
+        //   simd   — the module's regular path, i.e. the hand-written
+        //            dot_wasm128_rowvec kernel in src/NeuralNet.cpp
         //   scalar — novec_gemv_sigmoid, vector lanes disabled
         double sink = 0.0;
         const TimedMean simd = timeMeanMs(
