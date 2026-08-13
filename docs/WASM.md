@@ -28,6 +28,25 @@ once.
 | `web/public/wasm/fast_mnist.wasm`        | 43.8 kB (43,751 B) · 22.8 kB gzipped | Compiled `Matrix` + `NeuralNet` + Embind shim. |
 | `web/public/wasm/model.weights.bin`      | 318.1 kB raw (318,064 B) / 299.1 kB gzipped | Binary weights blob (float32). |
 
+### Digests
+
+`benchmarks/mnist_eval.json` records a sha256 for `model.weights` — the 800,678-byte
+ASCII checkpoint the native evaluator reads. **The browser does not fetch that
+file.** It fetches `model.weights.bin`, the 318,064-byte float32 export produced
+by `apps/export_weights.cpp`, and until 2026-08-13 no digest for it was
+committed anywhere. So the one artifact a visitor actually downloads was the one
+artifact they could not check.
+
+| File | sha256 |
+| ---- | ------ |
+| `web/public/wasm/fast_mnist.js` | `c47050c579d0bc1f9dec6f8b77153a0372a3425d265f8aff716ee3f169dc63e7` |
+| `web/public/wasm/fast_mnist.wasm` | `e681d2f76d41305aa3b8c250799f898bd1139497f60580ed59000d49cf5d6360` |
+| `web/public/wasm/model.weights.bin` | `cbbb2b7b57120fff98982510423d3894a3dceeb3db0f005d040b7389ad442786` |
+
+Check any of them with `shasum -a 256 web/public/wasm/<file>`. These are also
+gated by `tools/readme_facts.py --check`, so a rebuilt artifact that is not
+re-recorded fails CI rather than silently invalidating the table.
+
 `web/public/wasm/` **is** checked into git: git-driven Vercel builds must ship
 the real simd128 artifacts rather than fall back to the JS classifier, so the
 three files above are tracked. They remain reproducible via

@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import hashlib
 import json
 import pathlib
 import sys
@@ -157,6 +158,7 @@ def build_shipped() -> list[dict[str, Any]]:
                 "what": what,
                 "bytes": len(data),
                 "gzipBytes": len(gzip.compress(data, compresslevel=9, mtime=0)),
+                "sha256": hashlib.sha256(data).hexdigest(),
             }
         )
     return out
@@ -261,6 +263,8 @@ export interface BenchRun {
         "  bytes: number;\n"
         "  /** Canonical gzip stream, no filename header — what a server sends. */\n"
         "  gzipBytes: number;\n"
+        "  /** Digest of the exact bytes the browser fetches, so a visitor can check them. */\n"
+        "  sha256: string;\n"
         "}\n\n"
         "/** The files the browser downloads to run the network, measured on disk. */\n"
         "export const shippedArtifacts: ShippedArtifact[] = "

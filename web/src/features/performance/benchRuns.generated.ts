@@ -330,6 +330,8 @@ export interface ShippedArtifact {
   bytes: number;
   /** Canonical gzip stream, no filename header — what a server sends. */
   gzipBytes: number;
+  /** Digest of the exact bytes the browser fetches, so a visitor can check them. */
+  sha256: string;
 }
 
 /** The files the browser downloads to run the network, measured on disk. */
@@ -340,7 +342,8 @@ export const shippedArtifacts: ShippedArtifact[] = [
     path: "web/public/wasm/fast_mnist.js",
     what: "Emscripten ES-module glue",
     bytes: 47839,
-    gzipBytes: 12580
+    gzipBytes: 12580,
+    sha256: "c47050c579d0bc1f9dec6f8b77153a0372a3425d265f8aff716ee3f169dc63e7"
   },
   {
     id: "wasm",
@@ -348,7 +351,8 @@ export const shippedArtifacts: ShippedArtifact[] = [
     path: "web/public/wasm/fast_mnist.wasm",
     what: "compiled Matrix + NeuralNet + Embind",
     bytes: 43751,
-    gzipBytes: 22816
+    gzipBytes: 22816,
+    sha256: "e681d2f76d41305aa3b8c250799f898bd1139497f60580ed59000d49cf5d6360"
   },
   {
     id: "weights",
@@ -356,6 +360,7 @@ export const shippedArtifacts: ShippedArtifact[] = [
     path: "web/public/wasm/model.weights.bin",
     what: "float32 weights, exported for the browser",
     bytes: 318064,
-    gzipBytes: 299144
+    gzipBytes: 299144,
+    sha256: "cbbb2b7b57120fff98982510423d3894a3dceeb3db0f005d040b7389ad442786"
   }
 ];

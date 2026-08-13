@@ -90,6 +90,7 @@ USAGE
 from __future__ import annotations
 
 import gzip
+import hashlib
 import json
 import os
 import platform
@@ -876,6 +877,29 @@ for _fid, _name, _byte_pat, _kb_pat, _gz_pat in [
     add(f"{_fid}GzipKb", f"web/public/wasm/{_name} gzipped, decimal kB", "static",
         [site(_gz_pat, file=WASM_MD)], (lambda n=_name: wasm_gzip_bytes(n) / 1000),
         decimals=1)
+
+# The digests of the files the browser actually downloads. benchmarks/mnist_eval.json
+# records a sha256 for model.weights (the 800,678-byte ASCII checkpoint the native
+# evaluator reads); the browser fetches model.weights.bin, a different file, and
+# had no committed digest at all until 2026-08-13.
+
+
+def wasm_sha256(name: str) -> str:
+    path = os.path.join(REPO, "web/public/wasm", name)
+    try:
+        with open(path, "rb") as fh:
+            return hashlib.sha256(fh.read()).hexdigest()
+    except FileNotFoundError:
+        die(f"web/public/wasm/{name} is missing. docs/WASM.md records its digest.")
+
+
+for _name in ("fast_mnist.js", "fast_mnist.wasm", "model.weights.bin"):
+    add(f"sha256_{_name.replace('.', '_')}",
+        f"sha256 of web/public/wasm/{_name}",
+        "static",
+        [site(r"`web/public/wasm/" + re.escape(_name) + r"` \| `([0-9a-f]{64})` \|",
+              file=WASM_MD)],
+        (lambda n=_name: wasm_sha256(n)))
 
 # -- the reference machine, sourced from ENVIRONMENT.md -------------------
 
