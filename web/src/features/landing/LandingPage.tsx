@@ -751,6 +751,21 @@ function ProofAct({ controller }: { controller: MnistDemoController }) {
 
       <div className={styles.benchHonesty}>
         <p>
+          <b>Which run these bars are:</b> the December M2 Air run named in the footer. The
+          repository&rsquo;s reference run is a later one on an M1 Pro, and it is <em>harsher</em>{' '}
+          on threading, not kinder — <b className="tabular">axpy 512</b> and{' '}
+          <b className="tabular">axpy 1024</b> are wins here and losses there. Both runs are
+          committed;{' '}
+          <a
+            href={`${REPO_URL}/blob/main/docs/benchmarks/ENVIRONMENT.md`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            ENVIRONMENT.md
+          </a>{' '}
+          says which is the reference and why, and the System Card and README quote that one.
+        </p>
+        <p>
           <b>The honest row:</b> full classify throughput is{' '}
           <b className="tabular">{classifyThroughput.baseline}</b> single-threaded and{' '}
           <b className="tabular">{classifyThroughput.openmpNative}</b> with OpenMP.{' '}
