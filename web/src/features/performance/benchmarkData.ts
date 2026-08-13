@@ -381,16 +381,23 @@ export const gflopsSeries = {
  * verified against src/NeuralNet.cpp (see isaLadder). The "×" is literal:
  * lanes = f64 multiply-adds retired per vector instruction. Drives the
  * sequential lane-scale comparison on the landing.
+ *
+ * Ordered widest-first to match the ISA ladder cards directly above it —
+ * the two used to run in opposite directions on the same screen. The
+ * scalar rung closes the list: after four working ISAs, "and this is
+ * where it started" is the punchline, not the premise.
  */
 export const laneScale = [
   {
-    id: 'scalar',
-    name: 'scalar loop',
-    lanes: 1,
-    width: '64-bit',
-    tone: 'idle',
-    where: 'the starting point',
+    id: 'avx512',
+    name: 'AVX-512',
+    lanes: 8,
+    width: '512-bit',
+    tone: 'simd',
+    where: 'x86-64 server',
   },
+  { id: 'avx2', name: 'AVX2', lanes: 4, width: '256-bit', tone: 'simd', where: 'x86-64' },
+  { id: 'neon', name: 'NEON', lanes: 2, width: '128-bit', tone: 'simd', where: 'arm64 · this run' },
   {
     id: 'wasm',
     name: 'wasm-simd128',
@@ -399,15 +406,13 @@ export const laneScale = [
     tone: 'live',
     where: 'your browser',
   },
-  { id: 'neon', name: 'NEON', lanes: 2, width: '128-bit', tone: 'simd', where: 'arm64 · this run' },
-  { id: 'avx2', name: 'AVX2', lanes: 4, width: '256-bit', tone: 'simd', where: 'x86-64' },
   {
-    id: 'avx512',
-    name: 'AVX-512',
-    lanes: 8,
-    width: '512-bit',
-    tone: 'simd',
-    where: 'x86-64 server',
+    id: 'scalar',
+    name: 'scalar loop',
+    lanes: 1,
+    width: '64-bit',
+    tone: 'idle',
+    where: 'the starting point',
   },
 ] as const;
 

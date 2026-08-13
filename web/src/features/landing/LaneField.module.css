@@ -60,6 +60,21 @@
 .carriers {
   position: absolute;
   inset: 0;
+  transition: filter 0.4s var(--ease-out-quart);
+}
+
+/* The measurement surge: when the wasm kernel fires, the whole field
+   flares for a beat — brightness only, on already-composited layers. */
+.field[data-surge] .carriers {
+  filter: brightness(2.2);
+}
+
+.field[data-surge] .lanes {
+  filter: brightness(1.9);
+}
+
+.lanes {
+  transition: filter 0.4s var(--ease-out-quart);
 }
 
 /* A carrier: a thin vertical light streak that streams down its lane. */

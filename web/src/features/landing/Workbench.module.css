@@ -1,11 +1,14 @@
-/* The product frame — the real classifier as the fold visual.
- * One window: ink in, verdict out, signals on the side. */
+/* The fold instrument — the real classifier, compact, running beside the
+ * headline. One window: ink in, verdict out, the scalar-vs-simd measurement
+ * across the base. The deep signals live in the proof act's anatomy panel. */
 
 .section {
-  width: min(100% - 2.5rem, var(--content-max));
-  margin: 0 auto;
-  padding: 0 0 5rem;
+  width: 100%;
   scroll-margin-top: 84px;
+  /* The instrument sizes against its grid cell, not the viewport: on the
+     split fold it holds ~460–620px, stacked on mobile it holds the full
+     width. Container queries keep the compact/stacked switch honest. */
+  container-type: inline-size;
 }
 
 .frame {
@@ -21,7 +24,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.75rem 1.15rem;
+  padding: 0.6rem 1rem;
   border-bottom: 1px solid var(--line-soft);
   background: rgb(19 20 22 / 0.65);
 }
@@ -37,55 +40,15 @@
   font-style: normal;
 }
 
-.titlebarRight {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  min-width: 0;
-}
-
-/* The live proof line: scalar → simd, medians, sample count. */
-.timingReadout {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.45rem;
-  color: var(--text-muted);
-  font-size: 0.76rem;
-  white-space: nowrap;
-}
-
-.timingReadout i {
-  color: var(--text-dim);
-  font-style: normal;
-}
-
-.timingReadout [data-lit] {
-  color: var(--text-strong);
-}
-
-.timingReadout b {
-  padding: 0.08rem 0.42rem;
-  border: 1px solid rgb(74 222 128 / 0.35);
-  border-radius: 999px;
-  color: var(--green);
-  font-size: 0.78rem;
-  font-weight: 650;
-}
-
-.timingReadout small {
-  color: var(--text-dim);
-  font-size: 0.66rem;
-}
-
 .titlebarStatus {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  padding: 0.26rem 0.65rem;
+  padding: 0.24rem 0.6rem;
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -112,88 +75,173 @@
   box-shadow: 0 0 8px rgb(245 158 11 / 0.5);
 }
 
-.titlebarStatus b {
-  color: var(--text-soft);
-  font-weight: 600;
-}
-
 .grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
 }
 
 .grid > div {
-  padding: 1.4rem;
-  border-right: 1px solid var(--line-soft);
-}
-
-.grid > div:last-child {
-  border-right: 0;
-}
-
-.colLabel {
-  display: block;
-  margin-bottom: 0.9rem;
-  color: var(--text-dim);
-  font-size: 0.72rem;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-
-.colLabel b {
-  margin-right: 0.3rem;
-  color: var(--text-muted);
-  font-weight: 600;
+  min-width: 0;
+  padding: 1rem 1.1rem 1.1rem;
 }
 
 .colDraw {
   display: grid;
   align-content: start;
+  border-right: 1px solid var(--line-soft);
 }
 
-.colHint {
-  margin: 0.9rem 0 0;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  line-height: 1.55;
-}
-
-.sampleButton {
-  display: inline-flex;
-  gap: 0.4rem;
-  align-items: center;
-  width: fit-content;
-  margin-top: 0.7rem;
-  padding: 0.42rem 0.8rem;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: none;
-  color: var(--text-muted);
-  font-size: 0.74rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition:
-    color var(--dur-fast) var(--ease-out-quart),
-    border-color var(--dur-fast) var(--ease-out-quart);
-}
-
-.sampleButton:hover,
-.sampleButton:focus-visible {
-  border-color: var(--line-strong);
-  color: var(--text-strong);
-}
-
-.colSeen {
+.colVerdict {
   display: grid;
   align-content: start;
 }
+
+.colLabel {
+  display: block;
+  margin-bottom: 0.6rem;
+  color: var(--text-dim);
+  font-size: 0.68rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.colVerdict .colLabel + .colLabel,
+.colVerdict > .colLabel:nth-of-type(2) {
+  margin-top: 0.9rem;
+}
+
+.colHint {
+  margin: 0.7rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.verdict {
+  display: grid;
+  place-items: center;
+  gap: 0.15rem;
+  min-height: 6.6rem;
+  padding: 0.7rem;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.02);
+}
+
+.verdictDigit {
+  color: var(--text-strong);
+  font-family: var(--font-instrument-serif);
+  font-size: 3.9rem;
+  font-style: italic;
+  line-height: 0.9;
+}
+
+.verdictMeta {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+.verdictMeta b {
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+.verdictEmpty {
+  color: var(--text-dim);
+  font-family: var(--font-instrument-serif);
+  font-size: 3.2rem;
+  font-style: italic;
+  opacity: 0.55;
+}
+
+/* ── the proof line — scalar → simd, measured, across the base ── */
+
+.proofLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.8rem 1.1rem;
+  border-top: 1px solid var(--line-soft);
+  background:
+    radial-gradient(120% 160% at 0% 100%, rgb(56 189 248 / 0.07), transparent 55%),
+    rgb(19 20 22 / 0.4);
+}
+
+.proofPair {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.proofPair em {
+  color: var(--text-dim);
+  font-size: 0.66rem;
+  font-style: normal;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.proofPair b {
+  color: var(--text-soft);
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.proofPair b[data-lit] {
+  color: var(--sky-soft);
+}
+
+.proofPair i {
+  color: var(--text-dim);
+  font-style: normal;
+}
+
+.proofRatio b {
+  display: inline-block;
+  padding: 0.12rem 0.55rem;
+  border: 1px solid rgb(56 189 248 / 0.45);
+  border-radius: 999px;
+  background: rgb(56 189 248 / 0.08);
+  color: var(--sky-soft);
+  font-size: 1.02rem;
+  font-weight: 650;
+}
+
+.proofRatio[data-idle] b {
+  border-color: var(--line);
+  background: none;
+  color: var(--text-dim);
+}
+
+.proofLine small {
+  flex: 1;
+  min-width: 8rem;
+  color: var(--text-dim);
+  font-size: 0.66rem;
+  letter-spacing: 0.03em;
+  text-align: right;
+}
+
+.statusline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1.2rem;
+  padding: 0.55rem 1.1rem;
+  border-top: 1px solid var(--line-soft);
+  background: rgb(19 20 22 / 0.65);
+  color: var(--text-dim);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+}
+
+/* ───────── the input raster (rendered in the proof anatomy) ───────── */
 
 .rasterBox {
   position: relative;
   display: grid;
   place-items: center;
-  margin-bottom: 1.4rem;
   aspect-ratio: 1;
   border: 1px solid var(--line-soft);
   border-radius: 10px;
@@ -221,115 +269,13 @@
   text-transform: uppercase;
 }
 
-.verdict {
-  display: grid;
-  place-items: center;
-  gap: 0.2rem;
-  min-height: 9.5rem;
-  padding: 1rem;
-  border: 1px solid var(--line-soft);
-  border-radius: 10px;
-  background: rgb(255 255 255 / 0.02);
-}
-
-.verdictDigit {
-  color: var(--text-strong);
-  font-family: var(--font-instrument-serif);
-  font-size: 5.6rem;
-  font-style: italic;
-  line-height: 0.9;
-}
-
-.verdictMeta {
-  color: var(--text-muted);
-  font-size: 0.8rem;
-}
-
-.verdictMeta b {
-  color: var(--text-soft);
-  font-weight: 600;
-}
-
-.verdictEmpty {
-  color: var(--text-dim);
-  font-family: var(--font-instrument-serif);
-  font-size: 4.6rem;
-  font-style: italic;
-  opacity: 0.55;
-}
-
-.colSignals {
-  display: grid;
-  align-content: start;
-}
-
-.signalsStack {
-  display: grid;
-  gap: 1.1rem;
-}
-
-.confidencePanel {
-  display: grid;
-  gap: 0.7rem;
-}
-
-.signalLabel {
-  color: var(--text-dim);
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.signalsRow {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.8rem;
-}
-
-/* One line of copy earns the page's only saturated color. */
-.saliencyLegend {
-  color: var(--text-muted);
-  font-size: 0.66rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.saliencyLegend i {
-  display: inline-block;
-  width: 0.55rem;
-  height: 0.55rem;
-  margin-right: 0.25rem;
-  border-radius: 2px;
-  vertical-align: baseline;
-}
-
-.saliencyLegend i[data-kind='for'] {
-  background: rgb(247 248 248 / 0.92);
-}
-
-.saliencyLegend i[data-kind='against'] {
-  background: oklch(0.637 0.205 25 / 0.75);
-}
-
-.statusline {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem 1.6rem;
-  padding: 0.7rem 1.15rem;
-  border-top: 1px solid var(--line-soft);
-  background: rgb(19 20 22 / 0.65);
-  color: var(--text-dim);
-  font-size: 0.72rem;
-  letter-spacing: 0.05em;
-}
-
 /* ───────── global hooks: drawing canvas ───────── */
 
 .section :global(.drawing-canvas-container) {
   position: relative;
   display: grid;
   justify-items: center;
-  gap: 0.9rem;
+  gap: 0.7rem;
 }
 
 .section :global(.drawing-canvas) {
@@ -371,14 +317,14 @@
 .section :global(.canvas-buttons) {
   display: flex;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
 
 .section :global(.canvas-icon-button) {
   display: inline-grid;
   place-items: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.25rem;
+  height: 2.25rem;
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -401,27 +347,27 @@
   cursor: not-allowed;
 }
 
-/* ───────── global hooks: confidence bars ───────── */
+/* ───────── global hooks: confidence bars (compact) ───────── */
 
 .section :global(.softmax-bars) {
   display: grid;
-  gap: 0.34rem;
+  gap: 0.26rem;
 }
 
 .section :global(.softmax-row) {
   display: grid;
-  grid-template-columns: 1rem minmax(0, 1fr) 2.6rem;
-  gap: 0.5rem;
+  grid-template-columns: 0.9rem minmax(0, 1fr) 2.4rem;
+  gap: 0.45rem;
   align-items: center;
 }
 
 .section :global(.softmax-digit) {
   color: var(--text-dim);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
 }
 
 .section :global(.softmax-track) {
-  height: 5px;
+  height: 4px;
   overflow: hidden;
   border-radius: 999px;
   background: rgb(255 255 255 / 0.06);
@@ -444,81 +390,29 @@
 
 .section :global(.softmax-pct) {
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   text-align: right;
-}
-
-/* ───────── global hooks: activation panels ───────── */
-
-.section :global(.activation-panel) {
-  display: grid;
-  gap: 0.55rem;
-  min-width: 0;
-  padding: 0.75rem;
-  border: 1px solid var(--line-soft);
-  border-radius: 10px;
-  background: rgb(255 255 255 / 0.02);
-}
-
-.section :global(.activation-panel-label) {
-  color: var(--text-dim);
-  font-size: 0.66rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.section :global(.activation-canvas) {
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 6px;
 }
 
 /* ─────────────────────── responsive ─────────────────────── */
 
-@media (max-width: 1000px) {
-  .grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-
-  .grid > div:nth-child(2) {
-    border-right: 0;
-  }
-
-  .colSignals {
-    grid-column: 1 / -1;
-    border-top: 1px solid var(--line-soft);
-  }
-}
-
-@media (max-width: 700px) {
-  .section {
-    width: min(100% - 1.5rem, var(--content-max));
-  }
-
+/* Inside the fold the instrument sits in a ~460–620px grid cell; when the
+   cell itself drops under 430px (a phone, after the hero stacks) it goes
+   single column, canvas first. Queried against the container, not the
+   viewport — the cell width is what the layout actually answers to. */
+@container (max-width: 430px) {
   .grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .grid > div {
+  .colDraw {
     border-right: 0;
     border-bottom: 1px solid var(--line-soft);
-  }
-
-  .grid > div:last-child {
-    border-bottom: 0;
   }
 
   .titlebar {
     flex-wrap: wrap;
     gap: 0.5rem 1rem;
-  }
-
-  .titlebarName em {
-    display: none;
-  }
-
-  .signalsRow {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   /* Thumb-sized toolbar; undo/redo are keyboard affordances, not touch. */
@@ -533,7 +427,7 @@
   }
 }
 
-@media (max-width: 480px) {
+@container (max-width: 350px) {
   /* A chip must never fracture: swap to the short ISA label. */
   .statusLong {
     display: none;
@@ -543,7 +437,7 @@
     display: inline;
   }
 
-  .timingReadout small {
+  .proofLine small {
     display: none;
   }
 }

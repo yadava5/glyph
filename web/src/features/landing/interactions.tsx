@@ -306,23 +306,27 @@ interface DecodeProps {
  * Reduced-motion renders the final string immediately (and it is always the
  * accessible text). Only the visual glyphs scramble; screen readers get the
  * real text via aria-label.
+ *
+ * The scramble writes ONE text node's textContent inside the rAF loop —
+ * never state. A per-frame setState here reconciles the whole subtree tens
+ * of times a second; a text-node write is a paint, not a render, and the
+ * accessible string stays intact in a single node throughout.
  */
 export function Decode({ text, className, as }: DecodeProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Tag: any = as ?? 'span';
   const reduced = useReducedMotion();
   const { ref, inView } = useInView<HTMLElement>('0px 0px -18% 0px');
-  const [out, setOut] = useState(reduced ? text : '');
+  const glyphRef = useRef<HTMLSpanElement>(null);
   const raf = useRef(0);
 
-  // Every setOut runs inside a rAF callback, so nothing sets state
-  // synchronously during the effect. Reduced-motion settles on the text.
   useEffect(() => {
-    if (reduced) {
-      raf.current = requestAnimationFrame(() => setOut(text));
-      return () => cancelAnimationFrame(raf.current);
+    const node = glyphRef.current;
+    if (!node) return;
+    if (reduced || !inView) {
+      if (reduced) node.textContent = text;
+      return;
     }
-    if (!inView) return;
     const chars = text.split('');
     const nonSpace = chars.filter((c) => c !== ' ').length;
     let startTs = 0;
@@ -345,7 +349,7 @@ export function Decode({ text, className, as }: DecodeProps) {
           return '';
         })
         .join('');
-      setOut(settled < nonSpace ? next : text);
+      node.textContent = settled < nonSpace ? next : text;
       if (settled < nonSpace) raf.current = requestAnimationFrame(tick);
     };
     raf.current = requestAnimationFrame(tick);
@@ -354,7 +358,9 @@ export function Decode({ text, className, as }: DecodeProps) {
 
   return (
     <Tag ref={ref} className={className} aria-label={text}>
-      <span aria-hidden>{out || ' '}</span>
+      <span aria-hidden ref={glyphRef}>
+        {reduced ? text : '\u00A0'}
+      </span>
     </Tag>
   );
 }

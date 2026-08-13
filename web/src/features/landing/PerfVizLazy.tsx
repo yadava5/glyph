@@ -16,6 +16,8 @@ const GflopsSlopeLazy = lazy(() => mod().then((m) => ({ default: m.GflopsSlope }
 const ThroughputGaugeLazy = lazy(() => mod().then((m) => ({ default: m.ThroughputGauge })));
 const AccuracyWaffleLazy = lazy(() => mod().then((m) => ({ default: m.AccuracyWaffle })));
 const LaneScaleLazy = lazy(() => mod().then((m) => ({ default: m.LaneScale })));
+const SimdCensusPanelLazy = lazy(() => mod().then((m) => ({ default: m.SimdCensusPanel })));
+const FailureMapLazy = lazy(() => mod().then((m) => ({ default: m.FailureMap })));
 
 function Boundary({ children, minH }: { children: ReactNode; minH: number }) {
   return (
@@ -54,5 +56,17 @@ export const LaneScale = () => (
 export const ThroughputGauge = ({ controller }: { controller: MnistDemoController }) => (
   <Boundary minH={360}>
     <ThroughputGaugeLazy controller={controller} />
+  </Boundary>
+);
+
+export const SimdCensusPanel = () => (
+  <Boundary minH={420}>
+    <SimdCensusPanelLazy />
+  </Boundary>
+);
+
+export const FailureMap = () => (
+  <Boundary minH={420}>
+    <FailureMapLazy />
   </Boundary>
 );

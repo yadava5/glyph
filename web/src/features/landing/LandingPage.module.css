@@ -241,16 +241,15 @@
   }
 }
 
-/* ───────────────────────── hero ───────────────────────── */
+/* ───────────────────────── hero — the fold ─────────────────────────
+ * The thesis on the left, the thesis RUNNING on the right. At 1024×700
+ * the instrument is in view, already measuring. */
 
 .hero {
   position: relative;
-  display: grid;
-  justify-items: center;
-  max-width: 940px;
+  width: min(100% - 3rem, 1200px);
   margin: 0 auto;
-  padding: clamp(7rem, 13svh, 9rem) 1.25rem 3.5rem;
-  text-align: center;
+  padding: clamp(5.2rem, 9svh, 6.5rem) 0 3rem;
 }
 
 /* faint registration grid behind the hero */
@@ -267,28 +266,39 @@
   pointer-events: none;
 }
 
+.heroGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.96fr);
+  gap: clamp(1.6rem, 3.5vw, 3.2rem);
+  align-items: center;
+  margin-bottom: clamp(1.6rem, 3.5vh, 2.6rem);
+}
+
+.heroCopy {
+  display: grid;
+  justify-items: start;
+  align-content: center;
+}
+
+.heroBench {
+  min-width: 0;
+}
+
 .heroPill {
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
-  margin-bottom: 2.1rem;
-  padding: 0.44rem 1rem;
+  margin-bottom: 1.6rem;
+  padding: 0.4rem 0.9rem;
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--text-muted);
-  font-size: 0.8rem;
-  text-decoration: none;
-  transition:
-    color var(--dur-fast) var(--ease-out-quart),
-    border-color var(--dur-fast) var(--ease-out-quart);
-}
-
-.heroPill:hover {
-  border-color: var(--line-strong);
-  color: var(--text-soft);
+  font-size: 0.74rem;
+  letter-spacing: 0.02em;
 }
 
 .heroPillDot {
+  flex: none;
   width: 7px;
   height: 7px;
   border-radius: 999px;
@@ -310,11 +320,11 @@
 .heroTitle {
   display: grid;
   gap: 0.1em;
-  margin: 0 0 1.6rem;
-  font-size: clamp(2.6rem, 7.2vw, 5.4rem);
+  margin: 0 0 1.3rem;
+  font-size: clamp(2.05rem, 1rem + 2.3vw, 3.35rem);
   font-weight: 550;
   letter-spacing: -0.035em;
-  line-height: 1.02;
+  line-height: 1.04;
   text-wrap: balance;
 }
 
@@ -326,10 +336,6 @@
   color: var(--text-muted);
 }
 
-.pillShort {
-  display: none;
-}
-
 .heroTitleMuted em {
   font-family: var(--font-instrument-serif);
   font-style: italic;
@@ -339,11 +345,11 @@
 }
 
 .heroSubhead {
-  max-width: 660px;
-  margin: 0 0 2.2rem;
+  max-width: 34rem;
+  margin: 0 0 1.7rem;
   color: var(--text-muted);
-  font-size: clamp(0.92rem, 1.6vw, 1.02rem);
-  line-height: 1.75;
+  font-size: clamp(0.9rem, 1.4vw, 0.99rem);
+  line-height: 1.7;
 }
 
 .heroWord {
@@ -368,9 +374,7 @@
 .heroCtas {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: 0.8rem;
-  margin-bottom: 2.75rem;
 }
 
 .ctaPrimary {
@@ -422,7 +426,7 @@
 .heroMetrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  width: min(100%, 880px);
+  width: 100%;
   margin: 0;
   border: 1px solid var(--line-soft);
   border-radius: 10px;
@@ -432,6 +436,7 @@
 .heroMetrics > div {
   display: grid;
   gap: 0.3rem;
+  align-content: start;
   padding: 1rem 1.1rem;
   border-right: 1px solid var(--line-soft);
   text-align: left;
@@ -572,7 +577,6 @@
  */
 @media (prefers-reduced-motion: no-preference) {
   :global(html.js-reveal) .act[data-reveal],
-  :global(html.js-reveal) .benchIntro[data-reveal],
   :global(html.js-reveal) .tryBand[data-reveal] {
     transition:
       opacity 0.7s var(--ease-out-quart),
@@ -580,7 +584,6 @@
   }
 
   :global(html.js-reveal) .act[data-reveal]:not([data-inview='true']),
-  :global(html.js-reveal) .benchIntro[data-reveal]:not([data-inview='true']),
   :global(html.js-reveal) .tryBand[data-reveal]:not([data-inview='true']) {
     opacity: 0;
     transform: translateY(22px);
@@ -934,8 +937,11 @@
   gap: 1rem;
 }
 
+/* Rows: name / body / pill. The body row flexes so the status pills sit at
+   one shared baseline across the three cards regardless of copy length. */
 .tierCard {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   align-content: start;
   gap: 0.7rem;
   padding: 1.3rem 1.4rem;
@@ -949,11 +955,6 @@
   border-color: rgb(74 222 128 / 0.35);
 }
 
-.tierCard > span {
-  color: var(--text-dim);
-  font-size: 0.78rem;
-}
-
 .tierCard h3 {
   margin: 0;
   color: var(--text-strong);
@@ -964,6 +965,7 @@
 
 .tierCard p {
   margin: 0;
+  align-self: start;
   color: var(--text-muted);
   font-size: 0.86rem;
   line-height: 1.6;
@@ -971,6 +973,7 @@
 
 .tierCard b {
   width: fit-content;
+  align-self: end;
   margin-top: 0.3rem;
   padding: 0.22rem 0.55rem;
   border: 1px solid var(--line);
@@ -1025,52 +1028,180 @@
   font-weight: 500;
 }
 
-/* ─────────────── bench intro band (the hinge) ─────────────── */
+/* ─────────────── proof rail — the chapter's own index ───────────────
+ * A sticky instrument scale under the fixed nav: `04 · proof`, eight
+ * numbered stops, and a live NN/NN position. It works at 1024 first —
+ * one mechanism at every width, horizontal scroll when cramped. */
 
-.benchIntro {
-  padding: clamp(3.5rem, 7vh, 5.5rem) 0 clamp(1.5rem, 3vh, 2.5rem);
+.proofRail {
+  position: sticky;
+  z-index: 30;
+  top: 59px;
+  margin-bottom: clamp(2rem, 4vh, 3rem);
   border-top: 1px solid var(--line-soft);
-  scroll-margin-top: 84px;
-  background: radial-gradient(80% 120% at 50% 0%, rgb(56 189 248 / 0.05), transparent 60%);
-  text-align: center;
+  border-bottom: 1px solid var(--line-soft);
+  background: rgb(6 7 13 / 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
-.benchIntro .actInner {
-  display: grid;
-  justify-items: center;
+.proofRailInner {
+  display: flex;
+  align-items: stretch;
+  gap: 1.1rem;
+  width: min(100% - 3rem, 1200px);
+  margin: 0 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-.benchIntroEyebrow {
-  color: var(--sky-soft);
-  font-size: 0.74rem;
-  letter-spacing: 0.12em;
+.proofRailInner::-webkit-scrollbar {
+  display: none;
+}
+
+.proofRailTitle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.62rem 0;
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 
-.benchIntroTitle {
-  margin: 0.8rem 0 0.9rem;
-  max-width: 720px;
-  font-size: clamp(1.7rem, 3.4vw, 2.6rem);
-  font-weight: 550;
-  letter-spacing: -0.03em;
-  line-height: 1.12;
+.proofRailTitle b {
+  color: var(--green);
+  font-weight: 650;
+}
+
+.proofRailLinks {
+  display: flex;
+  flex: 1;
+  align-items: stretch;
+  gap: 0.1rem;
+}
+
+.proofRailLinks button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  padding: 0.62rem 0.65rem;
+  border: 0;
+  background: none;
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out-quart);
+}
+
+.proofRailLinks button b {
+  font-weight: 600;
+}
+
+.proofRailLinks button em {
+  font-style: normal;
+}
+
+.proofRailLinks button:hover,
+.proofRailLinks button:focus-visible {
+  color: var(--text-soft);
+}
+
+.proofRailLinks button[data-active='true'] {
   color: var(--text-strong);
-  text-wrap: balance;
 }
 
-.benchIntroTitle em {
-  font-family: var(--font-instrument-serif);
-  font-style: italic;
-  font-weight: 400;
-  color: var(--sky-soft);
+.proofRailLinks button[data-active='true'] b {
+  color: var(--green);
 }
 
-.benchIntro p {
+/* the active stop carries a tick on the rail's base line */
+.proofRailLinks button::after {
+  content: '';
+  position: absolute;
+  inset: auto 0.65rem -1px;
+  height: 2px;
+  background: var(--green);
+  opacity: 0;
+  transform: scaleX(0.4);
+  transform-origin: 0 50%;
+  transition:
+    opacity var(--dur-fast) var(--ease-out-quart),
+    transform var(--dur-med) var(--ease-out-quart);
+}
+
+.proofRailLinks button[data-active='true']::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.proofRailPos {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.62rem 0;
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+}
+
+.proofRailPos b {
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+/* ─────────────── proof subsections ─────────────── */
+
+.proofSub {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.2rem;
+  padding-top: 0.4rem;
+  scroll-margin-top: 128px;
+}
+
+.proofSub + .proofSub {
+  margin-top: clamp(1.6rem, 3.5vh, 2.8rem);
+  padding-top: clamp(1.8rem, 3.5vh, 2.6rem);
+  border-top: 1px solid var(--line-soft);
+}
+
+.proofSubHead {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1rem;
+  align-items: baseline;
+  max-width: 780px;
+}
+
+.proofSubNum b {
+  color: var(--green);
+  font-size: 0.82rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+
+.proofSubHead h3 {
   margin: 0;
-  max-width: 640px;
+  color: var(--text-strong);
+  font-size: clamp(1.25rem, 2vw, 1.55rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.proofSubHead p {
+  margin: 0.45rem 0 0;
   color: var(--text-muted);
-  font-size: 0.96rem;
-  line-height: 1.66;
+  font-size: 0.92rem;
+  line-height: 1.6;
 }
 
 /* ─────────────── act 04 · proof — the kernels, measured ─────────────── */
@@ -1179,8 +1310,16 @@
   opacity: 0.55;
 }
 
+/* openmp+native is the TOOLCHAIN quantity and it is violet everywhere it
+   appears — these bars, the payoff slope, the crossover series. The old
+   green→sky gradient spent both the "verified" and the "live wasm" hues
+   on a number that is neither. */
 .benchFillOpt {
-  background: linear-gradient(90deg, var(--green), var(--sky));
+  background: linear-gradient(
+    90deg,
+    var(--violet-sig),
+    color-mix(in oklab, var(--violet-sig) 70%, #fff)
+  );
 }
 
 /* A case where threading LOSES must not be painted in the win gradient. The
@@ -1222,15 +1361,6 @@
   border-left: 2px solid var(--amber);
   border-radius: 12px;
   background: var(--surface);
-}
-
-.crossover h3 {
-  margin: 0 0 0.7rem;
-  color: var(--text-soft);
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
 }
 
 .crossover p {
@@ -1323,25 +1453,128 @@
   background: var(--surface);
 }
 
-.liveAnatomyHead {
+/* The evidence signals — the raster the network was given, its hidden
+   layer, and the saliency read — one row under the anatomy diagram. */
+.anatomySignals {
   display: grid;
-  gap: 0.5rem;
-  max-width: 620px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--line-soft);
+  scroll-margin-top: 128px;
 }
 
-.liveAnatomyHead h3 {
-  margin: 0;
+.signalCell {
+  display: grid;
+  gap: 0.55rem;
+  align-content: start;
+}
+
+.signalLabel {
+  color: var(--text-dim);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* One line of copy earns the page's only saturated red. */
+.saliencyLegend {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.saliencyLegend i {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-right: 0.25rem;
+  border-radius: 2px;
+  vertical-align: baseline;
+}
+
+.saliencyLegend i[data-kind='for'] {
+  background: rgb(247 248 248 / 0.92);
+}
+
+.saliencyLegend i[data-kind='against'] {
+  background: oklch(0.637 0.205 25 / 0.75);
+}
+
+/* activation panels (hidden heatmap, saliency) inside the anatomy */
+.anatomySignals :global(.activation-panel) {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.02);
+}
+
+.anatomySignals :global(.activation-panel-label) {
+  color: var(--text-dim);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.anatomySignals :global(.activation-canvas) {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+}
+
+/* ── accuracy: the count-up beside the failure map ── */
+.accuracyGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+/* ── the convergence strip: one number, three measurements ── */
+.convergence {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1.15rem 1.3rem;
+  border: 1px solid var(--line-soft);
+  border-left: 2px solid var(--violet-sig);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.convergenceRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.convergenceRow > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.convergenceRow span {
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.convergenceRow b {
   color: var(--text-strong);
-  font-size: 1.1rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-size: 1.35rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
 }
 
-.liveAnatomyHead p {
+.convergence p {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.9rem;
-  line-height: 1.6;
+  font-size: 0.84rem;
+  line-height: 1.55;
 }
 
 /* network diagram (SVG telemetry) */
@@ -1498,7 +1731,7 @@
   background: var(--surface);
 }
 
-.proofGrid h3 {
+.proofGrid h4 {
   margin: 0;
   color: var(--text-soft);
   font-size: 0.8rem;
@@ -1516,29 +1749,30 @@
 
 /* ─────────────── try-it band ─────────────── */
 
+/* Left-aligned like every act — the page does not switch voices to close.
+   The eyebrow is the standard rule-and-label treatment, not a one-off. */
 .tryBand {
   padding: clamp(4.5rem, 9vh, 7rem) 0;
   border-top: 1px solid var(--line-soft);
   scroll-margin-top: 84px;
-  background: radial-gradient(70% 130% at 50% 0%, rgb(56 189 248 / 0.06), transparent 62%);
-  text-align: center;
-}
-
-.tryBand .actInner {
-  display: grid;
-  justify-items: center;
+  background: radial-gradient(70% 130% at 30% 0%, rgb(56 189 248 / 0.06), transparent 62%);
 }
 
 .tryEyebrow {
-  color: var(--sky-soft);
-  font-size: 0.76rem;
-  letter-spacing: 0.14em;
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 1.15rem;
+  padding-left: 0.9rem;
+  border-left: 2px solid var(--sky);
+  color: var(--text-dim);
+  font-size: 0.74rem;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 
 .tryTitle {
-  margin: 0.9rem 0 0.9rem;
-  max-width: 760px;
+  margin: 0 0 0.9rem;
+  max-width: 820px;
   font-size: clamp(1.9rem, 4vw, 3rem);
   font-weight: 550;
   letter-spacing: -0.032em;
@@ -1556,7 +1790,7 @@
 
 .tryLede {
   margin: 0 0 2rem;
-  max-width: 600px;
+  max-width: 640px;
   color: var(--text-muted);
   font-size: 0.98rem;
   line-height: 1.66;
@@ -1565,7 +1799,6 @@
 .tryCtas {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: 0.8rem;
 }
 
@@ -1704,7 +1937,7 @@
   :global(html.js-reveal) .footer[data-inview='true'] .pixelShimmer {
     animation:
       pixelIn 0.45s var(--ease-out-expo) forwards,
-      pixelIdle 3.6s ease-in-out infinite;
+      pixelIdle 3.6s ease-in-out 3;
     animation-delay: var(--pixel-delay, 0s), calc(1.2s + var(--shimmer-delay, 0s));
   }
 }
@@ -1751,12 +1984,13 @@
 }
 
 /* Hero title: a sky "read-head" sweeps the words on hover — the network
-   reading left to right. Words carry --i for the stagger. */
+   reading left to right. Words carry --i for the stagger. The spans are
+   deliberately plain `inline`: an inline-block boundary terminates
+   Chromium's find-in-page buffer and would make the headline
+   un-searchable, so the sweep is colour-only — no transform, which an
+   inline box could not carry anyway. */
 .titleWord {
-  display: inline-block;
-  transition:
-    color 0.25s var(--ease-out-quart),
-    transform 0.25s var(--ease-out-quart);
+  transition: color 0.25s var(--ease-out-quart);
 }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
@@ -1769,7 +2003,6 @@
 @keyframes readHead {
   30% {
     color: var(--sky-soft);
-    transform: translateY(-3px);
   }
 }
 
@@ -1790,7 +2023,15 @@
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: var(--sky-soft);
-  animation: shimmer 5.5s linear infinite;
+  /* Three passes, then rest — part of the page-settles budget. The sweep
+     replays on headline hover via the readHead rule below. */
+  animation: shimmer 5.5s linear 3;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .heroTitle:hover .shimmerWord {
+    animation: shimmer 1.6s linear;
+  }
 }
 
 @keyframes shimmer {
@@ -1808,14 +2049,14 @@
 }
 
 .heroMetricsTilt {
-  width: min(100%, 880px);
+  width: 100%;
 }
 
 /* One machine line for the whole tile row. The machine used to be stamped
    into two of the four tiles and omitted from the other two, which read as
    though only those two were measured somewhere. */
 .heroMetricsSource {
-  width: min(100%, 880px);
+  width: 100%;
   margin: 0.75rem 0 0;
   color: var(--text-dim);
   font-size: 0.78rem;
@@ -1888,9 +2129,24 @@
 /* ─────────────────────── responsive ─────────────────────── */
 
 @media (max-width: 1000px) {
-  .problemGrid,
-  .solutionGrid {
+  /* The fold stacks: words, then the instrument at full width. */
+  .heroGrid {
     grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
+  }
+
+  .heroTitle {
+    font-size: clamp(2.3rem, 7vw, 3.2rem);
+  }
+
+  .problemGrid,
+  .solutionGrid,
+  .accuracyGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .anatomySignals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .isaLadder {
@@ -1959,23 +2215,13 @@
     overflow-wrap: anywhere;
   }
 
-  .pillLong {
-    display: none;
-  }
-
-  .pillShort {
-    display: inline;
-  }
-
-  .heroPill span {
-    white-space: nowrap;
-  }
-
   .hero {
-    padding-top: 7.5rem;
+    padding-top: 6.5rem;
   }
 
-  .isaLadder {
+  .isaLadder,
+  .anatomySignals,
+  .convergenceRow {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -2021,7 +2267,6 @@
   }
 
   .act[data-reveal],
-  .benchIntro[data-reveal],
   .tryBand[data-reveal] {
     opacity: 1;
     transform: none;

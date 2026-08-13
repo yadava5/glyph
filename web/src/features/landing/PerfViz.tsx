@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
 import {
   accuracyWaffle,
   crossoverSeries,
   gflopsSeries,
   laneScale,
+  simdCensus,
 } from '../performance/benchmarkData';
 import type { MnistDemoController } from '../mnist/useMnistDemoController';
-import { RollingNumber } from './interactions';
+import { Decode, RollingNumber } from './interactions';
 import { useInView } from './interactionHooks';
 import styles from './PerfViz.module.css';
 
@@ -23,10 +24,18 @@ function fmtTime(ns: number): string {
   return `${(ns / 1e6).toFixed(2)}ms`;
 }
 
-const ACCENT: Record<string, string> = {
-  sky: 'var(--sky)',
-  amber: 'var(--amber)',
-  steel: 'var(--steel)',
+/*
+ * Colour is semantic everywhere on this page: steel = the single-thread
+ * baseline, violet = the toolchain quantity (OpenMP + native codegen),
+ * green = a win, amber = a loss, sky = the live wasm path. All three
+ * crossover series plot the SAME violet quantity (omp ÷ single), so they
+ * differ by tint and carry their names at the line ends — series identity
+ * comes from direct labels, not from spending a semantic hue per family.
+ */
+const SERIES_INK: Record<string, string> = {
+  matmul: 'rgb(167 139 250 / 0.95)',
+  transpose: 'rgb(167 139 250 / 0.6)',
+  axpy: 'rgb(167 139 250 / 0.34)',
 };
 
 /* ─────────────── 1 · crossover scatter / line ─────────────── */
@@ -40,7 +49,6 @@ interface Hovered {
   speedup: number;
   cx: number;
   cy: number;
-  accent: string;
 }
 
 /**
@@ -80,16 +88,11 @@ export function CrossoverChart() {
       <figcaption className={styles.chartHead}>
         <div>
           <span className={styles.chartEyebrow}>the crossover · single-thread ÷ openmp+native</span>
-          <h3 className={styles.chartTitle}>Where threads start to pay — and where they cost</h3>
+          <h4 className={styles.chartTitle}>Where threads start to pay — and where they cost</h4>
         </div>
-        <ul className={styles.legend} aria-hidden>
-          {crossoverSeries.map((s) => (
-            <li key={s.id}>
-              <i style={{ background: ACCENT[s.accent] }} />
-              {s.label}
-            </li>
-          ))}
-        </ul>
+        <span className={styles.chartKey} aria-hidden>
+          <i data-tone="win" /> wins · <i data-tone="loss" /> losses
+        </span>
       </figcaption>
 
       <div className={styles.chartWrap}>
@@ -142,20 +145,35 @@ export function CrossoverChart() {
             per-op size (log scale)
           </text>
 
-          {/* series */}
+          {/* series — one violet quantity, three tints, named at the line end */}
           {crossoverSeries.map((s) => {
             const pts = [...s.points].sort((a, b) => a.size - b.size);
             const d = pts
               .map((p, i) => `${i === 0 ? 'M' : 'L'} ${xOf(p.size)} ${yOf(p.speedup)}`)
               .join(' ');
+            const last = pts[pts.length - 1];
+            /* A line ending near break-even would put its name on top of the
+               amber "break-even 1.0×" caption — drop that label into the loss
+               band instead, where its line actually lives. */
+            const nearBreakEven = Math.abs(last.speedup - 1) < 0.3;
             return (
-              <path
-                key={s.id}
-                d={d}
-                className={styles.series}
-                pathLength={1}
-                style={{ stroke: ACCENT[s.accent] }}
-              />
+              <g key={s.id}>
+                <path
+                  d={d}
+                  className={styles.series}
+                  pathLength={1}
+                  style={{ stroke: SERIES_INK[s.id] }}
+                />
+                <text
+                  x={xOf(last.size) - 2}
+                  y={yOf(last.speedup) + (nearBreakEven ? 24 : -11)}
+                  className={styles.seriesLabel}
+                  textAnchor="end"
+                  style={{ fill: SERIES_INK[s.id] }}
+                >
+                  {s.id}
+                </text>
+              </g>
             );
           })}
 
@@ -173,7 +191,10 @@ export function CrossoverChart() {
                   r={5.5}
                   className={styles.dot}
                   data-loses={loses || undefined}
-                  style={{ stroke: ACCENT[s.accent], color: ACCENT[s.accent] }}
+                  style={{
+                    stroke: loses ? 'var(--amber)' : 'var(--green)',
+                    color: loses ? 'var(--amber)' : 'var(--green)',
+                  }}
                   tabIndex={0}
                   role="button"
                   aria-label={`${s.label} ${p.size}: single thread ${fmtTime(
@@ -191,7 +212,6 @@ export function CrossoverChart() {
                       speedup: p.speedup,
                       cx,
                       cy,
-                      accent: ACCENT[s.accent],
                     })
                   }
                   onMouseLeave={() => setHover(null)}
@@ -205,7 +225,6 @@ export function CrossoverChart() {
                       speedup: p.speedup,
                       cx,
                       cy,
-                      accent: ACCENT[s.accent],
                     })
                   }
                   onBlur={() => setHover(null)}
@@ -270,8 +289,8 @@ export function GflopsSlope() {
 
   const pts = gflopsSeries.points;
   const W = 340;
-  const H = 260;
-  const m = { l: 38, r: 16, t: 20, b: 40 };
+  const H = 272;
+  const m = { l: 38, r: 16, t: 20, b: 52 };
   const plotW = W - m.l - m.r;
   const plotH = H - m.t - m.b;
   /* Same rule as the crossover chart: the frame follows the data. */
@@ -287,7 +306,7 @@ export function GflopsSlope() {
       <figcaption className={styles.chartHead}>
         <div>
           <span className={styles.chartEyebrow}>matmul · GFLOP/s ({gflopsSeries.flops})</span>
-          <h3 className={styles.chartTitle}>The payoff slope</h3>
+          <h4 className={styles.chartTitle}>The payoff slope</h4>
         </div>
       </figcaption>
       <div className={styles.chartWrap}>
@@ -316,6 +335,10 @@ export function GflopsSlope() {
               {s}
             </text>
           ))}
+          {/* The left chart titles its x-axis; so does this one. */}
+          <text x={m.l + plotW / 2} y={H - 8} className={styles.axisLabel} textAnchor="middle">
+            matrix size N (log scale)
+          </text>
           <path
             d={lineOf('single')}
             className={styles.series}
@@ -326,8 +349,27 @@ export function GflopsSlope() {
             d={lineOf('omp')}
             className={styles.series}
             pathLength={1}
-            style={{ stroke: 'var(--sky)' }}
+            style={{ stroke: 'var(--violet-sig)' }}
           />
+          {/* direct labels — same convention as the crossover chart */}
+          <text
+            x={xOf(pts[pts.length - 1].size) - 2}
+            y={yOf(pts[pts.length - 1].single) + 18}
+            className={styles.seriesLabel}
+            textAnchor="end"
+            style={{ fill: 'var(--steel)' }}
+          >
+            single thread
+          </text>
+          <text
+            x={xOf(pts[pts.length - 1].size) - 2}
+            y={yOf(pts[pts.length - 1].omp) + 26}
+            className={styles.seriesLabel}
+            textAnchor="end"
+            style={{ fill: 'var(--violet-sig)' }}
+          >
+            openmp + native
+          </text>
           {(['single', 'omp'] as const).map((key) =>
             pts.map((p) => (
               <circle
@@ -337,8 +379,8 @@ export function GflopsSlope() {
                 r={4.5}
                 className={styles.dot}
                 style={{
-                  stroke: key === 'omp' ? 'var(--sky)' : 'var(--steel)',
-                  color: key === 'omp' ? 'var(--sky)' : 'var(--steel)',
+                  stroke: key === 'omp' ? 'var(--violet-sig)' : 'var(--steel)',
+                  color: key === 'omp' ? 'var(--violet-sig)' : 'var(--steel)',
                 }}
                 tabIndex={0}
                 role="button"
@@ -392,14 +434,6 @@ export function GflopsSlope() {
           )}
         </svg>
       </div>
-      <div className={styles.slopeLegend} aria-hidden>
-        <span>
-          <i style={{ background: 'var(--steel)' }} /> single thread
-        </span>
-        <span>
-          <i style={{ background: 'var(--sky)' }} /> openmp + native
-        </span>
-      </div>
     </figure>
   );
 }
@@ -442,19 +476,19 @@ export function ThroughputGauge({ controller }: { controller: MnistDemoControlle
       <figcaption className={styles.chartHead}>
         <div>
           <span className={styles.chartEyebrow}>live · your machine</span>
-          <h3 className={styles.chartTitle}>simd128 vs scalar, right now</h3>
+          <h4 className={styles.chartTitle}>simd128 vs scalar, right now</h4>
         </div>
         <span className={styles.gaugePulse} data-live={live || undefined} aria-hidden />
       </figcaption>
 
       <div className={styles.gaugeWrap}>
         <svg
-          viewBox="0 0 300 190"
+          viewBox="0 0 300 202"
           className={styles.gaugeSvg}
           role="img"
           aria-label={
             live
-              ? `Live speedup ${speedup!.toFixed(1)} times`
+              ? `Live speedup ${speedup!.toFixed(2)} times`
               : 'Live gauge idle — draw a digit to measure'
           }
         >
@@ -516,17 +550,22 @@ export function ThroughputGauge({ controller }: { controller: MnistDemoControlle
             }
           />
           <circle cx={cx} cy={cy} r={6} className={styles.gaugeHub} />
-          {/* center readout */}
-          <text x={cx} y={cy - 30} className={styles.gaugeBig} textAnchor="middle">
-            {live ? `${speedup!.toFixed(1)}×` : '—'}
+          {/* The readout sits BELOW the hub, outside the needle's sweep — the
+              old cy−30 position put it exactly where the needle points at ~3×,
+              and its 1-decimal rounding disagreed with the 2-decimal stat
+              underneath (2.7× over 2.68×). One position, one precision. */}
+          <text x={cx} y={cy + 38} className={styles.gaugeBig} textAnchor="middle">
+            {live ? `${speedup!.toFixed(2)}×` : '—'}
           </text>
         </svg>
       </div>
 
+      {/* Idle figures are an em-dash, everywhere — the one hint line below
+          names the action instead of three cells inventing three phrasings. */}
       <dl className={styles.gaugeReadout}>
         <div>
           <dt>median speedup</dt>
-          <dd className="tabular">{live ? `${speedup!.toFixed(2)}×` : 'awaiting ink'}</dd>
+          <dd className="tabular">{live ? `${speedup!.toFixed(2)}×` : '—'}</dd>
         </div>
         <div>
           <dt>simd128 forward pass</dt>
@@ -539,10 +578,13 @@ export function ThroughputGauge({ controller }: { controller: MnistDemoControlle
         <div>
           <dt>throughput</dt>
           <dd className="tabular">
-            {imgPerSec ? `≈ ${imgPerSec.toLocaleString('en-US')} img/s` : 'draw above'}
+            {imgPerSec ? `≈ ${imgPerSec.toLocaleString('en-US')} img/s` : '—'}
           </dd>
         </div>
       </dl>
+      {!live && (
+        <p className={styles.gaugeIdleHint}>idle — draw in the bench at the top to arm the dial</p>
+      )}
     </figure>
   );
 }
@@ -564,7 +606,7 @@ export function LaneScale() {
     <div className={styles.laneScale} ref={ref}>
       <div className={styles.laneScaleHead}>
         <span className={styles.chartEyebrow}>lanes per FMA · f64</span>
-        <h3 className={styles.chartTitle}>One instruction, one to eight multiply-adds</h3>
+        <h4 className={styles.chartTitle}>One instruction, one to eight multiply-adds</h4>
       </div>
       <ul
         className={styles.laneRowsScale}
@@ -686,6 +728,330 @@ export function AccuracyWaffle() {
           validation split — so the set reporting the figure also selected the weights.
         </p>
       </div>
+    </div>
+  );
+}
+
+/* ─────────────── 6 · the artifact census ─────────────── */
+
+/*
+ * The disassembly census of the exact wasm module this page executes:
+ * function and vector-instruction counts, the opcode histogram, and the
+ * unrolled dual-accumulator signature — all read out of the committed
+ * binary by tools/gen_web_facts.py, never typed. `namesStripped` is why
+ * nothing here claims a count for a *named* function: the module ships
+ * no names, so counts are per-module, full stop.
+ */
+export function SimdCensusPanel() {
+  const shownOps = simdCensus.opcodes.slice(0, 8);
+  const restOps = simdCensus.opcodes.slice(8);
+  const restCount = restOps.reduce((sum, o) => sum + o.count, 0);
+  const maxOp = simdCensus.opcodes[0].count;
+
+  return (
+    <div className={styles.census}>
+      <div className={styles.censusIntro}>
+        <span className={styles.chartEyebrow}>glyph.wasm · disassembly census</span>
+        <p className={styles.censusHeadline}>
+          <Decode
+            text={`The whole optimisation is ${simdCensus.vectorInstructions} instructions.`}
+          />
+        </p>
+        <p className={styles.censusProse}>
+          Disassemble the module and count. Of{' '}
+          <b className="tabular">{simdCensus.totalFunctions}</b> functions,{' '}
+          <b className="tabular">{simdCensus.vectorFunctions}</b> touch a vector instruction —{' '}
+          <b className="tabular">{simdCensus.vectorInstructions}</b> in total. That is the entire
+          hand-written speedup, in a module you already ran.
+        </p>
+
+        <div
+          className={styles.censusStrip}
+          role="img"
+          aria-label={`${simdCensus.vectorFunctions} of ${simdCensus.totalFunctions} functions contain vector instructions`}
+        >
+          {Array.from({ length: simdCensus.totalFunctions }, (_, i) => (
+            <i key={i} data-hot={i < simdCensus.vectorFunctions || undefined} />
+          ))}
+        </div>
+        <span className={styles.censusStripNote}>
+          {simdCensus.vectorFunctions} of {simdCensus.totalFunctions} functions — counts, not
+          positions; the module ships no function names
+        </span>
+
+        <div className={styles.censusSig}>
+          <span className={styles.chartEyebrow}>the inner loop, found in the binary</span>
+          <div
+            className={styles.censusChain}
+            role="img"
+            aria-label={`The sequence ${simdCensus.signature.join(', then ')} appears ${simdCensus.signatureHits} times`}
+          >
+            {simdCensus.signature.map((op, i) => (
+              <span key={op} className={styles.censusChainStep}>
+                {i > 0 && <i aria-hidden>→</i>}
+                <code>{op}</code>
+              </span>
+            ))}
+            <b className="tabular">×{simdCensus.signatureHits}</b>
+          </div>
+          <p>
+            The dual-accumulator dot product, unrolled ×2 — the same shape as the AVX-512 kernel
+            above, surviving compilation intact.
+          </p>
+        </div>
+      </div>
+
+      <div className={styles.censusSide}>
+        <div className={styles.censusHisto}>
+          <span className={styles.chartEyebrow}>
+            vector opcodes · all {simdCensus.vectorInstructions}
+          </span>
+          <ul>
+            {shownOps.map((o) => (
+              <li key={o.op}>
+                <code>{o.op}</code>
+                <span className={styles.censusHistoTrack}>
+                  <i style={{ width: `${(o.count / maxOp) * 100}%` }} />
+                </span>
+                <b className="tabular">{o.count}</b>
+              </li>
+            ))}
+            {restCount > 0 && (
+              <li data-rest>
+                <code>{restOps.length} more opcodes</code>
+                <span className={styles.censusHistoTrack}>
+                  <i style={{ width: `${(restCount / maxOp) * 100}%` }} data-rest />
+                </span>
+                <b className="tabular">{restCount}</b>
+              </li>
+            )}
+          </ul>
+        </div>
+
+        <div className={styles.censusCustody}>
+          <span className={styles.chartEyebrow}>chain of custody</span>
+          <p>
+            <code>sha256 {simdCensus.moduleSha256.slice(0, 12)}…</code> — CI rebuilds this module
+            from source at a pinned emsdk on linux/amd64 <em>and</em> macos/arm64, and fails unless
+            the bytes match. Source → binary → browser, closed.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────── 7 · the failure map ─────────────── */
+
+interface FailureEntry {
+  index: number;
+  true: number;
+  pred: number;
+  predActivation: number;
+  trueActivation: number;
+}
+
+/** One failing digit, drawn from the packed bytes. Real MNIST ink. */
+function FailureDigit({
+  pack,
+  packIndex,
+  entry,
+}: {
+  pack: Uint8Array;
+  packIndex: number;
+  entry: FailureEntry;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const img = ctx.createImageData(28, 28);
+    const base = packIndex * 784;
+    for (let i = 0; i < 784; i += 1) {
+      const v = pack[base + i];
+      img.data[i * 4] = v;
+      img.data[i * 4 + 1] = v;
+      img.data[i * 4 + 2] = v;
+      img.data[i * 4 + 3] = v > 0 ? 255 : 0;
+    }
+    ctx.putImageData(img, 0, 0);
+  }, [pack, packIndex]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={28}
+      height={28}
+      className={styles.failureDigit}
+      role="img"
+      aria-label={`Test digit ${entry.index}: a ${entry.true} read as ${entry.pred}`}
+      title={`test #${entry.index} — read as ${entry.pred} (${(entry.predActivation * 100).toFixed(0)}%), true ${entry.true} (${(entry.trueActivation * 100).toFixed(0)}%)`}
+    />
+  );
+}
+
+/*
+ * All 299 misses, as a true→predicted map. Counts come from the committed
+ * failure manifest (web/public/failures/misclassified.json, CI-pinned to
+ * benchmarks/mnist_misclassified.csv); selecting a cell fetches the 234 kB
+ * image pack once and shows the actual digits the model got wrong. Nothing
+ * is bundled — a reader pays for the failures only by asking to see them.
+ */
+export function FailureMap() {
+  const { ref, inView } = useInView<HTMLDivElement>('0px 0px -10% 0px');
+  const [entries, setEntries] = useState<FailureEntry[] | null>(null);
+  const [pack, setPack] = useState<Uint8Array | null>(null);
+  const [sel, setSel] = useState<{ t: number; p: number } | null>(null);
+  const [failed, setFailed] = useState(false);
+  const packRequested = useRef(false);
+
+  useEffect(() => {
+    if (!inView || entries !== null || failed) return;
+    let alive = true;
+    fetch('/failures/misclassified.json')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))))
+      .then((j) => {
+        if (alive) setEntries(j.entries as FailureEntry[]);
+      })
+      .catch(() => {
+        if (alive) setFailed(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [inView, entries, failed]);
+
+  const counts = useMemo(() => {
+    const c = Array.from({ length: 10 }, () => new Array<number>(10).fill(0));
+    entries?.forEach((e) => {
+      c[e.true][e.pred] += 1;
+    });
+    return c;
+  }, [entries]);
+
+  const maxCount = Math.max(1, ...counts.flat());
+  const worst = useMemo(() => {
+    let best = { t: 0, p: 0, n: 0 };
+    counts.forEach((row, t) =>
+      row.forEach((n, p) => {
+        if (t !== p && n > best.n) best = { t, p, n };
+      }),
+    );
+    return best;
+  }, [counts]);
+
+  const selectCell = (t: number, p: number) => {
+    setSel((cur) => (cur && cur.t === t && cur.p === p ? null : { t, p }));
+    if (!packRequested.current) {
+      packRequested.current = true;
+      fetch('/failures/misclassified.bin')
+        .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`${r.status}`))))
+        .then((b) => setPack(new Uint8Array(b)))
+        .catch(() => setFailed(true));
+    }
+  };
+
+  const selected = sel
+    ? (entries ?? [])
+        .map((e, packIndex) => ({ e, packIndex }))
+        .filter(({ e }) => e.true === sel.t && e.pred === sel.p)
+    : [];
+
+  return (
+    <div className={styles.failureMap} ref={ref}>
+      <div className={styles.failureHead}>
+        <span className={styles.chartEyebrow}>the 299 · true → predicted</span>
+        <h4 className={styles.chartTitle}>Where the misses live</h4>
+      </div>
+
+      {failed ? (
+        <p className={styles.failureFallback}>
+          The failure pack could not be fetched. The full list — every miss with its true label,
+          prediction and both activations — is committed as{' '}
+          <code>benchmarks/mnist_misclassified.csv</code>.
+        </p>
+      ) : (
+        <>
+          <div
+            className={styles.failureGrid}
+            role="grid"
+            aria-label="Confusion map of the 299 misclassified test digits"
+          >
+            <span className={styles.failureCorner} aria-hidden>
+              t\p
+            </span>
+            {Array.from({ length: 10 }, (_, p) => (
+              <span key={`h${p}`} className={styles.failureAxis} aria-hidden>
+                {p}
+              </span>
+            ))}
+            {counts.map((row, t) => (
+              <Fragment key={`r${t}`}>
+                <span className={styles.failureAxis} aria-hidden>
+                  {t}
+                </span>
+                {row.map((n, p) =>
+                  t === p ? (
+                    <span key={`${t}-${p}`} className={styles.failureDiag} aria-hidden>
+                      ·
+                    </span>
+                  ) : n === 0 ? (
+                    <span key={`${t}-${p}`} className={styles.failureZero} aria-hidden />
+                  ) : (
+                    <button
+                      key={`${t}-${p}`}
+                      type="button"
+                      className={styles.failureCell}
+                      style={{ '--heat': (n / maxCount).toFixed(2) } as React.CSSProperties}
+                      data-active={(sel && sel.t === t && sel.p === p) || undefined}
+                      aria-label={`True ${t} predicted ${p}: ${n} ${n === 1 ? 'miss' : 'misses'}. Show the digits.`}
+                      onClick={() => selectCell(t, p)}
+                    >
+                      <span className="tabular">{n}</span>
+                    </button>
+                  ),
+                )}
+              </Fragment>
+            ))}
+          </div>
+
+          <p className={styles.failureNote}>
+            {entries === null ? (
+              'reading the committed failure manifest…'
+            ) : sel ? (
+              <>
+                <b className="tabular">
+                  {sel.t} → {sel.p}
+                </b>{' '}
+                · {counts[sel.t][sel.p]} of the 299 — hover a digit for its activations
+              </>
+            ) : (
+              <>
+                worst cell:{' '}
+                <b className="tabular">
+                  {worst.t} → {worst.p}
+                </b>{' '}
+                ({worst.n} times). Select any lit cell to see the actual digits.
+              </>
+            )}
+          </p>
+
+          {sel && (
+            <div className={styles.failureStripRow} aria-live="polite">
+              {pack === null ? (
+                <span className={styles.failureFetching}>fetching the failure pack (234 kB)…</span>
+              ) : (
+                selected.map(({ e, packIndex }) => (
+                  <FailureDigit key={e.index} pack={pack} packIndex={packIndex} entry={e} />
+                ))
+              )}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

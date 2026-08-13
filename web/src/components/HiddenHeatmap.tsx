@@ -75,8 +75,11 @@ export function HiddenHeatmap({ hiddenActivations, size = 220 }: HiddenHeatmapPr
     }
   }, [activations, present, size]);
 
-  const count = present ? activations.length : 0;
-  const label = present ? `Hidden (${count})` : 'Hidden';
+  // One label in both states: the idle grid still depicts 100 units, so
+  // claiming the count only when live made the "(100)" flicker in and out
+  // with the data — it read as a truncation, not a state change.
+  const count = present ? activations.length : 100;
+  const label = `Hidden (${count})`;
 
   return (
     <div className="activation-panel">

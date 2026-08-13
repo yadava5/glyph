@@ -1,12 +1,13 @@
 import { Fragment, useEffect, useState } from 'react';
-import { ArrowDown, ArrowUpRight, BookOpen, Command, Menu, X } from 'lucide-react';
-import { motion, useReducedMotion } from 'motion/react';
+import { ArrowDown, ArrowUp, ArrowUpRight, BookOpen, Command, Menu, X } from 'lucide-react';
+import { m, useReducedMotion } from 'motion/react';
 import {
   benchMethodology,
   classifyThroughput,
   crossoverLosses,
   crossoverPragma,
   decemberRecord,
+  headlineConvergence,
   isaLadder,
   kernelBenchmarks,
   kernelSource,
@@ -19,42 +20,62 @@ import {
 } from '../performance/benchmarkData';
 import { formatRunDate } from '../performance/benchDerive';
 import type { MnistDemoController } from '../mnist/useMnistDemoController';
+import { HiddenHeatmap } from '../../components/HiddenHeatmap';
+import { SaliencyPanel } from '../../components/SaliencyPanel';
 import { NetworkDiagram } from './NetworkDiagram';
 import { Workbench } from './Workbench';
 import { LaneField } from './LaneField';
 import { FlowMark } from './FlowMark';
 import { GlyphMark } from './GlyphMark';
+import { InputRaster } from './InputRaster';
 import {
   AccuracyWaffle,
   CrossoverChart,
+  FailureMap,
   GflopsSlope,
   LaneScale,
+  SimdCensusPanel,
   ThroughputGauge,
 } from './PerfVizLazy';
-import { Decode, MagneticButton, RollingNumber, Spotlight, Tilt } from './interactions';
+import { MagneticButton, RollingNumber, Spotlight, Tilt } from './interactions';
 import styles from './LandingPage.module.css';
 
 const REPO_URL = 'https://github.com/yadava5/glyph';
 const SYSTEM_CARD_URL = '/system-card';
 const KERNEL_URL = `${REPO_URL}/blob/main/src/NeuralNet.cpp`;
 
-/* The five acts of the scroll. The live bench sits at the hinge between
- * implementation and proof — it is the implementation, running. */
+/* The scroll: the live bench IS the fold, then four acts argue for it.
+ * `··` marks the instrument — it is not a chapter, it is the exhibit. */
 const ACTS = [
+  { id: 'classifier', n: '··', label: 'live bench' },
   { id: 'problem', n: '01', label: 'problem' },
   { id: 'solution', n: '02', label: 'solution' },
   { id: 'build', n: '03', label: 'build' },
-  { id: 'classifier', n: '··', label: 'live bench' },
   { id: 'proof', n: '04', label: 'proof' },
 ] as const;
 
 const NAV_LINKS = [
+  { id: 'classifier', label: 'live bench' },
   { id: 'problem', label: 'problem' },
   { id: 'solution', label: 'solution' },
   { id: 'build', label: 'build' },
-  { id: 'classifier', label: 'live bench' },
   { id: 'proof', label: 'proof' },
 ] as const;
+
+/* Proof-internal index. `4.x` deliberately reads as a subordinate system to
+ * the act numbers `01–04` — two levels, two shapes, no collision. */
+const PROOF_SUBS = [
+  { id: 'proof-artifact', n: '4.1', label: 'artifact' },
+  { id: 'proof-live', n: '4.2', label: 'live' },
+  { id: 'proof-run', n: '4.3', label: 'the run' },
+  { id: 'proof-crossover', n: '4.4', label: 'crossover' },
+  { id: 'proof-record', n: '4.5', label: 'record' },
+  { id: 'proof-anatomy', n: '4.6', label: 'anatomy' },
+  { id: 'proof-accuracy', n: '4.7', label: 'accuracy' },
+  { id: 'proof-repro', n: '4.8', label: 'reproduce' },
+] as const;
+
+const PROOF_SUB_IDS = PROOF_SUBS.map((s) => s.id);
 
 function scrollToSection(id: string) {
   document.getElementById(id)?.scrollIntoView({
@@ -63,7 +84,7 @@ function scrollToSection(id: string) {
   });
 }
 
-/** Scroll-spy over the act sections for the rails + nav. */
+/** Scroll-spy over a list of section ids, for the rails + nav. */
 function useActiveSection(ids: readonly string[]): string | null {
   const [active, setActive] = useState<string | null>(null);
 
@@ -223,9 +244,12 @@ function ActRail({ active }: { active: string | null }) {
 
 /**
  * Word spans for the hero title, so a sky "read-head" can sweep on hover.
- * The inter-word spaces are rendered as text nodes BETWEEN the inline-block
- * spans (an inline-block trims its own trailing whitespace), which keeps both
- * the visible spacing and the accessible heading text intact.
+ * Two constraints shape the markup: the spans stay `display:inline` — an
+ * inline-block boundary terminates Chromium's find-in-page buffer, which
+ * would make the headline un-searchable — and the inter-word spaces are
+ * real text nodes BETWEEN the spans, so selection and clipboard read the
+ * true sentence. The sweep therefore animates color only, never transform
+ * (which a non-replaced inline box cannot carry anyway).
  */
 function TitleWords({ text, offset = 0 }: { text: string; offset?: number }) {
   const words = text.split(' ');
@@ -246,10 +270,16 @@ function TitleWords({ text, offset = 0 }: { text: string; offset?: number }) {
 /** The headline card, looked up rather than re-typed. */
 const matmul256 = kernelBenchmarks.find((k) => k.caseKey === 'benchDot/256')!;
 
-function Hero() {
+/*
+ * The fold: the thesis on the left, the thesis RUNNING on the right. The
+ * workbench auto-fires its sample digit on first sight, so at 1024×700 a
+ * visitor sees ink, a verdict, and a scalar-vs-simd measurement taken on
+ * their own machine before they have scrolled a pixel.
+ */
+function Hero({ controller }: { controller: MnistDemoController }) {
   const reduced = useReducedMotion();
   const subhead =
-    'The classifier came as coursework; the speed is ours — the hot loop hand-written in SIMD, down to a wasm port that races scalar live in your browser. Every number here is measured, including where it loses.';
+    'The classifier came as coursework; the speed is ours — the hot loop hand-written in SIMD intrinsics four times, down to the simd128 kernel racing a lanes-off scalar build live in this page. Every number is measured, including where it loses.';
   const words = subhead.split(' ');
 
   return (
@@ -260,79 +290,83 @@ function Hero() {
       aria-labelledby="hero-title"
       glow="56 189 248"
     >
-      <motion.a
-        className={styles.heroPill}
-        href="#classifier"
-        onClick={(e) => {
-          e.preventDefault();
-          scrollToSection('classifier');
-        }}
-        initial={reduced ? false : { opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.19, 1, 0.22, 1] }}
-      >
-        <i className={styles.heroPillDot} aria-hidden />
-        <span className={styles.pillLong}>
-          Hand-forged simd128 kernel — benchmarked live on your silicon
-        </span>
-        <span className={styles.pillShort}>Live SIMD benchmark below</span>
-        <ArrowDown size={14} strokeWidth={2} aria-hidden />
-      </motion.a>
-
-      <motion.h1
-        id="hero-title"
-        className={styles.heroTitle}
-        initial={reduced ? false : { opacity: 0, filter: 'blur(10px)', y: 14 }}
-        animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
-        transition={{ duration: 0.8, delay: 0.15, ease: [0.19, 1, 0.22, 1] }}
-      >
-        <span className={styles.heroTitleBright}>
-          <TitleWords text="Handed a neural network." />
-        </span>
-        <span className={styles.heroTitleMuted}>
-          <TitleWords text="Handed back a" /> <em className={styles.shimmerWord}>fast</em>{' '}
-          <TitleWords text="one." offset={4} />
-        </span>
-      </motion.h1>
-
-      <p className={styles.heroSubhead}>
-        {words.map((word, i) => (
-          <span
-            key={`${word}-${i}`}
-            className={styles.heroWord}
-            // FM-4 · tight, capped cascade so the subhead settles to full text
-            // in ~1.4s and never reads as truncated mid-reveal (was ~2.45s).
-            style={reduced ? undefined : { animationDelay: `${450 + Math.min(i * 12, 480)}ms` }}
-            data-static={reduced || undefined}
+      <div className={styles.heroGrid}>
+        <div className={styles.heroCopy}>
+          <m.span
+            className={styles.heroPill}
+            initial={reduced ? false : { opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.19, 1, 0.22, 1] }}
           >
-            {word}{' '}
-          </span>
-        ))}
-      </p>
+            <i className={styles.heroPillDot} aria-hidden />
+            live — a hand-written simd128 kernel, timed on your silicon
+          </m.span>
 
-      <motion.div
-        className={styles.heroCtas}
-        initial={reduced ? false : { opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 1.15, ease: [0.19, 1, 0.22, 1] }}
-      >
-        <MagneticButton className={styles.ctaPrimary} onClick={() => scrollToSection('classifier')}>
-          Fire the live bench
-          <ArrowDown size={16} strokeWidth={2} aria-hidden />
-        </MagneticButton>
-        <a
-          className={styles.ctaGhost}
-          href={SYSTEM_CARD_URL}
-          target="_blank"
-          rel="noopener noreferrer"
+          <m.h1
+            id="hero-title"
+            className={styles.heroTitle}
+            initial={reduced ? false : { opacity: 0, filter: 'blur(10px)', y: 14 }}
+            animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
+            transition={{ duration: 0.8, delay: 0.15, ease: [0.19, 1, 0.22, 1] }}
+          >
+            <span className={styles.heroTitleBright}>
+              <TitleWords text="Handed a neural network." />
+            </span>
+            <span className={styles.heroTitleMuted}>
+              <TitleWords text="Handed back a" /> <em className={styles.shimmerWord}>fast</em>{' '}
+              <TitleWords text="one." offset={4} />
+            </span>
+          </m.h1>
+
+          <p className={styles.heroSubhead}>
+            {words.map((word, i) => (
+              <span
+                key={`${word}-${i}`}
+                className={styles.heroWord}
+                // FM-4 · tight, capped cascade so the subhead settles to full text
+                // in ~1.4s and never reads as truncated mid-reveal (was ~2.45s).
+                style={reduced ? undefined : { animationDelay: `${450 + Math.min(i * 12, 480)}ms` }}
+                data-static={reduced || undefined}
+              >
+                {word}{' '}
+              </span>
+            ))}
+          </p>
+
+          <m.div
+            className={styles.heroCtas}
+            initial={reduced ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 1.15, ease: [0.19, 1, 0.22, 1] }}
+          >
+            <MagneticButton className={styles.ctaPrimary} onClick={() => scrollToSection('proof')}>
+              Read the proof
+              <ArrowDown size={16} strokeWidth={2} aria-hidden />
+            </MagneticButton>
+            <a
+              className={styles.ctaGhost}
+              href={SYSTEM_CARD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <BookOpen size={16} strokeWidth={2} aria-hidden />
+              Read the System Card
+            </a>
+          </m.div>
+        </div>
+
+        <m.div
+          className={styles.heroBench}
+          initial={reduced ? false : { opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.35, ease: [0.19, 1, 0.22, 1] }}
         >
-          <BookOpen size={16} strokeWidth={2} aria-hidden />
-          Read the System Card
-        </a>
-      </motion.div>
+          <Workbench controller={controller} />
+        </m.div>
+      </div>
 
       <Tilt className={styles.heroMetricsTilt} max={4}>
-        <motion.dl
+        <m.dl
           className={styles.heroMetrics}
           aria-label="Verified numbers from the reference benchmark run"
           initial={reduced ? false : { opacity: 0 }}
@@ -359,7 +393,7 @@ function Hero() {
             <dt>test accuracy</dt>
             <dd className="tabular">97.01% / 10,000</dd>
           </div>
-        </motion.dl>
+        </m.dl>
       </Tilt>
       <p className={styles.heroMetricsSource}>
         Measured on {referenceRun.machine}, {formatRunDate(referenceRun.dateISO)} —{' '}
@@ -623,9 +657,8 @@ function ImplementationAct({ controller }: { controller: MnistDemoController }) 
       <LaneScale />
 
       <div className={styles.tierGrid}>
-        {tiers.map((t, i) => (
+        {tiers.map((t) => (
           <article key={t.id} className={styles.tierCard} data-state={t.state}>
-            <span className="tabular">0{i + 1}</span>
             <h3>{t.name}</h3>
             <p>{t.body}</p>
             <b data-state={t.state}>{t.state}</b>
@@ -641,25 +674,6 @@ function ImplementationAct({ controller }: { controller: MnistDemoController }) 
         ))}
       </dl>
     </ActShell>
-  );
-}
-
-/** The bench hinge — one line of framing above the live instrument. */
-function BenchIntro() {
-  return (
-    <div className={styles.benchIntro} data-reveal>
-      <div className={styles.actInner}>
-        <span className={styles.benchIntroEyebrow}>·· the fourth ISA, running</span>
-        <h2 className={styles.benchIntroTitle}>
-          <Decode text="Proof you can run." /> <em>Scalar versus simd128, on your machine.</em>
-        </h2>
-        <p>
-          The workbench below is the real classifier compiled to wasm. Each stroke times the
-          hand-written simd128 kernel against the same math with vector lanes switched off —
-          measured in C++, in your tab. The median is in the titlebar.
-        </p>
-      </div>
-    </div>
   );
 }
 
@@ -710,157 +724,321 @@ function BenchBars({
   );
 }
 
-function ProofAct({ controller }: { controller: MnistDemoController }) {
+/*
+ * The headline number, measured on two machines at three repetition counts.
+ * Agreement within 2% is the actual argument that it is a property of the
+ * code rather than of one afternoon.
+ */
+function ConvergenceStrip() {
   return (
-    <ActShell
-      id="proof"
-      n="04"
-      eyebrow="proof"
-      accent="green"
-      bright="Measured, not promised."
-      muted="Including where it loses."
-      lede={
-        <>
-          Every figure is scoped to exactly what it measures, and pulled from one committed Google
-          Benchmark run. The honest rows — where threading{' '}
-          <span className={styles.serifTurn}>costs</span> more than it buys — stay on the page.
-        </>
-      }
-    >
-      <div className={styles.liveInstrument}>
-        <ThroughputGauge controller={controller} />
-        <div className={styles.liveInstrumentNote}>
-          <span className={styles.miniLabel}>the one live number</span>
-          <p>
-            Everything else on this page is the <b>committed</b> {referenceRun.machine} run, which
-            you can re-run. This dial is the exception — it is <em>your</em> machine, timing the
-            wasm simd128 kernel against scalar as you draw in the bench above. The committed bars
-            below measure threading and native codegen; the dial measures SIMD itself.
-          </p>
-        </div>
-      </div>
-
-      <div className={styles.benchGrid}>
-        {kernelBenchmarks.map((k) => (
-          <article key={k.id} className={styles.benchCard} data-lost={!k.wins || undefined}>
-            <header>
-              <span>{k.operation}</span>
-              <b className="tabular">
-                {k.speedup}
-                {k.speedupQualifier && (
-                  <em className={styles.benchQualifier}>{k.speedupQualifier}</em>
-                )}
-              </b>
-            </header>
-            <BenchBars
-              baselineMs={k.baselineMs}
-              optimizedMs={k.optimizedMs}
-              baseline={k.baseline}
-              optimized={k.optimized}
-              baselineLabel={k.baselineLabel}
-              optimizedLabel={k.optimizedLabel}
-            />
-            {k.gflops && <span className={styles.benchGflops}>{k.gflops}</span>}
-            <p>{k.note}</p>
-          </article>
+    <div className={styles.convergence}>
+      <span className={styles.miniLabel}>matmul 256 — the same number, measured three times</span>
+      <div className={styles.convergenceRow}>
+        {headlineConvergence.map((c) => (
+          <div key={c.id}>
+            <span>{c.label}</span>
+            <b className="tabular">{c.display}</b>
+          </div>
         ))}
       </div>
-      <div className={styles.chartsRow}>
-        <CrossoverChart />
-        <GflopsSlope />
-      </div>
+      <p>
+        Two machines, three repetition counts, a spread under 2%. The headline is a property of the
+        code, not of one afternoon.
+      </p>
+    </div>
+  );
+}
 
-      <div className={styles.crossover}>
-        <h3>The crossover</h3>
-        <p>
-          Below a per-op size threshold, thread startup costs more than the work. The committed run
-          keeps the losses:{' '}
-          {crossoverLosses.map((c, i) => (
-            <span key={c.op}>
-              <b className="tabular">{c.op}</b> goes {c.single} → {c.omp} ({c.factor})
-              {i < crossoverLosses.length - 1 ? '; ' : '.'}
-            </span>
-          ))}{' '}
-          The threshold is in the code, not on a slide:
-        </p>
-        <pre className={styles.codeline}>
-          <code>{crossoverPragma}</code>
-        </pre>
+/** The sticky proof index — the chapter carries its own instrument scale. */
+function ProofRail({ active }: { active: string | null }) {
+  const idx = PROOF_SUBS.findIndex((s) => s.id === active);
+  return (
+    <nav className={styles.proofRail} aria-label="Proof sections">
+      <div className={styles.proofRailInner}>
+        <span className={styles.proofRailTitle}>
+          <b className="tabular">04</b> proof
+        </span>
+        <div className={styles.proofRailLinks}>
+          {PROOF_SUBS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              data-active={active === s.id}
+              onClick={() => scrollToSection(s.id)}
+            >
+              <b className="tabular">{s.n}</b>
+              <em>{s.label}</em>
+            </button>
+          ))}
+        </div>
+        <span className={styles.proofRailPos} aria-hidden>
+          <b className="tabular">{idx >= 0 ? idx + 1 : '–'}</b> / {PROOF_SUBS.length}
+        </span>
       </div>
+    </nav>
+  );
+}
 
-      <div className={styles.benchHonesty}>
-        <p>
-          <b>The record, in full:</b> across the twelve sized matrix cases in this run, threading
-          wins <b className="tabular">{referenceRecord.wins}</b> and loses{' '}
-          <b className="tabular">{referenceRecord.losses}</b>. The three cards above are the two
-          largest wins and the one that flipped — they are not a selection. Every case is plotted in
-          the crossover chart, losses included.
-        </p>
-        <p>
-          <b>And this is the harsher machine.</b> The page used to draw a December MacBook Air run,
-          where threading won <b className="tabular">{decemberRecord.wins}</b> of{' '}
-          {decemberRecord.total} and <b className="tabular">{signFlip.op}</b> was a{' '}
-          <b className="tabular">{signFlip.december}</b> win rather than the{' '}
-          <b className="tabular">{signFlip.reference}</b> it is here. That run is still committed —
-          it is history, not the reference, and{' '}
-          <a
-            href={`${REPO_URL}/blob/main/docs/benchmarks/ENVIRONMENT.md`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            ENVIRONMENT.md
-          </a>{' '}
-          says which is which and why. The README and the System Card quote this one, so now so does
-          the page.
-        </p>
-        <p>
-          <b>The honest row:</b> full classify throughput is{' '}
-          <b className="tabular">{classifyThroughput.baseline}</b> single-threaded and{' '}
-          <b className="tabular">{classifyThroughput.openmpNative}</b> with OpenMP —{' '}
-          {classifyThroughput.delta}. {classifyThroughput.conclusion}: threads pay off in kernels,
-          not in a {classifyThroughput.benchParams} forward pass (bench topology{' '}
-          <b className="tabular">{classifyThroughput.benchTopology}</b>).
-        </p>
-        <pre className={styles.codeline}>
-          <code>{reproduceBenchmarkCommand}</code>
-        </pre>
-      </div>
+function ProofSub({
+  id,
+  n,
+  title,
+  lede,
+  children,
+}: {
+  id: string;
+  n: string;
+  title: string;
+  lede?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div id={id} className={styles.proofSub}>
+      <header className={styles.proofSubHead}>
+        <span className={styles.proofSubNum}>
+          <b className="tabular">{n}</b>
+        </span>
+        <div>
+          <h3>{title}</h3>
+          {lede && <p>{lede}</p>}
+        </div>
+      </header>
+      {children}
+    </div>
+  );
+}
 
-      <div className={styles.liveAnatomy}>
-        <div className={styles.liveAnatomyHead}>
-          <h3>The whole pipeline, live</h3>
-          <p>
-            Not an illustration — the real 28×28 raster, all 100 hidden activations, and the ten
-            output confidences from the ink you gave the bench above.
+function ProofAct({ controller }: { controller: MnistDemoController }) {
+  const activeSub = useActiveSection(PROOF_SUB_IDS);
+
+  return (
+    <section
+      id="proof"
+      className={styles.act}
+      data-accent="green"
+      data-reveal
+      aria-labelledby="proof-title"
+    >
+      <ProofRail active={activeSub} />
+      <div className={styles.actInner}>
+        <header className={styles.actHead}>
+          <span className={styles.actCount}>
+            <b className="tabular">04</b> / 04 <em>proof</em>
+          </span>
+          <h2 id="proof-title" className={styles.actTitle}>
+            <span>Measured, not promised.</span>
+            <span>Including where it loses.</span>
+          </h2>
+          <p className={styles.actLede}>
+            Every figure is scoped to exactly what it measures, and pulled from one committed Google
+            Benchmark run. The honest rows — where threading{' '}
+            <span className={styles.serifTurn}>costs</span> more than it buys — stay on the page.
           </p>
-        </div>
-        <NetworkDiagram controller={controller} />
-      </div>
+        </header>
 
-      <AccuracyWaffle />
+        <div className={styles.actBody}>
+          <ProofSub
+            id="proof-artifact"
+            n="4.1"
+            title="The artifact, audited"
+            lede="Before trusting a stopwatch, open the binary — a disassembly census of the exact glyph.wasm this page just ran."
+          >
+            <SimdCensusPanel />
+          </ProofSub>
 
-      <dl className={styles.proofStats} data-cols="2" aria-label="Testing evidence">
-        <div>
-          <dt>C++ tests</dt>
-          <dd className="tabular">
-            <RollingNumber value={41} rerollOnHover />
-          </dd>
-          <span>Catch2 · 469 assertions · RapidCheck properties</span>
-        </div>
-        <div>
-          <dt>end-to-end</dt>
-          <dd className="tabular">
-            <RollingNumber value={29} rerollOnHover />
-          </dd>
-          <span>8 Playwright specs × 4 projects − 3 skips</span>
-        </div>
-      </dl>
+          <ProofSub
+            id="proof-live"
+            n="4.2"
+            title="Your machine, on the record"
+            lede="One number on this page is not committed: the one your machine is producing right now."
+          >
+            <div className={styles.liveInstrument}>
+              <ThroughputGauge controller={controller} />
+              <div className={styles.liveInstrumentNote}>
+                <span className={styles.miniLabel}>the one live number</span>
+                <p>
+                  Everything else here is the <b>committed</b> {referenceRun.machine} run, which you
+                  can re-run. This dial is the exception — it is <em>your</em> machine, timing the
+                  wasm simd128 kernel against scalar as you draw in the bench at the top. The
+                  committed bars below measure threading and native codegen; the dial measures SIMD
+                  itself.
+                </p>
+              </div>
+            </div>
+          </ProofSub>
 
-      <div className={styles.proofGrid}>
-        <article>
-          <h3>Reproduce the accuracy</h3>
-          <pre className={styles.codeblock}>
-            <code>{`cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          <ProofSub
+            id="proof-run"
+            n="4.3"
+            title="The committed run"
+            lede="The two largest wins and the case that flipped — chosen to span the result, not to flatter it."
+          >
+            <div className={styles.benchGrid}>
+              {kernelBenchmarks.map((k) => (
+                <article key={k.id} className={styles.benchCard} data-lost={!k.wins || undefined}>
+                  <header>
+                    <span>{k.operation}</span>
+                    <b className="tabular">
+                      {k.speedup}
+                      {k.speedupQualifier && (
+                        <em className={styles.benchQualifier}>{k.speedupQualifier}</em>
+                      )}
+                    </b>
+                  </header>
+                  <BenchBars
+                    baselineMs={k.baselineMs}
+                    optimizedMs={k.optimizedMs}
+                    baseline={k.baseline}
+                    optimized={k.optimized}
+                    baselineLabel={k.baselineLabel}
+                    optimizedLabel={k.optimizedLabel}
+                  />
+                  {k.gflops && <span className={styles.benchGflops}>{k.gflops}</span>}
+                  <p>{k.note}</p>
+                </article>
+              ))}
+            </div>
+            <ConvergenceStrip />
+          </ProofSub>
+
+          <ProofSub
+            id="proof-crossover"
+            n="4.4"
+            title="The crossover"
+            lede="Below a per-op size threshold, thread startup costs more than the work. Eight of twelve cases lose — all twelve are plotted."
+          >
+            <div className={styles.chartsRow}>
+              <CrossoverChart />
+              <GflopsSlope />
+            </div>
+            <div className={styles.crossover}>
+              <p>
+                The committed run keeps the losses:{' '}
+                {crossoverLosses.map((c, i) => (
+                  <span key={c.op}>
+                    <b className="tabular">{c.op}</b> goes {c.single} → {c.omp} ({c.factor})
+                    {i < crossoverLosses.length - 1 ? '; ' : '.'}
+                  </span>
+                ))}{' '}
+                The threshold is in the code, not on a slide:
+              </p>
+              <pre className={styles.codeline}>
+                <code>{crossoverPragma}</code>
+              </pre>
+            </div>
+          </ProofSub>
+
+          <ProofSub
+            id="proof-record"
+            n="4.5"
+            title="The record, in full"
+            lede="The whole tally, the kinder machine it replaced, and the row that embarrasses the headline."
+          >
+            <div className={styles.benchHonesty}>
+              <p>
+                <b>The tally:</b> across the twelve sized matrix cases in this run, threading wins{' '}
+                <b className="tabular">{referenceRecord.wins}</b> and loses{' '}
+                <b className="tabular">{referenceRecord.losses}</b>. The three cards above are the
+                two largest wins and the one that flipped — they are not a selection. Every case is
+                plotted in the crossover chart, losses included.
+              </p>
+              <p>
+                <b>And this is the harsher machine.</b> The page used to draw a December MacBook Air
+                run, where threading won <b className="tabular">{decemberRecord.wins}</b> of{' '}
+                {decemberRecord.total} and <b className="tabular">{signFlip.op}</b> was a{' '}
+                <b className="tabular">{signFlip.december}</b> win rather than the{' '}
+                <b className="tabular">{signFlip.reference}</b> it is here. That run is still
+                committed — it is history, not the reference, and{' '}
+                <a
+                  href={`${REPO_URL}/blob/main/docs/benchmarks/ENVIRONMENT.md`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  ENVIRONMENT.md
+                </a>{' '}
+                says which is which and why. The README and the System Card quote this one, so now
+                so does the page.
+              </p>
+              <p>
+                <b>The honest row:</b> full classify throughput is{' '}
+                <b className="tabular">{classifyThroughput.baseline}</b> single-threaded and{' '}
+                <b className="tabular">{classifyThroughput.openmpNative}</b> with OpenMP —{' '}
+                {classifyThroughput.delta}. {classifyThroughput.conclusion}: threads pay off in
+                kernels, not in a {classifyThroughput.benchParams} forward pass (bench topology{' '}
+                <b className="tabular">{classifyThroughput.benchTopology}</b>).
+              </p>
+            </div>
+          </ProofSub>
+
+          <ProofSub
+            id="proof-anatomy"
+            n="4.6"
+            title="The pipeline, live"
+            lede="Not an illustration — the real 28×28 raster, all 100 hidden activations, and the ten output confidences from your ink."
+          >
+            <div className={styles.liveAnatomy}>
+              <NetworkDiagram controller={controller} />
+              {/* The heatmap and saliency panels carry their own labels;
+                  only the raster needs one supplied. */}
+              <div className={styles.anatomySignals} id="results">
+                <div className={styles.signalCell}>
+                  <span className={styles.signalLabel}>what the network sees · 28×28</span>
+                  <InputRaster pixels={controller.inputPixels} />
+                </div>
+                <div className={styles.signalCell}>
+                  <HiddenHeatmap hiddenActivations={controller.hiddenActivations} />
+                </div>
+                <div className={styles.signalCell}>
+                  <SaliencyPanel inputGrad={controller.inputGrad} />
+                  <span className={styles.saliencyLegend} aria-hidden>
+                    <i data-kind="for" /> supports the verdict · <i data-kind="against" /> opposes
+                    it
+                  </span>
+                </div>
+              </div>
+            </div>
+          </ProofSub>
+
+          <ProofSub
+            id="proof-accuracy"
+            n="4.7"
+            title="Accuracy, errors included"
+            lede="9,701 of 10,000 — and every one of the 299 misses, mapped and inspectable."
+          >
+            <div className={styles.accuracyGrid}>
+              <AccuracyWaffle />
+              <FailureMap />
+            </div>
+          </ProofSub>
+
+          <ProofSub
+            id="proof-repro"
+            n="4.8"
+            title="Reproduce everything"
+            lede="Every figure re-derivable from a clean checkout. These are the commands."
+          >
+            <dl className={styles.proofStats} data-cols="2" aria-label="Testing evidence">
+              <div>
+                <dt>C++ tests</dt>
+                <dd className="tabular">
+                  <RollingNumber value={41} rerollOnHover />
+                </dd>
+                <span>Catch2 · 469 assertions · RapidCheck properties</span>
+              </div>
+              <div>
+                <dt>end-to-end</dt>
+                <dd className="tabular">
+                  <RollingNumber value={29} rerollOnHover />
+                </dd>
+                <span>8 Playwright specs × 4 projects − 3 skips</span>
+              </div>
+            </dl>
+
+            <div className={styles.proofGrid}>
+              <article>
+                <h4>Reproduce the accuracy</h4>
+                <pre className={styles.codeblock}>
+                  <code>{`cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 
 # 41 tests, 469 assertions
@@ -868,46 +1046,53 @@ cmake --build build -j
 
 # 9701 / 10000 = 97.01%
 ./test_model model.weights data 10000`}</code>
-          </pre>
-        </article>
-        <article>
-          <h3>Reproduce this page&apos;s runtime</h3>
-          <pre className={styles.codeblock}>
-            <code>{`source "$EMSDK/emsdk_env.sh"
+                </pre>
+              </article>
+              <article>
+                <h4>Reproduce this page&apos;s runtime</h4>
+                <pre className={styles.codeblock}>
+                  <code>{`source "$EMSDK/emsdk_env.sh"
 
 # stages web/public/wasm
 ./tools/build_wasm.sh
 
 cd web
 VITE_ENABLE_WASM=true npm run build`}</code>
-          </pre>
-        </article>
+                </pre>
+              </article>
+            </div>
+            <pre className={styles.codeline}>
+              <code>{reproduceBenchmarkCommand}</code>
+            </pre>
+            <p className={styles.methodology}>{benchMethodology}</p>
+          </ProofSub>
+        </div>
       </div>
-      <p className={styles.methodology}>{benchMethodology}</p>
-    </ActShell>
+    </section>
   );
 }
 
-/** Closing CTA band — try it, then read the whole story. */
+/** Closing band — the artifacts travel; the page is just their reading. */
 function TryItBand() {
   return (
     <section className={styles.tryBand} id="try" data-reveal aria-labelledby="try-title">
       <div className={styles.actInner}>
-        <span className={styles.tryEyebrow}>try it</span>
+        <span className={styles.tryEyebrow}>where to next</span>
         <h2 id="try-title" className={styles.tryTitle}>
-          Draw a digit. Watch a hand-written kernel <em>beat scalar on your own silicon.</em>
+          Every claim on this page is committed. <em>Take the artifacts, not our word.</em>
         </h2>
         <p className={styles.tryLede}>
-          Then read the System Card — the same story in full: every kernel, every benchmark cell,
-          the crossover math, and the reconciled test counts.
+          Run records, the wasm census, the failure pack with all 299 misses — in the repository,
+          gated by CI. The System Card tells the same story in full: every kernel, every benchmark
+          cell, the crossover math, the reconciled test counts.
         </p>
         <div className={styles.tryCtas}>
           <MagneticButton
             className={styles.ctaPrimary}
             onClick={() => scrollToSection('classifier')}
           >
-            <ArrowUpRight size={16} strokeWidth={2} aria-hidden />
-            Fire the live bench
+            <ArrowUp size={16} strokeWidth={2} aria-hidden />
+            Back to the bench
           </MagneticButton>
           <a
             className={styles.ctaSystemCard}
@@ -963,16 +1148,14 @@ export function LandingPage({ controller }: { controller: MnistDemoController })
 
   return (
     <main className={styles.page}>
-      <LaneField />
+      <LaneField pulse={controller.timing?.n ?? 0} />
       <div className={styles.pageContent}>
         <Nav active={active} />
         <ActRail active={active} />
-        <Hero />
+        <Hero controller={controller} />
         <ProblemAct />
         <SolutionAct />
         <ImplementationAct controller={controller} />
-        <BenchIntro />
-        <Workbench controller={controller} />
         <ProofAct controller={controller} />
         <TryItBand />
         <Footer />

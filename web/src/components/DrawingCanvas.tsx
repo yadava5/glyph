@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Redo2, RotateCcw, Trash2, Undo2 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { getStroke } from 'perfect-freehand';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { springs } from '../lib/springs';
@@ -463,7 +463,7 @@ export function DrawingCanvas({
         }}
       >
         {/* Faint 28x28 grid overlay. */}
-        <motion.g
+        <m.g
           aria-hidden
           initial={false}
           animate={{ opacity: gridOpacityTarget }}
@@ -481,7 +481,7 @@ export function DrawingCanvas({
               strokeWidth={1}
             />
           ))}
-        </motion.g>
+        </m.g>
 
         {/* Strokes. White fill to match the 28x28 white-on-black extraction. */}
         <g>
@@ -492,7 +492,7 @@ export function DrawingCanvas({
       </svg>
 
       <div className="canvas-buttons">
-        <motion.button
+        <m.button
           type="button"
           onClick={handleClear}
           disabled={disabled || strokeCount === 0}
@@ -505,8 +505,8 @@ export function DrawingCanvas({
           title="Clear"
         >
           <Trash2 size={18} aria-hidden />
-        </motion.button>
-        <motion.button
+        </m.button>
+        <m.button
           type="button"
           onClick={() => dispatch({ type: 'UNDO' })}
           disabled={disabled || !canUndo}
@@ -519,8 +519,8 @@ export function DrawingCanvas({
           data-tooltip="Undo"
         >
           <Undo2 size={18} aria-hidden />
-        </motion.button>
-        <motion.button
+        </m.button>
+        <m.button
           type="button"
           onClick={() => dispatch({ type: 'REDO' })}
           disabled={disabled || !canRedo}
@@ -533,8 +533,8 @@ export function DrawingCanvas({
           data-tooltip="Redo"
         >
           <Redo2 size={18} aria-hidden />
-        </motion.button>
-        <motion.button
+        </m.button>
+        <m.button
           type="button"
           onClick={() => {
             if (!sampleStrokes || sampleStrokes.length === 0) return;
@@ -551,7 +551,7 @@ export function DrawingCanvas({
           data-tooltip="Sample"
         >
           <RotateCcw size={18} aria-hidden />
-        </motion.button>
+        </m.button>
       </div>
 
       {/* Live-region so screen readers hear a summary of the drawing state. */}

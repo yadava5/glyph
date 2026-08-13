@@ -45,7 +45,8 @@
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
-  animation: beamSpin 7s linear infinite;
+  /* Three revolutions, then rest as a static ring — the page settles. */
+  animation: beamSpin 7s linear 3;
 }
 
 @keyframes beamSpin {
@@ -276,7 +277,7 @@
 
 /* slope */
 .peakLabel {
-  fill: var(--sky-soft);
+  fill: var(--violet-sig);
   font-size: 12px;
   font-weight: 600;
 }
@@ -524,7 +525,7 @@
   i[data-on] {
   animation:
     laneOn 0.4s var(--ease-out-quart) backwards,
-    laneShimmer 3.4s ease-in-out infinite;
+    laneShimmer 3.4s ease-in-out 4;
   animation-delay: var(--d), calc(1s + var(--d));
 }
 
@@ -653,5 +654,392 @@
   .laneScaleRow {
     grid-template-columns: minmax(6rem, 1fr) minmax(0, 1.6fr) 2rem;
     gap: 0.5rem;
+  }
+}
+
+/* ─────────── direct labels + win/loss key (both charts) ─────────── */
+
+.seriesLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.chartKey {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.chartKey i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--green);
+  border-radius: 999px;
+  background: var(--page-bg);
+}
+
+.chartKey i[data-tone='loss'] {
+  border-color: var(--amber);
+  background: rgb(245 158 11 / 0.18);
+}
+
+.gaugeIdleHint {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.74rem;
+  letter-spacing: 0.03em;
+}
+
+/* ─────────── the artifact census ─────────── */
+
+.census {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: clamp(1.4rem, 3vw, 2.4rem);
+  align-items: start;
+  padding: 1.5rem 1.6rem;
+  border: 1px solid var(--line-soft);
+  border-left: 2px solid var(--sky);
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgb(56 189 248 / 0.05), transparent 60%), var(--surface);
+}
+
+.censusIntro {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.censusHeadline {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: clamp(1.35rem, 2.4vw, 1.8rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.censusProse {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.censusProse b {
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+/* 89 function ticks, 5 lit — a tally, not a map (the module has no names) */
+.censusStrip {
+  display: flex;
+  gap: 2px;
+  height: 22px;
+}
+
+.censusStrip i {
+  flex: 1;
+  min-width: 2px;
+  border-radius: 1px;
+  background: rgb(148 163 184 / 0.14);
+}
+
+.censusStrip i[data-hot] {
+  background: linear-gradient(180deg, var(--sky-soft), var(--sky));
+  box-shadow: 0 0 8px rgb(56 189 248 / 0.5);
+}
+
+.censusStripNote {
+  margin-top: -0.5rem;
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+}
+
+.censusSig {
+  display: grid;
+  gap: 0.55rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.censusChain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.censusChainStep {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.censusChain code {
+  padding: 0.16rem 0.45rem;
+  border: 1px solid rgb(56 189 248 / 0.35);
+  border-radius: 6px;
+  background: rgb(56 189 248 / 0.07);
+  color: var(--sky-soft);
+  font-size: 0.78rem;
+}
+
+.censusChain i {
+  color: var(--text-dim);
+  font-style: normal;
+}
+
+.censusChain b {
+  margin-left: 0.2rem;
+  color: var(--text-strong);
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+.censusSig p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.censusSide {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.censusHisto {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.censusHisto ul {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.censusHisto li {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, auto) minmax(0, 1fr) 2rem;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.censusHisto li code {
+  overflow: hidden;
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.censusHisto li[data-rest] code {
+  color: var(--text-dim);
+}
+
+.censusHistoTrack {
+  display: block;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(148 163 184 / 0.1);
+}
+
+.censusHistoTrack i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--sky), var(--sky-soft));
+}
+
+.censusHistoTrack i[data-rest] {
+  background: rgb(148 163 184 / 0.4);
+}
+
+.censusHisto li b {
+  color: var(--text-soft);
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.censusCustody {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--line-soft);
+  border-left: 2px solid var(--green);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.censusCustody p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.censusCustody code {
+  color: var(--text-soft);
+  font-size: 0.78rem;
+}
+
+.censusCustody em {
+  font-style: italic;
+}
+
+/* ─────────── the failure map ─────────── */
+
+.failureMap {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  padding: 1.5rem;
+  border: 1px solid var(--line-soft);
+  border-top: 2px solid var(--amber);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.failureHead {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.failureGrid {
+  display: grid;
+  grid-template-columns: auto repeat(10, minmax(0, 1fr));
+  gap: 3px;
+  max-width: 460px;
+}
+
+.failureCorner,
+.failureAxis {
+  display: grid;
+  place-items: center;
+  min-height: 1.6rem;
+  color: var(--text-dim);
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.failureCorner {
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+}
+
+.failureDiag {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.025);
+  color: var(--text-dim);
+  font-size: 0.7rem;
+}
+
+.failureZero {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.012);
+}
+
+/* Heat is amber — losses are amber everywhere on this page. */
+.failureCell {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: rgb(245 158 11 / calc(0.1 + var(--heat) * 0.55));
+  color: var(--text-strong);
+  font-size: 0.68rem;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out-quart),
+    transform var(--dur-fast) var(--ease-out-quart);
+}
+
+.failureCell:hover,
+.failureCell:focus-visible {
+  border-color: var(--amber);
+  transform: scale(1.08);
+}
+
+.failureCell[data-active] {
+  border-color: var(--amber-soft);
+  box-shadow: 0 0 10px rgb(245 158 11 / 0.35);
+}
+
+.failureNote {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.failureNote b {
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+.failureStripRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  min-height: 3.2rem;
+  padding: 0.7rem;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: #0c0d0e;
+}
+
+.failureDigit {
+  width: 46px;
+  height: 46px;
+  border-radius: 6px;
+  background: #000;
+  image-rendering: pixelated;
+  cursor: help;
+  transition: transform var(--dur-fast) var(--ease-out-quart);
+}
+
+.failureDigit:hover {
+  transform: scale(1.35);
+}
+
+.failureFetching {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+}
+
+.failureFallback {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+/* ─────────── census + failure responsive ─────────── */
+
+@media (max-width: 1000px) {
+  .census {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

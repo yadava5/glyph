@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { springs } from '../lib/springs';
 
@@ -35,7 +35,7 @@ export function SoftmaxBars({ prediction, confidence }: SoftmaxBarsProps) {
               {digit}
             </span>
             <div className="softmax-track">
-              <motion.div
+              <m.div
                 key={`${digit}-${isWinner ? 'win' : 'lose'}`}
                 className="softmax-fill"
                 style={{ background: isWinner ? WINNER_COLOR : OTHER_COLOR }}

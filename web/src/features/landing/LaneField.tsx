@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
 import styles from './LaneField.module.css';
 
@@ -9,11 +9,17 @@ import styles from './LaneField.module.css';
  * cursor brighten (the machine notices you). It is deliberately dim so text
  * stays crisp on top.
  *
- * Perf: everything animated is a CSS transform/opacity on a compositor layer,
- * so the main thread — and therefore the live wasm bench — is never touched.
- * The only JS is a rAF-throttled pointer read that writes two CSS variables.
- * Reduced-motion freezes the carriers to a static field; no autonomous motion.
- * Rendered OUTSIDE #hero and aria-hidden.
+ * The field is coupled to the instrument: `pulse` ticks every time the wasm
+ * kernel takes a measurement, and the lanes flare for a beat — ambient
+ * motion that MEANS "work just moved through the lanes", not decoration.
+ * The resting state is deliberately sparse and slow so the page settles.
+ *
+ * Perf: everything animated is a CSS transform/opacity/filter on a
+ * compositor layer, so the main thread — and therefore the live wasm bench —
+ * is never touched. The only JS is a rAF-throttled pointer read that writes
+ * two CSS variables, plus a timeout per surge. Reduced-motion freezes the
+ * carriers to a static field; no autonomous motion. Rendered OUTSIDE #hero
+ * and aria-hidden.
  */
 
 interface Carrier {
@@ -36,25 +42,43 @@ function buildCarriers(): Carrier[] {
     return ((seed >>> 0) % 100000) / 100000;
   };
   const hues: Carrier['hue'][] = ['sky', 'sky', 'sky', 'steel', 'amber'];
-  return Array.from({ length: 16 }, () => {
+  // 10 slow, dim carriers at rest (was 16 brighter/faster ones): the field
+  // reads as idle silicon until a measurement surges it.
+  return Array.from({ length: 10 }, () => {
     const r = rand();
     return {
       lane: 3 + rand() * 94,
       width: r < 0.75 ? 1 : 2,
       height: 22 + rand() * 26,
-      dur: 9 + rand() * 12,
-      delay: -rand() * 20,
+      dur: 14 + rand() * 14,
+      delay: -rand() * 26,
       hue: hues[Math.floor(rand() * hues.length)],
-      opacity: 0.05 + rand() * 0.14,
+      opacity: 0.04 + rand() * 0.1,
     };
   });
 }
 
-export function LaneField() {
+export function LaneField({ pulse = 0 }: { pulse?: number }) {
   const reduced = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const raf = useRef(0);
   const carriers = useMemo(() => buildCarriers(), []);
+  const [surging, setSurging] = useState(false);
+  const surgeTimer = useRef(0);
+
+  // Flare the lanes for a beat whenever the kernel takes a measurement.
+  // The rising edge is set inside a rAF callback (house rule: no synchronous
+  // setState in an effect body — it cascades renders).
+  useEffect(() => {
+    if (!pulse || reduced) return;
+    const raf = requestAnimationFrame(() => setSurging(true));
+    window.clearTimeout(surgeTimer.current);
+    surgeTimer.current = window.setTimeout(() => setSurging(false), 1100);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(surgeTimer.current);
+    };
+  }, [pulse, reduced]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return;
@@ -80,7 +104,13 @@ export function LaneField() {
   }, []);
 
   return (
-    <div ref={ref} className={styles.field} data-reduced={reduced || undefined} aria-hidden>
+    <div
+      ref={ref}
+      className={styles.field}
+      data-reduced={reduced || undefined}
+      data-surge={surging || undefined}
+      aria-hidden
+    >
       <div className={styles.lanes} />
       <div className={styles.lanesLit} />
       <div className={styles.carriers}>

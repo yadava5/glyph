@@ -1,13 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { RotateCcw } from 'lucide-react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { DrawingCanvas } from '../../components/DrawingCanvas';
-import { HiddenHeatmap } from '../../components/HiddenHeatmap';
-import { SaliencyPanel } from '../../components/SaliencyPanel';
 import { SoftmaxBars } from '../../components/SoftmaxBars';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import type { MnistDemoController } from '../mnist/useMnistDemoController';
-import { InputRaster } from './InputRaster';
 import styles from './Workbench.module.css';
 
 interface WorkbenchProps {
@@ -40,44 +36,56 @@ function fmtMs(ms: number): string {
 }
 
 /*
- * The live proof line: scalar (vectorization disabled) vs the
- * hand-written wasm simd128 kernel, medians over the session, both
- * measured in C++ on the visitor's own machine. This is the page's
- * thesis rendered as an instrument, not a claim.
+ * The proof line — the instrument's whole reason to be on the fold.
+ * Scalar (vectorization disabled) vs the hand-written wasm simd128 kernel,
+ * medians over the session, both measured in C++ on the visitor's own
+ * machine. Idle figures render as an em-dash, never as fake zeros.
  */
-function TimingReadout({ controller }: WorkbenchProps) {
+function ProofLine({ controller }: WorkbenchProps) {
   const t = controller.timing;
-  if (!t) return null;
-  if (t.p50BaselineMs === null || t.speedup === null) {
+  if (!t || t.p50BaselineMs === null || t.speedup === null) {
     return (
-      <span className={styles.timingReadout} aria-label="Forward pass timing">
-        <b className="tabular">{fmtMs(t.p50OptimizedMs)}</b>
-        <small className="tabular">p50 · n={t.n}</small>
-      </span>
+      <div className={styles.proofLine} data-idle aria-label="Live kernel comparison, idle">
+        <span className={styles.proofPair}>
+          <em>scalar</em> <b className="tabular">—</b>
+          <i aria-hidden>→</i>
+          <em>simd128</em> <b className="tabular">{t ? fmtMs(t.p50OptimizedMs) : '—'}</b>
+        </span>
+        <span className={styles.proofRatio} data-idle>
+          <b className="tabular">—</b>
+        </span>
+        <small>{t ? `p50 · n=${t.n} · arming scalar baseline` : 'awaiting ink'}</small>
+      </div>
     );
   }
   return (
-    <span
-      className={styles.timingReadout}
+    <div
+      className={styles.proofLine}
       aria-label={`Live kernel comparison: scalar ${fmtMs(t.p50BaselineMs)} versus simd ${fmtMs(
         t.p50OptimizedMs,
       )}, ${t.speedup.toFixed(1)} times faster`}
     >
-      <span className="tabular">scalar {fmtMs(t.p50BaselineMs)}</span>
-      <i aria-hidden>→</i>
-      <span className="tabular" data-lit>
-        simd {fmtMs(t.p50OptimizedMs)}
+      <span className={styles.proofPair}>
+        <em>scalar</em> <b className="tabular">{fmtMs(t.p50BaselineMs)}</b>
+        <i aria-hidden>→</i>
+        <em>simd128</em>{' '}
+        <b className="tabular" data-lit>
+          {fmtMs(t.p50OptimizedMs)}
+        </b>
       </span>
-      <b className="tabular">{t.speedup.toFixed(1)}×</b>
-      <small className="tabular">p50 · n={t.n}</small>
-    </span>
+      <span className={styles.proofRatio}>
+        <b className="tabular">{t.speedup.toFixed(1)}×</b>
+      </span>
+      <small className="tabular">p50 · n={t.n} · timed in C++ on your silicon</small>
+    </div>
   );
 }
 
 /**
- * The product frame: the real classifier, above the fold, in a single
- * window. Left — ink. Middle — what the network sees, and its verdict.
- * Right — the evidence signals. The titlebar is a live benchmark.
+ * The fold instrument, compact: ink in on the left, verdict and per-class
+ * confidence on the right, the scalar-vs-simd measurement across the base.
+ * The deep signals (input raster, hidden heatmap, saliency) live with the
+ * proof act's anatomy panel — this window is the demo, that one is the audit.
  */
 export function Workbench({ controller }: WorkbenchProps) {
   const badge = runtimeBadge(controller);
@@ -89,10 +97,10 @@ export function Workbench({ controller }: WorkbenchProps) {
       ? controller.confidence[controller.prediction]
       : null;
 
-  // Let the machine perform before anyone is asked to believe it: when
-  // the workbench first enters the viewport with a blank canvas, run
-  // the sample digit once. Skipped under prefers-reduced-motion (the
-  // labeled button below covers that path) and never after user ink.
+  // Let the machine perform before anyone is asked to believe it: on the
+  // fold, first sight of a blank canvas runs the sample digit once. Skipped
+  // under prefers-reduced-motion (the canvas toolbar's sample button covers
+  // that path) and never after user ink.
   const { strokeCount, prediction, handleLoadSampleDigit } = controller;
   useEffect(() => {
     if (reduced || autoRanRef.current) return;
@@ -125,25 +133,20 @@ export function Workbench({ controller }: WorkbenchProps) {
           <span className={styles.titlebarName} id="workbench-title">
             glyph <em>/</em> live_bench
           </span>
-          <div className={styles.titlebarRight}>
-            <TimingReadout controller={controller} />
-            <span
-              className={styles.titlebarStatus}
-              data-tone={badge.tone}
-              aria-label={`Prediction source: ${badge.label}`}
-            >
-              <i aria-hidden />
-              <span className={styles.statusLong}>{badge.label}</span>
-              <span className={styles.statusShort}>{badge.short}</span>
-            </span>
-          </div>
+          <span
+            className={styles.titlebarStatus}
+            data-tone={badge.tone}
+            aria-label={`Prediction source: ${badge.label}`}
+          >
+            <i aria-hidden />
+            <span className={styles.statusLong}>{badge.label}</span>
+            <span className={styles.statusShort}>{badge.short}</span>
+          </span>
         </header>
 
         <div className={styles.grid}>
           <div className={styles.colDraw}>
-            <span className={styles.colLabel}>
-              <b>01</b> draw
-            </span>
+            <span className={styles.colLabel}>ink</span>
             <DrawingCanvas
               onPredict={controller.handlePredict}
               onClear={controller.resetPrediction}
@@ -155,31 +158,17 @@ export function Workbench({ controller }: WorkbenchProps) {
               isLoading={controller.isLoading}
             />
             <p className={styles.colHint}>
-              Draw a digit 0–9. Each stroke races the hand-written simd128 kernel against the same
-              math with vector lanes off — on your silicon.
+              Draw a digit 0–9 — every stroke races the simd128 kernel against the same math with
+              vector lanes off.
             </p>
-            <button
-              type="button"
-              className={styles.sampleButton}
-              onClick={controller.handleLoadSampleDigit}
-            >
-              <RotateCcw size={13} strokeWidth={2} aria-hidden />
-              load a sample digit
-            </button>
           </div>
 
-          <div className={styles.colSeen}>
-            <span className={styles.colLabel}>
-              <b>02</b> what the network sees
-            </span>
-            <InputRaster pixels={controller.inputPixels} />
-            <span className={styles.colLabel}>
-              <b>03</b> verdict
-            </span>
+          <div className={styles.colVerdict}>
+            <span className={styles.colLabel}>verdict</span>
             <div className={styles.verdict} data-empty={controller.prediction === null}>
               {controller.prediction !== null ? (
                 <>
-                  <motion.span
+                  <m.span
                     key={`digit-${controller.prediction}`}
                     className={styles.verdictDigit}
                     data-testid="verdict-digit"
@@ -192,9 +181,9 @@ export function Workbench({ controller }: WorkbenchProps) {
                     }}
                   >
                     {controller.prediction}
-                  </motion.span>
+                  </m.span>
                   {confidence !== null && (
-                    <motion.span
+                    <m.span
                       key={`meta-${controller.prediction}-${confidence.toFixed(3)}`}
                       className={styles.verdictMeta}
                       initial={reduced ? false : { opacity: 0 }}
@@ -202,44 +191,25 @@ export function Workbench({ controller }: WorkbenchProps) {
                       transition={{ duration: 0.3, delay: 0.28 }}
                     >
                       <b className="tabular">{(confidence * 100).toFixed(1)}%</b> confident
-                    </motion.span>
+                    </m.span>
                   )}
                 </>
               ) : (
                 <span className={styles.verdictEmpty}>?</span>
               )}
             </div>
-          </div>
-
-          <div className={styles.colSignals} id="results">
-            <span className={styles.colLabel}>
-              <b>04</b> signals
-            </span>
-            <div className={styles.signalsStack}>
-              <div className={styles.confidencePanel}>
-                <span className={styles.signalLabel}>per-class confidence</span>
-                <SoftmaxBars
-                  prediction={controller.prediction}
-                  confidence={controller.confidence}
-                />
-              </div>
-              <div className={styles.signalsRow}>
-                <SaliencyPanel inputGrad={controller.inputGrad} />
-                <HiddenHeatmap hiddenActivations={controller.hiddenActivations} />
-              </div>
-              <span className={styles.saliencyLegend} aria-hidden>
-                <i data-kind="for" /> supports the verdict · <i data-kind="against" /> opposes it
-              </span>
-            </div>
+            <span className={styles.colLabel}>per-class confidence</span>
+            <SoftmaxBars prediction={controller.prediction} confidence={controller.confidence} />
           </div>
         </div>
 
+        <ProofLine controller={controller} />
+
         <footer className={styles.statusline}>
-          <span>784 → 100 → 10</span>
-          <span>79,510 parameters</span>
-          <span>318KB weights</span>
-          <span>dual-accumulator f64x2 kernel</span>
-          <span>timed in C++, saliency excluded</span>
+          <span className="tabular">784 → 100 → 10</span>
+          <span className="tabular">79,510 params</span>
+          <span className="tabular">318 KB weights</span>
+          <span>f64x2 dual-accumulator</span>
         </footer>
       </div>
     </section>

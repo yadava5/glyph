@@ -14,7 +14,7 @@ import {
   Zap,
   type LucideIcon,
 } from 'lucide-react';
-import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
+import { AnimatePresence, LayoutGroup, m } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -157,7 +157,7 @@ export function CommandPalette({
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
+        <m.div
           className="command-overlay"
           role="dialog"
           aria-modal="true"
@@ -170,7 +170,7 @@ export function CommandPalette({
             if (e.target === e.currentTarget) setOpen(false);
           }}
         >
-          <motion.div
+          <m.div
             className="command-shell"
             layout
             initial={reduced ? false : { opacity: 0, y: -14, scale: 0.98 }}
@@ -201,7 +201,7 @@ export function CommandPalette({
                           onSelect={() => runAndClose(action.run)}
                           className="command-item"
                         >
-                          <motion.span
+                          <m.span
                             className="command-item-motion"
                             layout
                             initial={reduced ? false : { opacity: 0, y: 8, scale: 0.98 }}
@@ -228,7 +228,7 @@ export function CommandPalette({
                             <span className="command-enter" aria-hidden>
                               <CornerDownLeft size={14} strokeWidth={1.8} />
                             </span>
-                          </motion.span>
+                          </m.span>
                         </Command.Item>
                       );
                     })}
@@ -236,8 +236,8 @@ export function CommandPalette({
                 </Command.List>
               </Command>
             </LayoutGroup>
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       )}
     </AnimatePresence>
   );
