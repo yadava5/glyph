@@ -1,0 +1,278 @@
+{
+  "$comment": [
+    "Does the WebAssembly module the browser actually runs reproduce the committed",
+    "97.01% accuracy figure, image for image? This is the third and last of the",
+    "native-vs-browser divergences to be measured, and the only one that captures",
+    "reduction order and FMA contraction, because it runs the real wasm kernel.",
+    "",
+    "benchmarks/mnist_eval.json records 9701/10000 from apps/eval_model.cpp with the",
+    "double checkpoint. benchmarks/mnist_f32_flips.json showed the float32 weight",
+    "export changes none of those 10,000 predictions, but both of its columns ran",
+    "through the same native arm64 NEON kernel, so it measured quantisation only.",
+    "This run replaces the kernel as well: the wasm simd128 dot product uses two",
+    "independent f64x2 accumulators reducing four lanes, where NEON uses one",
+    "accumulator reducing two, and wasm simd128 has no FMA so it rounds every",
+    "product where vfmaq_f64 rounds none.",
+    "",
+    "Produced by: node tools/wasm_eval.mjs",
+    "It reads web/public/wasm/fast_mnist.{js,wasm} and model.weights.bin read-only",
+    "and never rebuilds them, so the digest gates in docs/WASM.md,",
+    "docs/benchmarks/wasm-simd-census.json, benchRuns.generated.ts and",
+    ".github/workflows/wasm.yml are untouched. Running the shipped bytes rather than",
+    "a purpose-built eval module is deliberate: it removes the question of whether a",
+    "rebuilt module contains the same kernel. An eval-only module calling just",
+    "classify() would drop classifyWithHidden() and computeInputGradient() as dead",
+    "code, taking the wasm-simd-census signature count from 12 to 4 -- a benign",
+    "difference that would nonetheless make the census gate unusable as a check.",
+    "",
+    "The native reference is reconstructed from benchmarks/mnist_eval.json rather",
+    "than re-run: every image absent from its `misclassified` list was predicted",
+    "correctly, so its prediction is its true label. The committed record is thus",
+    "the thing being compared against, which is the point.",
+    "",
+    "LIMITATION -- this is one host (Node, digests below) exercising one wasm",
+    "engine. The reason to expect a browser to match is not the specification alone.",
+    "Every arithmetic operation on this path is compiled INTO fast_mnist.wasm: both",
+    "the simd128 dot-product kernel and the std::exp behind the sigmoid, which is",
+    "emscripten libm code inside the module, not a host facility. WebAssembly f64",
+    "opcodes are IEEE-754 and deterministic -- no engine may reassociate, contract",
+    "or widen them -- and everything else is the same bytes, so a conforming engine",
+    "executing this module must produce these bits. The residual risk is engine bugs",
+    "and any future rebuild of the module, not arithmetic. Note that nothing",
+    "currently gates this artifact against the module digest it records, so a",
+    "rebuild of fast_mnist.wasm would make it stale silently.",
+    "",
+    "Reported activations are L1-normalized because that is what the shipped Embind",
+    "binding returns; normalization is division by a positive scalar and cannot",
+    "change an argmax. Ratios are unaffected by it, which is why the tightest-margin",
+    "watch below compares ratios against the committed native activations."
+  ],
+  "schema": "glyph.mnist_eval_wasm/1",
+  "generator": "tools/wasm_eval.mjs",
+  "environment": {
+    "node": "v24.9.0",
+    "platform": "darwin-arm64",
+    "emsdk_pin": "3.1.64",
+    "emsdk_pin_source": ".github/workflows/wasm.yml",
+    "module_build_info": "simd128",
+    "wall_ms": 59001,
+    "note": "module_build_info is the module's own compile-time report; \"simd128\" means the hand-written dot_wasm128_rowvec kernel was compiled in. emsdk_pin is TRANSCRIBED from the workflow, not read from the module -- emscripten strips version info at -O3 -- so the wasm sha256 below, not this string, is what actually identifies the binary that was run."
+  },
+  "artifacts": {
+    "wasm": {
+      "path": "web/public/wasm/fast_mnist.wasm",
+      "bytes": 43751,
+      "sha256": "e681d2f76d41305aa3b8c250799f898bd1139497f60580ed59000d49cf5d6360"
+    },
+    "glue": {
+      "path": "web/public/wasm/fast_mnist.js",
+      "bytes": 47839,
+      "sha256": "c47050c579d0bc1f9dec6f8b77153a0372a3425d265f8aff716ee3f169dc63e7"
+    },
+    "weights_float32": {
+      "path": "web/public/wasm/model.weights.bin",
+      "bytes": 318064,
+      "sha256": "cbbb2b7b57120fff98982510423d3894a3dceeb3db0f005d040b7389ad442786"
+    },
+    "weights_double": {
+      "path": "model.weights",
+      "bytes": 800678,
+      "sha256": "dddc925062c6a918e094652df7a0393692a66f9d90568cc1ec4a5e4072a884e8"
+    },
+    "native_reference": {
+      "path": "benchmarks/mnist_eval.json",
+      "bytes": 45050,
+      "sha256": "b1eca13a697c6b0bb7a5e389c57a537567bed2923dc71872bc4211bd66ab280a"
+    },
+    "quantisation_study": {
+      "path": "benchmarks/mnist_f32_flips.json",
+      "bytes": 6423,
+      "sha256": "5dc402052c67f8b6c363c3e9af3f0993738a94b054243055c0729ab9b40eb513"
+    }
+  },
+  "dataset": {
+    "list": "TestingSetList.txt",
+    "root": "data",
+    "images": 10000
+  },
+  "perturbation": null,
+  "accuracy": {
+    "native_double": {
+      "correct": 9701,
+      "total": 10000,
+      "accuracy_pct": 97.01
+    },
+    "wasm_float32": {
+      "correct": 9701,
+      "total": 10000,
+      "accuracy_pct": 97.01
+    },
+    "delta_correct": 0
+  },
+  "agreement": {
+    "note": "per-image comparison of argmax against the committed native run",
+    "images_compared": 10000,
+    "identical_predictions": 10000,
+    "disagreements": 0,
+    "helpful": 0,
+    "harmful": 0,
+    "neutral": 0,
+    "indices": [],
+    "records": []
+  },
+  "tightest_margin_watch": {
+    "note": "the ten smallest native-double argmax margins in the test set (from benchmarks/mnist_f32_flips.json), and what the wasm module predicts for each. A reduction-order or FMA divergence would land here first.",
+    "records": [
+      {
+        "index": 9858,
+        "file": "TestingSet/digit_9858_6.pgm",
+        "true": 6,
+        "native_double_top1": 8,
+        "native_double_top2": 6,
+        "native_double_margin": 0.0006493207,
+        "wasm_pred": 8,
+        "wasm_margin_l1_top1_top2": 0.001342345377,
+        "wasm_ratio_top1_top2": 1.002787398147,
+        "native_ratio_top1_top2": 1.00278604146,
+        "ratio_rel_delta": 0.000001353,
+        "ratio_note": "native ratio derived from the 6-decimal activations in benchmarks/mnist_eval.json; rel_delta is bounded below by that precision",
+        "agrees": true
+      },
+      {
+        "index": 882,
+        "file": "TestingSet/digit_882_9.pgm",
+        "true": 9,
+        "native_double_top1": 9,
+        "native_double_top2": 7,
+        "native_double_margin": 0.00148162,
+        "wasm_pred": 9,
+        "wasm_margin_l1_top1_top2": 0.006545152309,
+        "wasm_ratio_top1_top2": 1.014125524882,
+        "native_ratio_top1_top2": null,
+        "ratio_rel_delta": null,
+        "ratio_note": "no comparable native activation pair recorded for this image",
+        "agrees": true
+      },
+      {
+        "index": 151,
+        "file": "TestingSet/digit_151_9.pgm",
+        "true": 9,
+        "native_double_top1": 0,
+        "native_double_top2": 9,
+        "native_double_margin": 0.002318129,
+        "wasm_pred": 0,
+        "wasm_margin_l1_top1_top2": 0.008979292369,
+        "wasm_ratio_top1_top2": 1.02048553061,
+        "native_ratio_top1_top2": 1.020484632107,
+        "ratio_rel_delta": 8.805e-7,
+        "ratio_note": "native ratio derived from the 6-decimal activations in benchmarks/mnist_eval.json; rel_delta is bounded below by that precision",
+        "agrees": true
+      },
+      {
+        "index": 2560,
+        "file": "TestingSet/digit_2560_3.pgm",
+        "true": 3,
+        "native_double_top1": 3,
+        "native_double_top2": 1,
+        "native_double_margin": 0.002526546,
+        "wasm_pred": 3,
+        "wasm_margin_l1_top1_top2": 0.075909652578,
+        "wasm_ratio_top1_top2": 1.219981866653,
+        "native_ratio_top1_top2": null,
+        "ratio_rel_delta": null,
+        "ratio_note": "no comparable native activation pair recorded for this image",
+        "agrees": true
+      },
+      {
+        "index": 4966,
+        "file": "TestingSet/digit_4966_7.pgm",
+        "true": 7,
+        "native_double_top1": 8,
+        "native_double_top2": 1,
+        "native_double_margin": 0.002575885,
+        "wasm_pred": 8,
+        "wasm_margin_l1_top1_top2": 0.15964798277,
+        "wasm_ratio_top1_top2": 1.45258764459,
+        "native_ratio_top1_top2": null,
+        "ratio_rel_delta": null,
+        "ratio_note": "no comparable native activation pair recorded for this image",
+        "agrees": true
+      },
+      {
+        "index": 1469,
+        "file": "TestingSet/digit_1469_3.pgm",
+        "true": 3,
+        "native_double_top1": 5,
+        "native_double_top2": 3,
+        "native_double_margin": 0.002974056,
+        "wasm_pred": 5,
+        "wasm_margin_l1_top1_top2": 0.002135018125,
+        "wasm_ratio_top1_top2": 1.004282589697,
+        "native_ratio_top1_top2": 1.004282538073,
+        "ratio_rel_delta": 5.14e-8,
+        "ratio_note": "native ratio derived from the 6-decimal activations in benchmarks/mnist_eval.json; rel_delta is bounded below by that precision",
+        "agrees": true
+      },
+      {
+        "index": 629,
+        "file": "TestingSet/digit_629_2.pgm",
+        "true": 2,
+        "native_double_top1": 2,
+        "native_double_top2": 3,
+        "native_double_margin": 0.004290292,
+        "wasm_pred": 2,
+        "wasm_margin_l1_top1_top2": 0.376296317515,
+        "wasm_ratio_top1_top2": 2.650805716943,
+        "native_ratio_top1_top2": null,
+        "ratio_rel_delta": null,
+        "ratio_note": "no comparable native activation pair recorded for this image",
+        "agrees": true
+      },
+      {
+        "index": 3838,
+        "file": "TestingSet/digit_3838_7.pgm",
+        "true": 7,
+        "native_double_top1": 1,
+        "native_double_top2": 7,
+        "native_double_margin": 0.004754122,
+        "wasm_pred": 1,
+        "wasm_margin_l1_top1_top2": 0.013569205761,
+        "wasm_ratio_top1_top2": 1.027842269279,
+        "native_ratio_top1_top2": 1.02784171103,
+        "ratio_rel_delta": 5.431e-7,
+        "ratio_note": "native ratio derived from the 6-decimal activations in benchmarks/mnist_eval.json; rel_delta is bounded below by that precision",
+        "agrees": true
+      },
+      {
+        "index": 6651,
+        "file": "TestingSet/digit_6651_0.pgm",
+        "true": 0,
+        "native_double_top1": 5,
+        "native_double_top2": 2,
+        "native_double_margin": 0.004865399,
+        "wasm_pred": 5,
+        "wasm_margin_l1_top1_top2": 0.487201112046,
+        "wasm_ratio_top1_top2": 3.965462183544,
+        "native_ratio_top1_top2": null,
+        "ratio_rel_delta": null,
+        "ratio_note": "no comparable native activation pair recorded for this image",
+        "agrees": true
+      },
+      {
+        "index": 717,
+        "file": "TestingSet/digit_717_0.pgm",
+        "true": 0,
+        "native_double_top1": 6,
+        "native_double_top2": 0,
+        "native_double_margin": 0.005049865,
+        "wasm_pred": 6,
+        "wasm_margin_l1_top1_top2": 0.16732299183,
+        "wasm_ratio_top1_top2": 1.440931032057,
+        "native_ratio_top1_top2": 1.440932506767,
+        "ratio_rel_delta": 0.000001023,
+        "ratio_note": "native ratio derived from the 6-decimal activations in benchmarks/mnist_eval.json; rel_delta is bounded below by that precision",
+        "agrees": true
+      }
+    ]
+  }
+}
