@@ -103,7 +103,7 @@ export const TOC = {
   ],
   atAGlance: [
     { key: "4 ISAs", val: "AVX-512 · AVX2 · NEON · wasm-simd128." },
-    { key: "97.01%", val: "9,701 / 10,000 held-out test digits." },
+    { key: "97.01%", val: "9,701 / 10,000 MNIST test digits." },
     { key: "live bench", val: "wasm128 vs scalar, timed on your machine." },
   ],
   glossary: [
@@ -436,9 +436,9 @@ export const PROOF = {
     eyebrow: "§04 · THE NUMBER",
     headline: "97.01% on 10,000 digits.",
     hero: "97.01%",
-    heroLabel: "test accuracy · 10,000 held-out digits",
+    heroLabel: "test accuracy · 10,000 MNIST test digits",
     body:
-      "The optimization changes how fast the network runs, never what it answers — the vectorized kernels return the same doubles the scalar loop would. On the standard 10,000-image MNIST test set the model classifies 9,701 correctly: 97.01%.",
+      "The optimization changes how fast the network runs, never what it answers — the vectorized kernels return the same doubles the scalar loop would. On the standard 10,000-image MNIST test set the model classifies 9,701 correctly: 97.01%. Training kept the best-scoring epoch on that same set and the repo ships no validation split, so read this as the best epoch rather than a clean held-out estimate.",
     exact: "9,701 / 10,000 = 97.01%",
     receiptLabel: "THE RECEIPT",
     receipt: "$ ./test_model model.weights data 10000\n  # 9701 / 10000 = 97.01%",
@@ -577,7 +577,7 @@ export const TRY_IT = {
   alsoLabel: "also waiting in the app",
   alsoCards: [
     { k: "the four kernels", v: "AVX-512 · AVX2 · NEON · wasm128, side by side" },
-    { k: "the 97.01% receipt", v: "9,701 / 10,000 held-out test digits" },
+    { k: "the 97.01% receipt", v: "9,701 / 10,000 MNIST test digits" },
     { k: "the full table", v: "every op — wins and losses — re-runnable" },
   ],
   microNote: "one dot product · four ISAs · timed on your silicon",

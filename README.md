@@ -70,7 +70,13 @@ visual.
   for the line-by-line split.
 - **97.01% on the 10,000-image MNIST test set** — 9,701 correct, macro-F1
   0.9698, regenerable into `benchmarks/mnist_eval.json`, which pins the exact
-  model by SHA-256.
+  model by SHA-256. Read it as a **best-of-epochs number, not a clean held-out
+  estimate**: this repository ships no validation split, and
+  `apps/train_model.cpp` assesses the network on this same test set after every
+  epoch and overwrites the checkpoint only when that score improves. So the set
+  that reports the figure also chose the weights being reported on — the honest
+  reading is that 97.01% is the best epoch, and a genuinely unseen set would be
+  expected to read slightly lower.
 - **3.536× on the headline kernel — and the same change loses in 8 of the 12
   matrix-op cases.** `dot 256` with OpenMP + `-march=native` against the same
   kernel built without either, on the same machine. `axpy` never crosses over at
@@ -624,7 +630,7 @@ Every number above terminates in something you can open.
 | ----- | ------------------- |
 | 97.01% accuracy | `benchmarks/mnist_eval.json` — 9,701 / 10,000, with the model's SHA-256 and per-class precision/recall/F1. Regenerate with `./build/fast_mnist_eval model.weights data TestingSetList.txt benchmarks`. |
 | 3.536× on `dot 256` | `docs/benchmarks/runs/bench-20260802-dot20x-{baseline,openmp-native}.json`, medians of 20 repetitions. Machine and uncontrolled conditions in `docs/benchmarks/ENVIRONMENT.md`. |
-| The full ratio table | `docs/benchmarks/runs/bench-20260802-aggregated-*.json` and `docs/benchmarks/bench_summary.csv`. |
+| The full ratio table | `docs/benchmarks/runs/bench-20260802-aggregated-{baseline,openmp-native}.json` — the 2026-08-02 reference runs, and the only artifacts this table is computed from. **Not** `docs/benchmarks/bench_summary.csv`: that file is the December MacBook Air record, kept as history rather than deleted, and recomputing this table from it gives different ratios and a different count of losing cases. [`ENVIRONMENT.md`](docs/benchmarks/ENVIRONMENT.md) says which record is canonical and why. |
 | 37 tests passing on three OSes | [`ci.yml`](.github/workflows/ci.yml) — build + `ctest` on ubuntu, macos and windows, every push. |
 | Coverage table | `tools/coverage.sh`, clang source-based instrumentation, measured 2026-08-06. |
 | The committed WASM glue is the real build | [`wasm.yml`](.github/workflows/wasm.yml) rebuilds at pinned emsdk 3.1.64 and `cmp`s the bytes against `web/public/wasm/`, then greps the glue for `new Function(` and `eval(` because the site's CSP allows neither. |

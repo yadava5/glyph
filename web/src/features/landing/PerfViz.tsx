@@ -593,11 +593,11 @@ export function LaneScale() {
 
 /* ─────────────── 5 · accuracy waffle ─────────────── */
 
-/** The model's real held-out MNIST result — matches the hero's 97.01%. */
+/** The model's real MNIST test-set result — matches the hero's 97.01%. */
 const HELD_OUT = { correct: 9701, missed: 299, pct: 97.01 };
 
 /**
- * The held-out test result, as a single count-up on the model's real 97.01%
+ * The MNIST test-set result, as a single count-up on the model's real 97.01%
  * figure (measured, not invented — and consistent with the hero). On every
  * scroll-in the count-up replays and a left-to-right glow sweeps across just the
  * digits. `useInView` fires only once, so a local observer tracks the rising
@@ -632,7 +632,7 @@ export function AccuracyWaffle() {
   return (
     <div className={styles.waffle} ref={cardRef}>
       <div className={styles.waffleMeta}>
-        <span className={styles.chartEyebrow}>test accuracy · 10,000 held-out digits</span>
+        <span className={styles.chartEyebrow}>test accuracy · 10,000 MNIST test digits</span>
         <div className={styles.waffleBig}>
           <RollingNumber
             key={`c${run}`}

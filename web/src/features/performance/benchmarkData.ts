@@ -304,16 +304,22 @@ export const laneScale = [
 
 /*
  * ACCURACY WAFFLE — the 97.01% test result drawn honestly as ten thousand
- * held-out digits: 9,701 classified correctly, 299 missed. Not a confusion
+ * MNIST test digits: 9,701 classified correctly, 299 missed. Not a confusion
  * matrix (the repo commits no per-class breakdown, so the page invents
  * none) — just the one verified figure, made countable.
+ *
+ * NOT "held-out", which this said until 2026-08-13. apps/train_model.cpp
+ * assesses the net on this same set every epoch and rewrites the checkpoint
+ * only when that score improves, and the repo ships no validation split — so
+ * the set that reports the figure also selected the weights. 97.01% is the
+ * best epoch, not a clean held-out estimate.
  */
 export const accuracyWaffle = {
   total: 10000,
   correct: 9701,
   errors: 299,
   pct: '97.01%',
-  note: '9,701 of 10,000 held-out test digits classified correctly',
+  note: '9,701 of 10,000 MNIST test digits classified correctly',
 } as const;
 
 export const wasmKernelSource = `static inline double
