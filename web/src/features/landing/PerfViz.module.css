@@ -711,6 +711,15 @@
 
 .censusIntro {
   display: grid;
+  /* Grid items default to `min-width: auto`, so they refuse to shrink below
+     their own min-content width — and one child here has a hard floor: the
+     89-tick strip below is 89 x 2px + 88 x 2px of gap = exactly 354px. That
+     floor sized this whole column at 354px, dragged every prose sibling out
+     with it, and at a 375px viewport (52px in from the left) the last 31px
+     was destroyed by `.page { overflow-x: clip }` — body copy cut mid-word,
+     "Of 89 funct", and the f64x2.add chip sheared in half. Nothing reported
+     it because both overflow tests were vacuous. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   align-content: start;
 }
@@ -741,6 +750,11 @@
   display: flex;
   gap: 2px;
   height: 22px;
+  /* `minmax(0, 1fr)` above lets the column shrink; this lets the strip itself
+     shrink rather than overflow it. All 89 ticks stay — the count is the
+     fact this figure asserts, and dropping any of them would make the
+     picture disagree with its own caption. */
+  min-width: 0;
 }
 
 .censusStrip i {
@@ -748,6 +762,22 @@
   min-width: 2px;
   border-radius: 1px;
   background: rgb(148 163 184 / 0.14);
+}
+
+/* Below ~430px the 2px tick and 2px gap cannot both survive: 89 ticks need
+   354px and the column has ~271px. Halving both drops the floor to
+   89 + 88 = 177px — which is the HEADROOM, not the rendered size. The ticks
+   are `flex: 1`, so they grow above their floor to fill the column: measured
+   1.45px each at a 320px viewport and 2.06px at 375. All 89 stay drawn at
+   both, which is the property that matters, because the caption asserts 89. */
+@media (max-width: 430px) {
+  .censusStrip {
+    gap: 1px;
+  }
+
+  .censusStrip i {
+    min-width: 1px;
+  }
 }
 
 .censusStrip i[data-hot] {

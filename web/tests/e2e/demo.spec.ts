@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { expectNoHorizontalOverflow } from './overflow';
 import {
   classifyThroughput,
   kernelBenchmarks,
@@ -329,12 +330,6 @@ test.describe('Glyph landing experience', () => {
       .toBeGreaterThan(5_000);
   });
 
-  /*
-   * The "no horizontal overflow" half of this test is a KNOWN BLIND SPOT —
-   * see the longer note in smoke.spec.ts. `body { overflow-x: clip }` makes
-   * scrollWidth unable to exceed clientWidth, so that assertion cannot fail
-   * on a layout defect. The clipped-controls and draw-pad halves are real.
-   */
   test('@perf has no horizontal overflow, clipped visible controls, or a blank draw pad', async ({
     page,
   }) => {
@@ -382,7 +377,16 @@ test.describe('Glyph landing experience', () => {
         return { overflow, visible, width: window.innerWidth, height: window.innerHeight };
       }, id);
 
-      expect(layout.overflow, `${id} should not overflow horizontally`).toBeLessThanOrEqual(1);
+      // `layout.overflow` is scrollWidth - clientWidth, and `body` sets
+      // `overflow-x: clip`, which makes that difference structurally incapable
+      // of being positive. The assertion that used to stand here could not
+      // fail on any layout defect; it is replaced by a rect walk that proves
+      // it can see before it reports a clean page.
+      expect(
+        layout.overflow,
+        `${id}: clip should keep the document unscrollable`,
+      ).toBeLessThanOrEqual(1);
+      await expectNoHorizontalOverflow(page, `#${id}`);
       for (const item of layout.visible) {
         expect(item.left, `${id}: ${item.text} should not clip left`).toBeGreaterThanOrEqual(-2);
         expect(item.right, `${id}: ${item.text} should not clip right`).toBeLessThanOrEqual(

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { expectNoHorizontalOverflow } from './overflow';
 
 /**
  * Interaction smoke for the redesigned landing. Complements demo.spec.ts
@@ -205,18 +206,26 @@ test.describe('Landing interaction smoke', () => {
   });
 
   /*
-   * KNOWN BLIND SPOT, recorded 2026-08-13 rather than left to be rediscovered.
-   * `body { overflow-x: clip }` means scrollWidth is structurally incapable of
-   * exceeding clientWidth, so the scroll-position walk below cannot report a
-   * layout overflow — it only proves no scrollbar appears, which the clip
-   * already guarantees. A rect-walk over element boxes DOES find real
-   * offenders: 2px on .lanes/.lanesLit at every width, and 39 at 375 led by
-   * the proof rail. Those predate this suite and live in files these tests
-   * do not own, so asserting on them here would land a gate that is red on
-   * arrival — which teaches people to skip it, and is worse than no gate.
-   * The fix is to triage the offenders, scope the assertion to what this page
-   * owns, and land it green. Not done yet. The gauge-fits half below is real
-   * and does its job.
+   * This walk is real and always was: it collects every element whose box
+   * spills past the viewport without a scrolling or clipping ancestor, and
+   * asserts that list is empty. What it lacked was proof that it can still
+   * see anything, which is the failure mode that has bitten this repo
+   * repeatedly - the walk quietly stops matching and the empty list reads as
+   * success. expectNoHorizontalOverflow injects an element 600px wider than
+   * the viewport and requires the walk to catch it before trusting a clean
+   * result.
+   *
+   * The scrollWidth line below is kept deliberately, but for what it can
+   * actually prove: `body { overflow-x: clip }` should keep the document
+   * unscrollable. It cannot detect a layout defect - clip makes the
+   * difference structurally incapable of being positive - so it is no longer
+   * the thing standing between a broken layout and a green suite.
+   *
+   * Triaged before landing: 41 elements overhang at 375 and 2 do at 1024 and
+   * 1440, and every one is inside `_proofRailInner`, which sets overflow-x:
+   * auto. A rail that scrolls sideways on a phone is a design decision. With
+   * scrollers and fixed elements excluded there are zero offenders, so this
+   * landed green rather than red on arrival.
    */
   test('no horizontal overflow at 375px, and the live gauge fits', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
@@ -230,30 +239,13 @@ test.describe('Landing interaction smoke', () => {
       await page.evaluate((target) => {
         document.getElementById(target)?.scrollIntoView({ block: 'start', behavior: 'auto' });
       }, id);
-      const report = await page.evaluate(() => {
-        const de = document.documentElement;
-        const iw = window.innerWidth;
-        const uncontained: string[] = [];
-        for (const el of Array.from(document.body.querySelectorAll('*'))) {
-          const r = el.getBoundingClientRect();
-          if (!r.width || r.right <= iw + 1) continue;
-          let n = el.parentElement;
-          let contained = false;
-          while (n) {
-            const o = getComputedStyle(n).overflowX;
-            if (o === 'auto' || o === 'scroll' || o === 'hidden' || o === 'clip') {
-              contained = true;
-              break;
-            }
-            n = n.parentElement;
-          }
-          if (!contained)
-            uncontained.push((el.textContent ?? '').trim().slice(0, 30) || el.tagName);
-        }
-        return { overflowX: de.scrollWidth - de.clientWidth, uncontained };
-      });
-      expect(report.overflowX, `#${id} page must not scroll horizontally`).toBeLessThanOrEqual(1);
-      expect(report.uncontained, `#${id} has content spilling past the viewport`).toEqual([]);
+      const docOverflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(docOverflow, `#${id}: clip should keep the document unscrollable`).toBeLessThanOrEqual(
+        1,
+      );
+      await expectNoHorizontalOverflow(page, `#${id} at 375px`);
     }
 
     // The "one live number" gauge row must fit the mobile column.
