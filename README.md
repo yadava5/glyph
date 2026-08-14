@@ -393,7 +393,7 @@ coverage build's timings describe a binary nobody ships.
 | Fuzzing | ClusterFuzzLite, address sanitizer, 120 s per PR | `fuzzing.yml`, corpus in `.clusterfuzzlite/` |
 | Static analysis | CodeQL, `cpp` and `javascript-typescript` | `codeql.yml`, on push, PR, and weekly |
 | Secrets | gitleaks, full history (`fetch-depth: 0`) | `gitleaks.yml` |
-| Browser E2E | Playwright 1.59 | 15 tests across 2 spec files in `web/tests/e2e/`, run against 4 viewport projects (`web/playwright.config.ts`) |
+| Browser E2E | Playwright 1.59 | 16 tests across 2 spec files in `web/tests/e2e/`, run against 5 viewport projects (`web/playwright.config.ts`) |
 
 The Playwright figure is the count of `test(` declarations in the committed
 specs and the project count from the committed config, not a run summary. The
@@ -587,7 +587,7 @@ glyph/
 ├── web/                     # React 19 + Vite SPA
 │   ├── public/wasm/         # COMMITTED glue + weights; CI byte-compares against a rebuild
 │   ├── src/lib/             # classifier clients (native, wasm, JS fallback)
-│   └── tests/e2e/           # 15 Playwright tests × 4 viewport projects
+│   └── tests/e2e/           # 16 Playwright tests × 5 viewport projects
 └── model.weights            # ASCII weights, 800,678 bytes, the 97.01% model
 ```
 

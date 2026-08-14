@@ -30,6 +30,20 @@ export default defineConfig({
     timeout: 120_000,
   },
   projects: [
+    /*
+     * 1024 is the width this project is actually reviewed at, and until now
+     * nothing ran there: every project was 1440 or 1920. A layout defect
+     * gated between 1024 and 1440 was invisible to the whole suite while
+     * being the first thing a human saw. 648 rather than a round number is
+     * the measured inner height of that browser, so the fold assertions
+     * here describe a real viewport instead of an idealised one.
+     */
+    {
+      name: 'laptop',
+      use: {
+        viewport: { width: 1024, height: 648 },
+      },
+    },
     {
       name: 'desktop',
       use: {

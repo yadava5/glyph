@@ -248,6 +248,93 @@ test.describe('Glyph landing experience', () => {
     await expect(page.getByText(rendered(weightsFact.value)).first()).toBeVisible();
   });
 
+  test('the failure wall fetches its pack and actually draws all 299 specimens', async ({
+    page,
+  }) => {
+    await page.goto('/index.html');
+
+    // Both halves of the record are requested only when 4.7 scrolls in, and
+    // the wall needs BOTH: the manifest for the verdicts, the pack for the
+    // ink. Watch the requests so "the wall is missing" can be attributed to
+    // a fetch that never fired versus one whose result was dropped.
+    const got = new Set<string>();
+    page.on('response', (r) => {
+      const u = r.url();
+      if (/misclassified\.(json|bin)$/.test(u) && r.status() === 200) {
+        got.add(u.endsWith('.bin') ? 'bin' : 'json');
+      }
+    });
+
+    await scrollToId(page, 'proof-accuracy');
+
+    const wall = page.getByTestId('failure-wall');
+    await expect(wall).toBeVisible({ timeout: 20_000 });
+    await expect
+      .poll(() => got.size, { timeout: 20_000, message: 'both halves of the pack must load' })
+      .toBe(2);
+
+    // scrollToId parks the CHAPTER's top at the viewport top, and the wall is
+    // the last block in it — about 1,160px further down, i.e. off-screen at
+    // every viewport this suite runs. The develop pass is gated on an
+    // IntersectionObserver by design, so the canvas correctly stays at its
+    // default 300×150 and paints nothing until it is actually seen. Playwright's
+    // toBeVisible() means "has a box and is not display:none", NOT "in the
+    // viewport", so without this line the assertion below reads a canvas that
+    // was never asked to paint and the test can never pass — the inverse of the
+    // defect it guards against, and it failed identically on all five projects.
+    await wall.scrollIntoViewIfNeeded();
+
+    // The defect this test exists for produced a perfectly valid, perfectly
+    // empty exhibit: the manifest resolving cancelled the in-flight pack, so
+    // the confusion grid rendered and the wall silently never mounted. A
+    // presence check passes through that. Count actual non-transparent
+    // pixels — the wall is only real if there is ink on it.
+    //
+    // Polled, not read once: scrollIntoViewIfNeeded resolves when the scroll
+    // lands, but the develop pass is rAF-driven over roughly 900ms, so a
+    // single read at that instant sees a 300×150 canvas with nothing on it.
+    // Measured ramp at 1024×648: 0 at the scroll, 7,727 at +100ms, 49,770 at
+    // +500ms, settling at 66,119. Polling rather than sleeping keeps both
+    // failure modes sharp — never mounts (toBeVisible trips first) and mounts
+    // blank (polls to timeout) — without pinning a machine-dependent delay.
+    const inkPixels = () =>
+      wall.evaluate((el) => {
+        const c = el as HTMLCanvasElement;
+        if (c.width === 0 || c.height === 0) return -1;
+        // Read through a throwaway copy, never the page's own context.
+        // Chromium warns "Multiple readback operations using getImageData"
+        // after repeated reads on ONE context, this describe's afterEach
+        // fails any test that logs a warning, and polling means many reads —
+        // so the naive version of this poll would fail itself. A fresh canvas
+        // has no context yet, so willReadFrequently is actually honoured here
+        // (passing it to a canvas that already has a context is ignored), and
+        // each context is read exactly once.
+        const off = document.createElement('canvas');
+        off.width = c.width;
+        off.height = c.height;
+        const octx = off.getContext('2d', { willReadFrequently: true });
+        if (!octx) return -1;
+        octx.drawImage(c, 0, 0);
+        const { data } = octx.getImageData(0, 0, off.width, off.height);
+        let lit = 0;
+        for (let i = 3; i < data.length; i += 4) if (data[i] > 8) lit += 1;
+        return lit;
+      });
+
+    await expect
+      .poll(inkPixels, {
+        timeout: 15_000,
+        message: 'the failure wall must actually draw its specimens, not just mount',
+      })
+      .toBeGreaterThan(5_000);
+  });
+
+  /*
+   * The "no horizontal overflow" half of this test is a KNOWN BLIND SPOT —
+   * see the longer note in smoke.spec.ts. `body { overflow-x: clip }` makes
+   * scrollWidth unable to exceed clientWidth, so that assertion cannot fail
+   * on a layout defect. The clipped-controls and draw-pad halves are real.
+   */
   test('@perf has no horizontal overflow, clipped visible controls, or a blank draw pad', async ({
     page,
   }) => {

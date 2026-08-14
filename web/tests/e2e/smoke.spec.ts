@@ -204,6 +204,20 @@ test.describe('Landing interaction smoke', () => {
     assertClean(page);
   });
 
+  /*
+   * KNOWN BLIND SPOT, recorded 2026-08-13 rather than left to be rediscovered.
+   * `body { overflow-x: clip }` means scrollWidth is structurally incapable of
+   * exceeding clientWidth, so the scroll-position walk below cannot report a
+   * layout overflow — it only proves no scrollbar appears, which the clip
+   * already guarantees. A rect-walk over element boxes DOES find real
+   * offenders: 2px on .lanes/.lanesLit at every width, and 39 at 375 led by
+   * the proof rail. Those predate this suite and live in files these tests
+   * do not own, so asserting on them here would land a gate that is red on
+   * arrival — which teaches people to skip it, and is worse than no gate.
+   * The fix is to triage the offenders, scope the assertion to what this page
+   * owns, and land it green. Not done yet. The gauge-fits half below is real
+   * and does its job.
+   */
   test('no horizontal overflow at 375px, and the live gauge fits', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/index.html');
