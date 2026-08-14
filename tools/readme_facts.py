@@ -940,6 +940,44 @@ for _fid, _key, _pat, _readme_pat in [
         _s, (lambda k=_key: census_field(k)))
 
 
+# -- web dependency versions, read out of the committed lockfile ----------
+#
+# README's Web tech-stack table quotes seven major.minor versions. They were
+# all correct when checked on 2026-08-14 and none was gated, which is the same
+# unattached state the drifted numbers were in. Dependabot moves these without
+# anyone editing prose, so they are exactly the kind of figure that rots.
+#
+# Compared at the precision the prose states: the table says "React 19.2", the
+# lock says 19.2.5, and those agree. Asserting the patch would make the README
+# a changelog.
+
+
+def web_dep_version(name: str, parts: int) -> str:
+    path = os.path.join(REPO, "web/package-lock.json")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            pkgs = json.load(fh)["packages"]
+    except FileNotFoundError:
+        die("web/package-lock.json is missing; README quotes versions from it.")
+    entry = pkgs.get(f"node_modules/{name}")
+    if not entry or "version" not in entry:
+        die(f"web/package-lock.json has no version for `{name}` — the dependency "
+            f"was renamed or removed and README's tech-stack table still lists it.")
+    return ".".join(entry["version"].split(".")[:parts])
+
+
+for _fid, _pkg, _parts, _pat in [
+    ("webReact", "react", 2, r"\*\*Framework\*\* \| React ([\d.]+),"),
+    ("webTypeScript", "typescript", 2, r"React [\d.]+, TypeScript ([\d.]+),"),
+    ("webTailwind", "tailwindcss", 2, r"Tailwind CSS v([\d.]+) tokens"),
+    ("webMotion", "motion", 2, r"\*\*Motion\*\* \| Motion v([\d.]+) \|"),
+    ("webFreehand", "perfect-freehand", 2, r"perfect-freehand ([\d.]+) over an SVG"),
+    ("webPlaywright", "@playwright/test", 2, r"\*\*E2E\*\* \| Playwright ([\d.]+) \|"),
+]:
+    add(_fid, f"`{_pkg}` version in web/package-lock.json", "static",
+        [site(_pat)], (lambda n=_pkg, k=_parts: web_dep_version(n, k)))
+
+
 # -- the JS bundle budgets, read out of the check script itself -----------
 #
 # README quotes three ceilings. They were correct and ungated, which is the
