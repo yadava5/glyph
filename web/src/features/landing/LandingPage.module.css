@@ -23,9 +23,11 @@
   height: 60px;
   padding: 0 clamp(1rem, 3vw, 2rem);
   border-bottom: 1px solid var(--line-soft);
-  /* 0.92 alpha so the nav still reads as chrome even when a browser or
-     build strips backdrop-filter (defense in depth for the glass). */
-  background: rgb(6 7 13 / 0.92);
+  /* 0.97 alpha: the nav must read as chrome even when a browser, a build,
+     or a headless compositor strips backdrop-filter — at 0.92 scrolled
+     headlines ghosted through the bar in screenshots. Same defense in
+     depth as the proof rail; the blur is a bonus, never the barrier. */
+  background: rgb(6 7 13 / 0.97);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
@@ -266,21 +268,29 @@
   pointer-events: none;
 }
 
+/* Two columns, three regions: the bench spans both rows on the right;
+   the left column is copy at the top and the committed-run ledger pinned
+   to the bench's base. The old layout centered ~310px of copy against a
+   ~510px instrument — a third of the fold's left half was void. */
 .heroGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 0.96fr);
-  gap: clamp(1.6rem, 3.5vw, 3.2rem);
-  align-items: center;
-  margin-bottom: clamp(1.6rem, 3.5vh, 2.6rem);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    'copy bench'
+    'facts bench';
+  gap: 1.6rem clamp(1.6rem, 3.5vw, 3.2rem);
 }
 
 .heroCopy {
   display: grid;
+  grid-area: copy;
+  align-content: start;
   justify-items: start;
-  align-content: center;
 }
 
 .heroBench {
+  grid-area: bench;
   min-width: 0;
 }
 
@@ -321,7 +331,10 @@
   display: grid;
   gap: 0.1em;
   margin: 0 0 1.3rem;
-  font-size: clamp(2.05rem, 1rem + 2.3vw, 3.35rem);
+  /* The slope is tuned so the bright line holds ONE line in the fold's
+     ~470px column at 1024 — a wrap there pushes the bench statusline off
+     a 700px-tall fold. */
+  font-size: clamp(2.05rem, 0.68rem + 2.5vw, 3.35rem);
   font-weight: 550;
   letter-spacing: -0.035em;
   line-height: 1.04;
@@ -434,32 +447,41 @@
   color: var(--text-strong);
 }
 
+.heroFacts {
+  display: grid;
+  grid-area: facts;
+  align-self: end;
+  gap: 0.7rem;
+}
+
+/* The committed run as a ledger: label left, figure right, one row per
+   claim — the narrow-column reading of the same four derived values. */
 .heroMetrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   width: 100%;
   margin: 0;
+  overflow: hidden;
   border: 1px solid var(--line-soft);
   border-radius: 10px;
   background: rgb(11 13 21 / 0.6);
 }
 
 .heroMetrics > div {
-  display: grid;
-  gap: 0.3rem;
-  align-content: start;
-  padding: 1rem 1.1rem;
-  border-right: 1px solid var(--line-soft);
-  text-align: left;
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0.58rem 0.95rem;
+  border-bottom: 1px solid var(--line-soft);
 }
 
 .heroMetrics > div:last-child {
-  border-right: 0;
+  border-bottom: 0;
 }
 
 .heroMetrics dt {
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   letter-spacing: 0.07em;
   text-transform: uppercase;
 }
@@ -467,8 +489,9 @@
 .heroMetrics dd {
   margin: 0;
   color: var(--text-strong);
-  font-size: 0.95rem;
+  font-size: 0.86rem;
   font-weight: 600;
+  text-align: right;
 }
 
 /* ─────────────────────── act shell ─────────────────────── */
@@ -478,6 +501,8 @@
   padding: clamp(4.5rem, 9vh, 7rem) 0;
   border-top: 1px solid var(--line-soft);
   scroll-margin-top: 84px;
+  /* Plates default to the opaque surface; raised acts override below. */
+  --plate: var(--surface);
 }
 
 .actInner {
@@ -586,6 +611,15 @@
   --act-accent: var(--green);
 }
 
+/* Ground ladder: a raised act rides the band plane and its plates go
+   translucent (tokens.css) — the band carries the plane, density carries
+   the hierarchy, no stack of opaque fills. Hero and proof stay on the
+   ground plane, so the fold and the 4.x instruments are untouched. */
+.act[data-ground='raised'] {
+  --plate: var(--plate-on-band);
+  background: var(--ground-band);
+}
+
 /*
  * Reveal-on-scroll is a progressive enhancement, not a prerequisite for
  * reading. Sections are visible by DEFAULT — no-JS, crawlers, and
@@ -624,7 +658,7 @@
   border: 1px solid var(--line-soft);
   border-radius: 14px;
   background:
-    radial-gradient(120% 80% at 12% 0%, rgb(245 158 11 / 0.06), transparent 60%), var(--surface);
+    radial-gradient(120% 80% at 12% 0%, rgb(245 158 11 / 0.06), transparent 60%), var(--plate);
 }
 
 .laneRows {
@@ -723,7 +757,7 @@
   border: 1px solid var(--line-soft);
   border-radius: 10px;
   overflow: hidden;
-  background: var(--surface);
+  background: var(--plate);
 }
 
 .starterFacts li {
@@ -769,7 +803,7 @@
   border: 1px solid var(--line-soft);
   border-left: 2px solid var(--steel);
   border-radius: 12px;
-  background: var(--surface);
+  background: var(--plate);
 }
 
 .kernelPeek header {
@@ -830,7 +864,7 @@
   padding: 1.15rem 1.25rem;
   border: 1px solid var(--line-soft);
   border-radius: 12px;
-  background: var(--surface);
+  background: var(--plate);
 }
 
 .decisionCard p {
@@ -878,14 +912,14 @@
   padding: 1.25rem 1.3rem;
   border: 1px solid var(--line-soft);
   border-radius: 12px;
-  background: var(--surface);
+  background: var(--plate);
   transition: border-color var(--dur-fast) var(--ease-out-quart);
 }
 
 .isaRung[data-hot] {
   border-color: rgb(56 189 248 / 0.4);
   background:
-    radial-gradient(120% 90% at 0% 0%, rgb(56 189 248 / 0.08), transparent 62%), var(--surface);
+    radial-gradient(120% 90% at 0% 0%, rgb(56 189 248 / 0.08), transparent 62%), var(--plate);
 }
 
 .isaHead {
@@ -965,7 +999,7 @@
   padding: 1.3rem 1.4rem;
   border: 1px solid var(--line-soft);
   border-radius: 12px;
-  background: var(--surface);
+  background: var(--plate);
   transition: border-color var(--dur-med) var(--ease-out-quart);
 }
 
@@ -1018,7 +1052,7 @@
   margin: 0;
   border: 1px solid var(--line-soft);
   border-radius: 10px;
-  background: rgb(11 13 21 / 0.6);
+  background: var(--plate);
 }
 
 .wasmFacts > div {
@@ -1248,7 +1282,7 @@
   padding: 1.3rem 1.4rem;
   border: 1px solid var(--line-soft);
   border-radius: 12px;
-  background: var(--surface);
+  background: var(--plate);
 }
 
 .benchCard header {
@@ -1390,7 +1424,7 @@
   border: 1px solid var(--line-soft);
   border-left: 2px solid var(--amber);
   border-radius: 12px;
-  background: var(--surface);
+  background: var(--plate);
 }
 
 .crossover p {
@@ -1412,7 +1446,7 @@
   border: 1px solid var(--line-soft);
   border-left: 2px solid var(--amber);
   border-radius: 12px;
-  background: var(--surface);
+  background: var(--plate);
 }
 
 .benchHonesty p {
@@ -1480,7 +1514,7 @@
   padding: 1.6rem;
   border: 1px solid var(--line-soft);
   border-radius: 14px;
-  background: var(--surface);
+  background: var(--plate);
 }
 
 /* The evidence signals — the raster the network was given, its hidden
@@ -1572,7 +1606,7 @@
   border: 1px solid var(--line-soft);
   border-left: 2px solid var(--violet-sig);
   border-radius: 12px;
-  background: var(--surface);
+  background: var(--plate);
 }
 
 .convergenceRow {
@@ -1720,7 +1754,7 @@
   border: 1px solid var(--line-soft);
   border-top: 2px solid var(--green);
   border-radius: 12px;
-  background: var(--surface);
+  background: var(--plate);
 }
 
 .proofStats dt {
@@ -1758,7 +1792,7 @@
   padding: 1.3rem 1.4rem;
   border: 1px solid var(--line-soft);
   border-radius: 12px;
-  background: var(--surface);
+  background: var(--plate);
 }
 
 .proofGrid h4 {
@@ -1785,7 +1819,10 @@
   padding: clamp(4.5rem, 9vh, 7rem) 0;
   border-top: 1px solid var(--line-soft);
   scroll-margin-top: 84px;
-  background: radial-gradient(70% 130% at 30% 0%, rgb(56 189 248 / 0.06), transparent 62%);
+  /* Closes on the raised plane — the ladder's last rung before the footer
+     returns to ground. */
+  background:
+    radial-gradient(70% 130% at 30% 0%, rgb(56 189 248 / 0.06), transparent 62%), var(--ground-band);
 }
 
 .tryEyebrow {
@@ -2078,16 +2115,12 @@
   }
 }
 
-.heroMetricsTilt {
-  width: 100%;
-}
-
-/* One machine line for the whole tile row. The machine used to be stamped
-   into two of the four tiles and omitted from the other two, which read as
+/* One machine line for the whole ledger. The machine used to be stamped
+   into two of the four rows and omitted from the other two, which read as
    though only those two were measured somewhere. */
 .heroMetricsSource {
   width: 100%;
-  margin: 0.75rem 0 0;
+  margin: 0;
   color: var(--text-dim);
   font-size: 0.78rem;
   line-height: 1.5;
@@ -2161,9 +2194,15 @@
 /* ─────────────────────── responsive ─────────────────────── */
 
 @media (max-width: 1000px) {
-  /* The fold stacks: words, then the instrument at full width. */
+  /* The fold stacks: words, the instrument at full width, then the
+     committed-run ledger. */
   .heroGrid {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    grid-template-areas:
+      'copy'
+      'bench'
+      'facts';
     gap: 2rem;
   }
 
@@ -2263,22 +2302,6 @@
 
   .kernelPeek .codeblock {
     font-size: 0.64rem;
-  }
-
-  .heroMetrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .heroMetrics > div {
-    border-bottom: 1px solid var(--line-soft);
-  }
-
-  .heroMetrics > div:nth-child(2n) {
-    border-right: 0;
-  }
-
-  .heroMetrics > div:nth-last-child(-n + 2) {
-    border-bottom: 0;
   }
 }
 

@@ -91,9 +91,12 @@
   border-right: 1px solid var(--line-soft);
 }
 
+/* Rows: label / verdict / label / histogram. The verdict card takes the
+   column's slack, so the serif answer breathes instead of leaving a void
+   under the confidence panel. */
 .colVerdict {
   display: grid;
-  align-content: start;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
 }
 
 .colLabel {
@@ -131,7 +134,10 @@
 .verdictDigit {
   color: var(--text-strong);
   font-family: var(--font-instrument-serif);
-  font-size: 3.9rem;
+  /* cq-scaled: the verdict is the instrument's payoff and grows with the
+     bench (16cqw ≈ 72px in the fold's cell) instead of sitting at one
+     size in a card that now stretches. */
+  font-size: clamp(3.9rem, 16cqw, 5.4rem);
   font-style: italic;
   line-height: 0.9;
 }
@@ -354,51 +360,53 @@
   cursor: not-allowed;
 }
 
-/* ───────── global hooks: confidence bars (compact) ───────── */
+/* ───────── global hooks: confidence histogram ───────── */
 
+/* Ten columns over a ticked baseline — value is bar HEIGHT. One lit
+   column over a quiet floor is the honest shape of a confident softmax;
+   ten labelled rows of "0%" were the same data pretending to be a table. */
 .section :global(.softmax-bars) {
   display: grid;
-  gap: 0.26rem;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 0.3rem;
+  align-items: end;
 }
 
-.section :global(.softmax-row) {
+.section :global(.softmax-col) {
   display: grid;
-  grid-template-columns: 0.9rem minmax(0, 1fr) 2.4rem;
-  gap: 0.45rem;
-  align-items: center;
+  gap: 0.38rem;
+  justify-items: stretch;
+}
+
+/* Tracks are TRANSPARENT: a filled track ghost read as "every class near
+   100%" in a screenshot. Only the baseline tick and the fills are ink. */
+.section :global(.softmax-track) {
+  display: flex;
+  align-items: flex-end;
+  height: 64px;
+  overflow: hidden;
+  border-bottom: 1px solid rgb(255 255 255 / 0.18);
+}
+
+.section :global(.softmax-fill) {
+  width: 100%;
+  border-radius: 2px 2px 0 0;
+  background: rgb(255 255 255 / 0.3);
+}
+
+.section :global(.softmax-col[data-active] .softmax-fill) {
+  background: var(--text-strong);
 }
 
 .section :global(.softmax-digit) {
   color: var(--text-dim);
-  font-size: 0.7rem;
+  font-size: 0.66rem;
+  text-align: center;
 }
 
-.section :global(.softmax-track) {
-  height: 4px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.06);
-}
-
-.section :global(.softmax-fill) {
-  height: 100%;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.34);
-  transition: width var(--dur-med) var(--ease-out-quart);
-}
-
-.section :global(.softmax-row[data-active='true'] .softmax-fill) {
-  background: var(--text-strong);
-}
-
-.section :global(.softmax-row[data-active='true'] .softmax-digit) {
+.section :global(.softmax-col[data-active] .softmax-digit) {
   color: var(--text-strong);
-}
-
-.section :global(.softmax-pct) {
-  color: var(--text-muted);
-  font-size: 0.68rem;
-  text-align: right;
+  font-weight: 600;
 }
 
 /* ─────────────────────── responsive ─────────────────────── */

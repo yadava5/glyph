@@ -69,6 +69,14 @@
   --cyan: var(--text-strong);
   --violet: var(--text-muted);
 
+  /* Ground ladder — the scroll alternates between two fixed planes
+     (ground ≈ L* 2, band ≈ L* 5) so sections read as depth, not one
+     continuous black. Bands stay slightly translucent so the LaneField
+     pulse survives beneath; plates riding a band go translucent white so
+     hierarchy comes from density, not stacked opaque fills. */
+  --ground-band: rgb(15 18 30 / 0.84);
+  --plate-on-band: rgb(255 255 255 / 0.035);
+
   /* Depth + layout */
   --shadow-deep: 0 28px 110px rgb(0 0 0 / 0.6);
   --content-max: 1120px;

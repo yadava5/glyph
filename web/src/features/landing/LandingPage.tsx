@@ -41,7 +41,7 @@ import {
   SimdCensusPanel,
   ThroughputGauge,
 } from './PerfVizLazy';
-import { MagneticButton, RollingNumber, Spotlight, Tilt } from './interactions';
+import { MagneticButton, RollingNumber, Spotlight } from './interactions';
 import styles from './LandingPage.module.css';
 
 const REPO_URL = 'https://github.com/yadava5/glyph';
@@ -367,52 +367,59 @@ function Hero({ controller }: { controller: MnistDemoController }) {
         >
           <Workbench controller={controller} />
         </m.div>
-      </div>
 
-      <Tilt className={styles.heroMetricsTilt} max={4}>
-        <m.dl
-          className={styles.heroMetrics}
-          aria-label="Verified numbers from the reference benchmark run"
+        {/* The committed-run ledger, pinned to the instrument's base: the
+            left column is bookended — thesis at the top, evidence at the
+            bottom — so a 1024×700 fold holds both. (These rows used to be
+            a four-tile strip below the grid, where that viewport never
+            saw them.) */}
+        <m.div
+          className={styles.heroFacts}
           initial={reduced ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.7, delay: 1.5 }}
         >
-          {/* "matmul 256 · 3.57×" under a headline about a hand-written SIMD
-              kernel reads as though SIMD bought the 3.57×. It did not: the SIMD
-              kernels are compiled into BOTH configs, so this measures threading
-              and native codegen on top of them. The label says so. */}
-          <div>
-            <dt>matmul 256 · threads + native</dt>
-            <dd className="tabular">{matmul256.speedup} — SIMD in both sides</dd>
-          </div>
-          <div>
-            <dt>classify, single thread</dt>
-            <dd className="tabular">{classifyThroughput.baseline}</dd>
-          </div>
-          <div>
-            <dt>isa ladder</dt>
-            <dd className="tabular">AVX-512 · AVX2 · NEON · simd128</dd>
-          </div>
-          <div>
-            <dt>test accuracy</dt>
-            <dd className="tabular">
-              {accuracyWaffle.pct} / {accuracyWaffle.total.toLocaleString('en-US')}
-            </dd>
-          </div>
-        </m.dl>
-      </Tilt>
-      <p className={styles.heroMetricsSource}>
-        Measured on {referenceRun.machine}, {formatRunDate(referenceRun.dateISO)} —{' '}
-        {referenceRun.reps} repetitions per case, medians. The records are in the repository as{' '}
-        <a
-          href={`${REPO_URL}/tree/main/docs/benchmarks/runs`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          bench-{referenceRun.stamp}-*.json
-        </a>
-        .
-      </p>
+          <dl
+            className={styles.heroMetrics}
+            aria-label="Verified numbers from the reference benchmark run"
+          >
+            {/* "matmul 256 · 3.57×" under a headline about a hand-written SIMD
+                kernel reads as though SIMD bought the 3.57×. It did not: the SIMD
+                kernels are compiled into BOTH configs, so this measures threading
+                and native codegen on top of them. The label says so. */}
+            <div>
+              <dt>matmul 256 · threads + native</dt>
+              <dd className="tabular">{matmul256.speedup} — SIMD in both sides</dd>
+            </div>
+            <div>
+              <dt>classify, single thread</dt>
+              <dd className="tabular">{classifyThroughput.baseline}</dd>
+            </div>
+            <div>
+              <dt>isa ladder</dt>
+              <dd className="tabular">AVX-512 · AVX2 · NEON · simd128</dd>
+            </div>
+            <div>
+              <dt>test accuracy</dt>
+              <dd className="tabular">
+                {accuracyWaffle.pct} / {accuracyWaffle.total.toLocaleString('en-US')}
+              </dd>
+            </div>
+          </dl>
+          <p className={styles.heroMetricsSource}>
+            Measured on {referenceRun.machine}, {formatRunDate(referenceRun.dateISO)} —{' '}
+            {referenceRun.reps} repetitions per case, medians. The records are in the repository as{' '}
+            <a
+              href={`${REPO_URL}/tree/main/docs/benchmarks/runs`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              bench-{referenceRun.stamp}-*.json
+            </a>
+            .
+          </p>
+        </m.div>
+      </div>
     </Spotlight>
   );
 }
@@ -425,15 +432,28 @@ interface ActShellProps {
   muted: string;
   lede: React.ReactNode;
   accent?: 'steel' | 'amber' | 'sky' | 'green';
+  /** Ground ladder: 'raised' puts the act on the band plane. */
+  ground?: 'raised';
   children: React.ReactNode;
 }
 
-function ActShell({ id, n, eyebrow, bright, muted, lede, accent, children }: ActShellProps) {
+function ActShell({
+  id,
+  n,
+  eyebrow,
+  bright,
+  muted,
+  lede,
+  accent,
+  ground,
+  children,
+}: ActShellProps) {
   return (
     <section
       id={id}
       className={styles.act}
       data-accent={accent}
+      data-ground={ground}
       data-reveal
       aria-labelledby={`${id}-title`}
     >
@@ -473,6 +493,7 @@ function ProblemAct() {
       n="01"
       eyebrow="problem"
       accent="amber"
+      ground="raised"
       bright="Seven eighths of the"
       muted="silicon, asleep."
       lede={
@@ -632,6 +653,7 @@ function ImplementationAct({ controller }: { controller: MnistDemoController }) 
       n="03"
       eyebrow="implementation"
       accent="sky"
+      ground="raised"
       bright="One kernel,"
       muted="four instruction sets."
       lede={

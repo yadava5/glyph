@@ -129,11 +129,6 @@ pre {
   background: var(--text-soft);
 }
 
-.hero-poster {
-  opacity: 0.9;
-  filter: drop-shadow(0 0 40px rgb(125 211 252 / 0.2));
-}
-
 .command-overlay {
   position: fixed;
   z-index: 100;

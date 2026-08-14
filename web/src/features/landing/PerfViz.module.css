@@ -426,7 +426,9 @@
   padding: 1.4rem 1.5rem;
   border: 1px solid var(--line-soft);
   border-radius: 14px;
-  background: var(--surface);
+  /* Rides the build act's raised band — translucent plate there (the act
+     sets --plate), opaque surface anywhere else. */
+  background: var(--plate, var(--surface));
 }
 
 .laneScaleHead {
