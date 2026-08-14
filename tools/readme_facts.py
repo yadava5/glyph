@@ -931,6 +931,39 @@ for _fid, _key, _pat, _readme_pat in [
         _s, (lambda k=_key: census_field(k)))
 
 
+# -- the JS bundle budgets, read out of the check script itself -----------
+#
+# README quotes three ceilings. They were correct and ungated, which is the
+# state every drifted number in this repository was in first.
+
+
+def bundle_budget(pattern: str) -> int:
+    path = os.path.join(REPO, "web/scripts/check-bundle-budget.mjs")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            src = fh.read()
+    except FileNotFoundError:
+        die("web/scripts/check-bundle-budget.mjs is missing; README quotes its budgets.")
+    m = re.search(pattern, src)
+    if not m:
+        die(f"web/scripts/check-bundle-budget.mjs no longer matches {pattern!r} — "
+            f"the script changed shape and README still quotes its budgets.")
+    return int(m.group(1))
+
+
+for _fid, _describe, _site_pat, _src_pat in [
+    ("bundleEntryRawKb", "entry-chunk raw ceiling in check-bundle-budget.mjs",
+     r"entry chunk to (\d+) KiB raw", r"maxRawKb:\s*(\d+)"),
+    ("bundleEntryGzipKb", "entry-chunk gzip ceiling in check-bundle-budget.mjs",
+     r"entry chunk to \d+ KiB raw / (\d+) KiB gzip", r"maxGzipKb:\s*(\d+)"),
+    ("bundleTotalGzipKb", "all-JS gzip ceiling in check-bundle-budget.mjs",
+     r"caps \*\*all\*\* shipped JavaScript at\n\*\*(\d+)\*\* KiB gzip",
+     r"TOTAL_JS_GZIP_KB\s*=\s*(\d+)"),
+]:
+    add(_fid, _describe, "static", [site(_site_pat)],
+        (lambda pat=_src_pat: bundle_budget(pat)))
+
+
 # -- the misclassified-digit count the landing page draws -----------------
 #
 # README describes proof 4.7 as drawing "all 299 digits the model gets wrong".

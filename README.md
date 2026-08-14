@@ -269,8 +269,11 @@ including the part where OpenBLAS would win large `dot` by roughly 2–3×.
 | **E2E** | Playwright 1.59 |
 
 The landing page ships no WebGL. `web/scripts/check-bundle-budget.mjs` holds the
-entry chunk to 472 KiB raw / 150 KiB gzip and fails the build if a `three-vendor`
-chunk ever reappears. `three` and `@react-three/*` used to sit in `package.json`
+entry chunk to 472 KiB raw / 150 KiB gzip, caps **all** shipped JavaScript at
+**165** KiB gzip — the binding limit, and the one a visitor actually pays — and
+fails the build if a `three-vendor` chunk ever reappears. Budgeting the entry
+chunk alone could not fail for anything code-split, which is how a heavy
+library would have arrived unnoticed in the lazy charts chunk. `three` and `@react-three/*` used to sit in `package.json`
 backing an unrouted `NeuralNetHero` component; that component and the rest of the
 unreachable `features/experience/` tree were deleted on 2026-08-13, along with the
 six dependencies only it used. Dead code is bad enough on its own, but this
