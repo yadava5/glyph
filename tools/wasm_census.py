@@ -157,6 +157,46 @@ def check() -> int:
     if census.get("moduleBytes") != MODULE.stat().st_size:
         print(f"STALE {OUT.relative_to(ROOT)}: recorded byte length disagrees", file=sys.stderr)
         return 1
+
+    # The digest above proves the census was taken from THIS module. It does
+    # not prove the census still says what the disassembly said, and the three
+    # headline numbers below are rendered on the landing page. Until
+    # tools/check_gates.py mutated `totalVectorInstructions` from 154 to 155
+    # and watched this exit 0, nothing here read them at all: a hand-edited
+    # count would have shipped to the page with every gate green, which is the
+    # precise defect shape --check exists to prevent.
+    #
+    # Re-deriving them needs wabt, which --check deliberately does not require.
+    # Internal consistency does not: the histogram and the function list are
+    # the evidence, the totals are summaries of them, and a summary that
+    # disagrees with its own evidence is wrong no matter which one drifted.
+    summaries = []
+    opcodes = census.get("opcodes")
+    if isinstance(opcodes, dict):
+        summaries.append(("totalVectorInstructions", sum(opcodes.values()), "sum of `opcodes`"))
+    functions = census.get("functions")
+    if isinstance(functions, list):
+        summaries.append(
+            ("functionsWithVectorInstructions", len(functions), "length of `functions`")
+        )
+    if not summaries:
+        print(
+            f"{OUT.relative_to(ROOT)}: neither `opcodes` nor `functions` is present, so the "
+            f"published totals cannot be cross-checked. The schema changed and this gate has "
+            f"gone blind — fix it rather than deleting this message.",
+            file=sys.stderr,
+        )
+        return 1
+    for key, derived, source in summaries:
+        if census.get(key) != derived:
+            print(
+                f"INCONSISTENT {OUT.relative_to(ROOT)}: `{key}` says {census.get(key)} but the "
+                f"{source} is {derived}. The module's digest still matches, so the census was "
+                f"edited by hand rather than regenerated. Re-run --write (needs wabt).",
+                file=sys.stderr,
+            )
+            return 1
+
     print(
         f"OK {OUT.relative_to(ROOT)} describes the committed module — "
         f"{census['totalVectorInstructions']} vector instructions in "

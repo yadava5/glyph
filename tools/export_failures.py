@@ -140,6 +140,16 @@ def check() -> int:
         )
     if len(manifest["entries"]) * PIXELS != len(pack):
         problems.append("entry count and pack length disagree")
+    # `count` is the number this tool prints and the landing page renders as
+    # "299 misclassified digits". Nothing verified it until check_gates.py
+    # changed it to 300 and watched this exit 0 — the one field a reader
+    # actually sees was the one field going unchecked.
+    if manifest.get("count") != len(manifest["entries"]):
+        problems.append(
+            f"manifest count says {manifest.get('count')} but it carries "
+            f"{len(manifest['entries'])} entries — the figure the page displays is not "
+            f"the number of digits in the pack"
+        )
     if problems:
         for p in problems:
             print(f"  x {p}", file=sys.stderr)

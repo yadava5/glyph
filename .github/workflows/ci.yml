@@ -132,3 +132,18 @@ jobs:
       - name: Verify the font subset still covers every character the site sets
         working-directory: .
         run: python3 tools/subset_fonts.py --check
+
+      # Everything above this line reports green when its subject is correct
+      # AND when it has quietly stopped looking — the two are indistinguishable
+      # in a log. This step breaks each gate's subject on purpose and requires
+      # the gate to go red, then restores the file and verifies the restoration
+      # by sha256. It found two gates that could not fail on its first run:
+      # wasm_census never read the instruction counts it publishes, and
+      # export_failures never read the digit count the landing page displays.
+      #
+      # It lives in this job rather than readme-facts because proving the font
+      # gate needs fontTools, installed above. All seven are proven here; a gate
+      # that cannot be proven is a failure, not a skip.
+      - name: Prove every gate can actually fail
+        working-directory: .
+        run: python3 tools/check_gates.py
