@@ -514,7 +514,13 @@ add("accuracyPct",
      site(r"([\d.]+)% is the classifier's accuracy on"),
      site(r"mnist_eval\.json\s+# ([\d.]+)% — pins the model"),
      site(r"bytes, the ([\d.]+)% model"),
-     site(r"\| ([\d.]+)% accuracy \|")],
+     site(r"\| ([\d.]+)% accuracy \|"),
+     # The README's landing screenshot bakes live figures into pixels no gate
+     # can read. Its alt text quotes the same figures, so gating the alt makes
+     # the description the canary: when the data moves, this goes red, and the
+     # red says "re-shoot docs/branding/landing-fold.png" as much as it says
+     # "fix the prose". A stale screenshot is otherwise silent.
+     site(r"and ([\d.]+)% of 10,000 — beside the live bench")],
     lambda: eval_json()["overall"]["accuracy_pct"], decimals=2)
 
 add("correct",

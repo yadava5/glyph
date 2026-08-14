@@ -100,8 +100,13 @@ visual.
 **Live: https://getglyph.vercel.app** — draw a digit and the WebAssembly build
 reads it, on your machine, with no server.
 
-<img src="web/public/hero-poster.svg" width="760"
-     alt="Glyph animated web demo preview">
+<img src="docs/branding/landing-fold.png" width="900"
+     alt="The Glyph landing fold at 1200px: the headline on the left over a ledger of four
+          committed figures — matmul 256 at 3.57x, 70,293 img/s single-threaded, the
+          AVX-512/AVX2/NEON/simd128 ladder, and 97.01% of 10,000 — beside the live bench,
+          which has just classified its sample digit as a 5 at 95.3% confidence through the
+          wasm simd128 kernel and is reporting scalar 73us against simd128 20us, 3.7x, over
+          219 timed runs.">
 
 The bench is the fold. A sample digit classifies itself on first sight, and
 every stroke after that races the hand-written simd128 kernel against the same
