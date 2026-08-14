@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { expectNoHorizontalOverflow } from './overflow';
+import { applyProjectMotionPreference } from './motionPreference';
 
 /**
  * Interaction smoke for the redesigned landing. Complements demo.spec.ts
@@ -66,7 +67,10 @@ async function expectScrolledTo(page: Page, id: string) {
 }
 
 test.describe('Landing interaction smoke', () => {
-  test.beforeEach(({ page }) => instrument(page));
+  test.beforeEach(async ({ page }, testInfo) => {
+    await applyProjectMotionPreference(page, testInfo);
+    instrument(page);
+  });
 
   test('nav anchor links scroll to each act', async ({ page }) => {
     await page.goto('/index.html');

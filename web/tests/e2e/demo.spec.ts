@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { expectNoHorizontalOverflow } from './overflow';
+import { applyProjectMotionPreference } from './motionPreference';
 import {
   classifyThroughput,
   kernelBenchmarks,
@@ -100,7 +101,9 @@ async function waitForReadableDrawPad(page: Page) {
 }
 
 test.describe('Glyph landing experience', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    await applyProjectMotionPreference(page, testInfo);
+
     const instrumentedPage = page as InstrumentedPage;
     instrumentedPage.__consoleIssues = [];
     instrumentedPage.__pageErrors = [];
