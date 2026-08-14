@@ -1058,7 +1058,19 @@
   margin-bottom: clamp(2rem, 4vh, 3rem);
   border-top: 1px solid var(--line-soft);
   border-bottom: 1px solid var(--line-soft);
-  background: rgb(6 7 13 / 0.88);
+  /* 0.98, not 0.88, and the alpha is doing the work rather than the blur.
+     The built stylesheet's rule for this element carries NO backdrop-filter —
+     read out of the CSSOM, `getComputedStyle` returns `none` here while `.nav`
+     right above resolves blur(14px) — so at 0.88 this was a flat strip with
+     12% of the page showing through it. Section headings scrolling underneath
+     ghosted straight across the rail's own labels: text on top of text, which
+     is what it looked like in a screenshot at 1024. The nav already carries
+     this same defense in depth for exactly this reason; the rail was missing
+     it. Fully opaque rather than 0.98 — at 0.98 the ghost was fainter but
+     still legible in a screenshot, and the rail sits on a solid ground where
+     transparency buys nothing. Keep the blur for browsers that do composite
+     it, but never let it be the thing standing between two layers of text. */
+  background: rgb(6 7 13);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
