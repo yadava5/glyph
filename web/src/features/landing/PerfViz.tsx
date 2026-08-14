@@ -1,10 +1,19 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useReducedMotion } from 'motion/react';
 import {
   accuracyWaffle,
   crossoverSeries,
   gflopsSeries,
   laneScale,
+  recordLedger,
   simdCensus,
 } from '../performance/benchmarkData';
 import type { MnistDemoController } from '../mnist/useMnistDemoController';
@@ -595,6 +604,245 @@ export function ThroughputGauge({ controller }: { controller: MnistDemoControlle
   );
 }
 
+/* ─────────────── 3b · the read race ─────────────── */
+
+const RASTER = 28;
+const EDGE_SCALAR = 'rgb(148 163 184)'; // steel — the lanes-off baseline
+const EDGE_SIMD = 'rgb(56 189 248)'; // sky — the live wasm kernel
+
+/** Sub-0.1ms medians render as µs — the same rule the gauge readout uses. */
+const fmtPaneMs = (ms: number) => (ms < 0.1 ? `${Math.round(ms * 1000)}µs` : `${ms.toFixed(2)}ms`);
+
+/** The visitor's 784-value input, painted once as full ink on an offscreen. */
+function paintInk(off: HTMLCanvasElement, pixels: number[]) {
+  const ctx = off.getContext('2d');
+  if (!ctx) return;
+  const img = ctx.createImageData(RASTER, RASTER);
+  for (let i = 0; i < RASTER * RASTER; i += 1) {
+    const v = Math.round(clamp(pixels[i] ?? 0, 0, 1) * 255);
+    img.data[i * 4] = v;
+    img.data[i * 4 + 1] = v;
+    img.data[i * 4 + 2] = v;
+    img.data[i * 4 + 3] = v > 0 ? 255 : 0;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+/** One frame of a pane: dim ink ahead of the read-head, full ink behind it. */
+function paintPane(canvas: HTMLCanvasElement, off: HTMLCanvasElement, frac: number, edge: string) {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  ctx.clearRect(0, 0, RASTER, RASTER);
+  ctx.globalAlpha = 0.15;
+  ctx.drawImage(off, 0, 0);
+  const cols = Math.round(frac * RASTER);
+  if (cols > 0) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, cols, RASTER);
+    ctx.clip();
+    ctx.globalAlpha = 1;
+    ctx.drawImage(off, 0, 0);
+    ctx.restore();
+  }
+  if (frac > 0 && frac < 1) {
+    ctx.globalAlpha = 0.6;
+    ctx.fillStyle = edge;
+    ctx.fillRect(cols, 0, 1, RASTER);
+  }
+  ctx.globalAlpha = 1;
+}
+
+/**
+ * The dial's number, made visible as an event: the visitor's own raster read
+ * twice, by a read-head sweeping at the two measured medians. Absolute pace is
+ * stretched to watchable speed — the RATIO between the sweeps is the live
+ * measurement, never a typed figure. Two sweeps per arming, then the panes
+ * rest at full ink; reduced-motion renders the rested state with the figures.
+ */
+export function ReadRace({ controller }: { controller: MnistDemoController }) {
+  const reduced = useReducedMotion();
+  const { ref, inView } = useInView<HTMLElement>('0px 0px -14% 0px');
+  const scalarRef = useRef<HTMLCanvasElement>(null);
+  const simdRef = useRef<HTMLCanvasElement>(null);
+  const offRef = useRef<HTMLCanvasElement | null>(null);
+  const [replay, setReplay] = useState(0);
+
+  const t = controller.timing;
+  const pixels = controller.inputPixels;
+  const speedup = t !== null && t.speedup !== null && t.speedup > 0 ? t.speedup : null;
+  const live = speedup !== null && pixels !== null;
+
+  useEffect(() => {
+    if (pixels === null) return;
+    if (!offRef.current) {
+      const off = document.createElement('canvas');
+      off.width = RASTER;
+      off.height = RASTER;
+      offRef.current = off;
+    }
+    paintInk(offRef.current, pixels);
+  }, [pixels]);
+
+  useEffect(() => {
+    const scalar = scalarRef.current;
+    const simd = simdRef.current;
+    const off = offRef.current;
+    if (!scalar || !simd || !off || !inView || pixels === null) return;
+    if (!live || reduced) {
+      paintPane(scalar, off, 1, EDGE_SCALAR);
+      paintPane(simd, off, 1, EDGE_SIMD);
+      return;
+    }
+    const scalarDur = 2600;
+    const simdDur = scalarDur / speedup!;
+    const hold = 1100;
+    const cycles = 2;
+    let raf = 0;
+    const t0 = performance.now();
+    const tick = (now: number) => {
+      const elapsed = now - t0;
+      if (elapsed >= cycles * (scalarDur + hold)) {
+        paintPane(scalar, off, 1, EDGE_SCALAR);
+        paintPane(simd, off, 1, EDGE_SIMD);
+        return;
+      }
+      const tt = elapsed % (scalarDur + hold);
+      paintPane(scalar, off, Math.min(1, tt / scalarDur), EDGE_SCALAR);
+      paintPane(simd, off, Math.min(1, tt / simdDur), EDGE_SIMD);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, live, reduced, speedup, pixels, replay]);
+
+  return (
+    <figure className={styles.raceCard} ref={ref}>
+      <figcaption className={styles.chartHead}>
+        <div>
+          <span className={styles.chartEyebrow}>live · the same measurement, as ink</span>
+          <h4 className={styles.chartTitle}>Two kernels read your digit</h4>
+        </div>
+        <span className={styles.gaugePulse} data-live={live || undefined} aria-hidden />
+      </figcaption>
+
+      <div
+        className={styles.raceLanes}
+        role="img"
+        aria-label={
+          live
+            ? `Your digit read twice: scalar median ${fmtPaneMs(t!.p50BaselineMs!)}, simd128 median ${fmtPaneMs(t!.p50OptimizedMs)} — ${speedup!.toFixed(2)} times faster.`
+            : 'Read race idle — draw a digit to measure'
+        }
+      >
+        <div className={styles.racePane} data-tone="scalar" data-empty={!live || undefined}>
+          <span>scalar · lanes off</span>
+          <canvas ref={scalarRef} width={RASTER} height={RASTER} />
+          <b className="tabular">{live ? fmtPaneMs(t!.p50BaselineMs!) : '—'}</b>
+        </div>
+        <div className={styles.racePane} data-tone="simd" data-empty={!live || undefined}>
+          <span>simd128 · f64x2</span>
+          <canvas ref={simdRef} width={RASTER} height={RASTER} />
+          <b className="tabular">{live ? fmtPaneMs(t!.p50OptimizedMs) : '—'}</b>
+        </div>
+      </div>
+
+      <p className={styles.raceFoot}>
+        {!live ? (
+          <>idle — draw in the bench at the top and the race replays your ink</>
+        ) : reduced ? (
+          <>
+            Your measured medians, <b className="tabular">{speedup!.toFixed(2)}×</b> apart.
+          </>
+        ) : (
+          <>
+            Sweeps stretched to watchable speed; the ratio is yours — simd128 finishes{' '}
+            <b className="tabular">{speedup!.toFixed(2)}×</b> sooner.{' '}
+            <button
+              type="button"
+              className={styles.raceReplay}
+              onClick={() => setReplay((r) => r + 1)}
+            >
+              replay
+            </button>
+          </>
+        )}
+      </p>
+    </figure>
+  );
+}
+
+/* ─────────────── 3c · the record ledger ─────────────── */
+
+/**
+ * Proof 4.5's visual anchor: all twelve sized cases, win or lose, as a
+ * diverging log-scale ledger around the break-even axis. The row that changed
+ * sign between the two committed machines carries its December figure inline —
+ * the chapter's whole argument in one flagged line.
+ */
+export function RecordLedger() {
+  const reduced = useReducedMotion();
+  const { ref, inView } = useInView<HTMLDivElement>('0px 0px -12% 0px');
+  const lit = reduced || inView;
+  const maxAbs = Math.max(...recordLedger.rows.map((r) => Math.abs(log2(r.ratio))));
+
+  return (
+    <figure className={styles.ledgerCard} ref={ref} data-lit={lit || undefined}>
+      <figcaption className={styles.chartHead}>
+        <div>
+          <span className={styles.chartEyebrow}>
+            every sized case · single-thread ÷ openmp+native
+          </span>
+          <h4 className={styles.chartTitle}>
+            The full ledger: {recordLedger.wins} wins, {recordLedger.losses} losses
+          </h4>
+        </div>
+        <span className={styles.chartKey} aria-hidden>
+          <i data-tone="win" /> wins · <i data-tone="loss" /> losses
+        </span>
+      </figcaption>
+
+      <ul className={styles.ledgerRows}>
+        {recordLedger.rows.map((r, i) => {
+          const half = (Math.abs(log2(r.ratio)) / maxAbs) * 50;
+          return (
+            <li
+              key={r.label}
+              data-loss={!r.wins || undefined}
+              data-flip={r.flipNote !== null || undefined}
+              style={{ '--d': `${i * 40}ms` } as React.CSSProperties}
+            >
+              <span className={styles.ledgerOp}>{r.label}</span>
+              <span
+                className={styles.ledgerTrack}
+                role="img"
+                aria-label={`${r.label}: ${r.single} single thread to ${r.omp} with OpenMP — ${r.display}`}
+              >
+                <i
+                  className={styles.ledgerBar}
+                  style={
+                    r.wins
+                      ? { left: '50%', width: `${half}%` }
+                      : { right: '50%', width: `${half}%` }
+                  }
+                />
+              </span>
+              <b className="tabular">{r.display}</b>
+              {r.flipNote !== null && <em className={styles.ledgerFlip}>{r.flipNote}</em>}
+            </li>
+          );
+        })}
+      </ul>
+
+      <p className={styles.chartFoot}>
+        Bars are log-scaled from the committed medians; left of the axis, OpenMP loses (
+        {recordLedger.losses} of {recordLedger.rows.length}). The flagged row is the one that
+        changed sign between the two committed machines.
+      </p>
+    </figure>
+  );
+}
+
 /* ─────────────── 4 · per-ISA lane scale ─────────────── */
 
 /**
@@ -857,45 +1105,212 @@ interface FailureEntry {
   trueActivation: number;
 }
 
-/** One failing digit, drawn from the packed bytes. Real MNIST ink. */
-function FailureDigit({
-  pack,
-  packIndex,
-  entry,
-}: {
-  pack: Uint8Array;
-  packIndex: number;
-  entry: FailureEntry;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+/* Wall geometry, CSS pixels. 34px keeps the 28×28 ink readable as ink while
+   all 299 specimens still land in roughly twelve rows at a 1024 viewport. */
+const WALL_CELL = 34;
+const WALL_GAP = 5;
+const WALL_PITCH = WALL_CELL + WALL_GAP;
 
+interface WallSpecimen {
+  e: FailureEntry;
+  packIndex: number;
+}
+
+/**
+ * THE WALL — every one of the 299 misses at once, drawn as actual MNIST ink
+ * from the committed pack. One canvas, one sprite atlas: sprites are unpacked
+ * once into a 28×(28·299) strip, then every redraw is 299 drawImage calls, so
+ * dimming for a selection or ringing a hovered specimen costs a frame, not a
+ * re-decode. Specimens sort by true digit then prediction — the wall reads as
+ * ten uneven lines of handwriting, each line one digit's failures.
+ *
+ * The canvas is a single role="img": per-specimen data stays keyboard-reachable
+ * through the confusion grid above, which lists the same record by cell.
+ */
+function FailureWall({
+  entries,
+  pack,
+  sel,
+  onHoverEntry,
+  onPick,
+}: {
+  entries: FailureEntry[];
+  pack: Uint8Array;
+  sel: { t: number; p: number } | null;
+  onHoverEntry: (e: FailureEntry | null) => void;
+  onPick: (t: number, p: number) => void;
+}) {
+  const reduced = useReducedMotion();
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const atlasRef = useRef<HTMLCanvasElement | null>(null);
+  const { ref: inViewRef, inView } = useInView<HTMLDivElement>('0px 0px -8% 0px');
+  const [cols, setCols] = useState(0);
+  const [revealed, setRevealed] = useState(false);
+  const [hovered, setHovered] = useState<number | null>(null);
+
+  const order = useMemo<WallSpecimen[]>(
+    () =>
+      entries
+        .map((e, packIndex) => ({ e, packIndex }))
+        .sort((a, b) => a.e.true - b.e.true || a.e.pred - b.e.pred || a.e.index - b.e.index),
+    [entries],
+  );
+
+  // Unpack the committed bytes once. Ink is alpha-mapped near-white, so the
+  // page ground shows through exactly where MNIST recorded no pressure.
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const atlas = document.createElement('canvas');
+    atlas.width = RASTER;
+    atlas.height = RASTER * entries.length;
+    const ctx = atlas.getContext('2d');
     if (!ctx) return;
-    const img = ctx.createImageData(28, 28);
-    const base = packIndex * 784;
-    for (let i = 0; i < 784; i += 1) {
-      const v = pack[base + i];
-      img.data[i * 4] = v;
-      img.data[i * 4 + 1] = v;
-      img.data[i * 4 + 2] = v;
-      img.data[i * 4 + 3] = v > 0 ? 255 : 0;
+    const img = ctx.createImageData(RASTER, RASTER * entries.length);
+    const n = Math.min(entries.length * RASTER * RASTER, pack.length);
+    for (let i = 0; i < n; i += 1) {
+      img.data[i * 4] = 235;
+      img.data[i * 4 + 1] = 238;
+      img.data[i * 4 + 2] = 245;
+      img.data[i * 4 + 3] = pack[i];
     }
     ctx.putImageData(img, 0, 0);
-  }, [pack, packIndex]);
+    atlasRef.current = atlas;
+  }, [pack, entries.length]);
+
+  // Columns are seeded synchronously from the laid-out width — the observer
+  // only handles RESIZES. Seeding through the observer alone left the wall
+  // blank anywhere ResizeObserver never fired.
+  /* The floor was 8, which promised a minimum canvas of 8×39−5 = 307px that a
+     narrow wrap cannot honour: at a 375px viewport the wrap is 277px, the
+     canvas asked for 307px, and the global `canvas { max-width: 100% }` in
+     base.css clamped and RESAMPLED it — precisely the blur the exact-CSS-size
+     code in draw() exists to prevent. 4 keeps the wall from degenerating into
+     a tower (299 rows at 1 column is a ~12,000px canvas) while staying inside
+     any wrap above 151px, which is narrower than any real viewport reaches. */
+  const colsFor = (w: number) => Math.max(4, Math.floor((w + WALL_GAP) / WALL_PITCH));
+
+  useLayoutEffect(() => {
+    const wrap = wrapRef.current;
+    if (wrap) setCols(colsFor(wrap.clientWidth));
+  }, []);
+
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap || typeof ResizeObserver === 'undefined') return;
+    const obs = new ResizeObserver(([entry]) => {
+      if (entry) setCols(colsFor(entry.contentRect.width));
+    });
+    obs.observe(wrap);
+    return () => obs.disconnect();
+  }, []);
+
+  const draw = useCallback(
+    (elapsedMs: number) => {
+      const canvas = canvasRef.current;
+      const atlas = atlasRef.current;
+      if (!canvas || !atlas || cols === 0) return;
+      const rows = Math.ceil(order.length / cols);
+      const cssW = cols * WALL_PITCH - WALL_GAP;
+      const cssH = rows * WALL_PITCH - WALL_GAP;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      if (canvas.width !== Math.round(cssW * dpr) || canvas.height !== Math.round(cssH * dpr)) {
+        canvas.width = Math.round(cssW * dpr);
+        canvas.height = Math.round(cssH * dpr);
+        // Exact CSS size, set here rather than `width: 100%`: stretching the
+        // raster by a fractional remainder would blur every specimen.
+        canvas.style.width = `${cssW}px`;
+        canvas.style.height = `${cssH}px`;
+      }
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, cssW, cssH);
+      ctx.imageSmoothingEnabled = false;
+      order.forEach(({ e, packIndex }, i) => {
+        const x = (i % cols) * WALL_PITCH;
+        const y = Math.floor(i / cols) * WALL_PITCH;
+        const isSel = sel !== null && e.true === sel.t && e.pred === sel.p;
+        const dimmed = sel !== null && !isSel;
+        const developed = clamp((elapsedMs - i * 2.2) / 240, 0, 1);
+        ctx.globalAlpha = developed * (dimmed ? 0.13 : 1);
+        ctx.drawImage(atlas, 0, packIndex * RASTER, RASTER, RASTER, x, y, WALL_CELL, WALL_CELL);
+        if (developed === 1 && (isSel || i === hovered)) {
+          ctx.globalAlpha = 1;
+          ctx.lineWidth = 1.25;
+          ctx.strokeStyle = i === hovered ? 'rgb(56 189 248 / 0.9)' : 'rgb(245 158 11 / 0.55)';
+          ctx.strokeRect(x - 1.5, y - 1.5, WALL_CELL + 3, WALL_CELL + 3);
+        }
+      });
+      ctx.globalAlpha = 1;
+    },
+    [cols, order, sel, hovered],
+  );
+
+  // Redraws after the develop pass (selection, hover, resize) are instant.
+  // `draw` rides in a ref so the develop loop below reads the freshest closure
+  // without restarting when a hover mid-develop changes its identity.
+  const drawRef = useRef(draw);
+  useEffect(() => {
+    drawRef.current = draw;
+    if (revealed || reduced) draw(Number.POSITIVE_INFINITY);
+  }, [draw, revealed, reduced]);
+
+  // The develop pass itself — once, on first sight, like prints in a tray.
+  useEffect(() => {
+    if (!inView || cols === 0 || reduced || revealed) return;
+    let raf = 0;
+    const t0 = performance.now();
+    const total = order.length * 2.2 + 260;
+    const tick = (now: number) => {
+      const elapsed = now - t0;
+      drawRef.current(elapsed);
+      if (elapsed < total) raf = requestAnimationFrame(tick);
+      else setRevealed(true);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, cols, reduced, revealed, order.length]);
+
+  const cellAt = (ev: React.PointerEvent | React.MouseEvent): number | null => {
+    const canvas = canvasRef.current;
+    if (!canvas || cols === 0) return null;
+    const rect = canvas.getBoundingClientRect();
+    const x = ev.clientX - rect.left;
+    const y = ev.clientY - rect.top;
+    if (x < 0 || y < 0 || x % WALL_PITCH > WALL_CELL || y % WALL_PITCH > WALL_CELL) return null;
+    const cx = Math.floor(x / WALL_PITCH);
+    if (cx >= cols) return null;
+    const i = Math.floor(y / WALL_PITCH) * cols + cx;
+    return i >= 0 && i < order.length ? i : null;
+  };
+
+  const hover = (i: number | null) => {
+    setHovered(i);
+    onHoverEntry(i === null ? null : order[i].e);
+  };
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={28}
-      height={28}
-      className={styles.failureDigit}
-      role="img"
-      aria-label={`Test digit ${entry.index}: a ${entry.true} read as ${entry.pred}`}
-      title={`test #${entry.index} — read as ${entry.pred} (${(entry.predActivation * 100).toFixed(0)}%), true ${entry.true} (${(entry.trueActivation * 100).toFixed(0)}%)`}
-    />
+    <div
+      ref={(node) => {
+        wrapRef.current = node;
+        inViewRef.current = node;
+      }}
+      className={styles.wallCanvasWrap}
+    >
+      <canvas
+        ref={canvasRef}
+        className={styles.wallCanvas}
+        data-testid="failure-wall"
+        role="img"
+        aria-label={`All ${entries.length} misclassified test digits, drawn from the committed failure pack and grouped by true digit. The confusion grid lists the same record by cell.`}
+        onPointerMove={(ev) => hover(cellAt(ev))}
+        onPointerLeave={() => hover(null)}
+        onClick={(ev) => {
+          const i = cellAt(ev);
+          if (i !== null) onPick(order[i].e.true, order[i].e.pred);
+        }}
+      />
+    </div>
   );
 }
 
@@ -911,24 +1326,55 @@ export function FailureMap() {
   const [entries, setEntries] = useState<FailureEntry[] | null>(null);
   const [pack, setPack] = useState<Uint8Array | null>(null);
   const [sel, setSel] = useState<{ t: number; p: number } | null>(null);
+  const [hoveredEntry, setHoveredEntry] = useState<FailureEntry | null>(null);
   const [failed, setFailed] = useState(false);
-  const packRequested = useRef(false);
+
+  // Both halves of the committed failure record, fetched when the chapter
+  // scrolls in: the manifest feeds the confusion grid, the image pack feeds
+  // the wall. The pack used to wait for a cell click; now the wall IS the
+  // exhibit, so reaching this chapter is the request. A pack failure loses
+  // only the wall — the grid stands on the manifest alone.
+  // The guard here is UNMOUNT, and that distinction is the entire bug this
+  // replaced. `entries` was a dependency and ONE `alive` flag covered both
+  // fetches, so the manifest resolving re-ran the effect, fired its cleanup,
+  // and set alive = false while the pack — five times larger (234,416 B
+  // against 40,902) and therefore almost always the slower of the two — was
+  // still in flight. Its setPack was silenced forever and the wall never
+  // mounted. It failed SILENTLY: `failed` stays false and the grid still
+  // renders off the manifest, so there was no error state to notice; the
+  // exhibit was simply gone. Forcing json-first reproduced it 3/3, bin-first
+  // 0/3. A ref makes the request once; mountedRef only stops writes after
+  // the component is actually gone, and is re-armed in the effect body
+  // because StrictMode mounts, unmounts and remounts in development.
+  const requestedRef = useRef(false);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
-    if (!inView || entries !== null || failed) return;
-    let alive = true;
+    if (!inView || requestedRef.current || failed) return;
+    requestedRef.current = true;
     fetch('/failures/misclassified.json')
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))))
       .then((j) => {
-        if (alive) setEntries(j.entries as FailureEntry[]);
+        if (mountedRef.current) setEntries(j.entries as FailureEntry[]);
       })
       .catch(() => {
-        if (alive) setFailed(true);
+        if (mountedRef.current) setFailed(true);
       });
-    return () => {
-      alive = false;
-    };
-  }, [inView, entries, failed]);
+    fetch('/failures/misclassified.bin')
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`${r.status}`))))
+      .then((b) => {
+        if (mountedRef.current) setPack(new Uint8Array(b));
+      })
+      .catch(() => {
+        /* wall-only loss; the grid keeps working */
+      });
+  }, [inView, failed]);
 
   const counts = useMemo(() => {
     const c = Array.from({ length: 10 }, () => new Array<number>(10).fill(0));
@@ -951,113 +1397,131 @@ export function FailureMap() {
 
   const selectCell = (t: number, p: number) => {
     setSel((cur) => (cur && cur.t === t && cur.p === p ? null : { t, p }));
-    if (!packRequested.current) {
-      packRequested.current = true;
-      fetch('/failures/misclassified.bin')
-        .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`${r.status}`))))
-        .then((b) => setPack(new Uint8Array(b)))
-        .catch(() => setFailed(true));
-    }
   };
 
-  const selected = sel
-    ? (entries ?? [])
-        .map((e, packIndex) => ({ e, packIndex }))
-        .filter(({ e }) => e.true === sel.t && e.pred === sel.p)
-    : [];
-
   return (
-    <div className={styles.failureMap} ref={ref}>
-      <div className={styles.failureHead}>
-        <span className={styles.chartEyebrow}>the 299 · true → predicted</span>
-        <h4 className={styles.chartTitle}>Where the misses live</h4>
+    <>
+      <div className={styles.failureMap} ref={ref}>
+        <div className={styles.failureHead}>
+          <span className={styles.chartEyebrow}>the 299 · true → predicted</span>
+          <h4 className={styles.chartTitle}>Where the misses live</h4>
+        </div>
+
+        {failed ? (
+          <p className={styles.failureFallback}>
+            The failure pack could not be fetched. The full list — every miss with its true label,
+            prediction and both activations — is committed as{' '}
+            <code>benchmarks/mnist_misclassified.csv</code>.
+          </p>
+        ) : (
+          <>
+            <div
+              className={styles.failureGrid}
+              role="grid"
+              aria-label="Confusion map of the 299 misclassified test digits"
+            >
+              <span className={styles.failureCorner} aria-hidden>
+                t\p
+              </span>
+              {Array.from({ length: 10 }, (_, p) => (
+                <span key={`h${p}`} className={styles.failureAxis} aria-hidden>
+                  {p}
+                </span>
+              ))}
+              {counts.map((row, t) => (
+                <Fragment key={`r${t}`}>
+                  <span className={styles.failureAxis} aria-hidden>
+                    {t}
+                  </span>
+                  {row.map((n, p) =>
+                    t === p ? (
+                      <span key={`${t}-${p}`} className={styles.failureDiag} aria-hidden>
+                        ·
+                      </span>
+                    ) : n === 0 ? (
+                      <span key={`${t}-${p}`} className={styles.failureZero} aria-hidden />
+                    ) : (
+                      <button
+                        key={`${t}-${p}`}
+                        type="button"
+                        className={styles.failureCell}
+                        style={{ '--heat': (n / maxCount).toFixed(2) } as React.CSSProperties}
+                        data-active={(sel && sel.t === t && sel.p === p) || undefined}
+                        aria-label={`True ${t} predicted ${p}: ${n} ${n === 1 ? 'miss' : 'misses'}. Show the digits.`}
+                        onClick={() => selectCell(t, p)}
+                      >
+                        <span className="tabular">{n}</span>
+                      </button>
+                    ),
+                  )}
+                </Fragment>
+              ))}
+            </div>
+
+            <p className={styles.failureNote}>
+              {entries === null ? (
+                'reading the committed failure manifest…'
+              ) : sel ? (
+                <>
+                  <b className="tabular">
+                    {sel.t} → {sel.p}
+                  </b>{' '}
+                  · {counts[sel.t][sel.p]} of the {accuracyWaffle.errors} — isolated on the wall
+                  below
+                </>
+              ) : (
+                <>
+                  worst cell:{' '}
+                  <b className="tabular">
+                    {worst.t} → {worst.p}
+                  </b>{' '}
+                  ({worst.n} times). Select any lit cell to isolate those digits on the wall.
+                </>
+              )}
+            </p>
+          </>
+        )}
       </div>
 
-      {failed ? (
-        <p className={styles.failureFallback}>
-          The failure pack could not be fetched. The full list — every miss with its true label,
-          prediction and both activations — is committed as{' '}
-          <code>benchmarks/mnist_misclassified.csv</code>.
-        </p>
-      ) : (
-        <>
-          <div
-            className={styles.failureGrid}
-            role="grid"
-            aria-label="Confusion map of the 299 misclassified test digits"
-          >
-            <span className={styles.failureCorner} aria-hidden>
-              t\p
+      {entries !== null && pack !== null && (
+        <div className={styles.wallBlock}>
+          <div className={styles.wallHead}>
+            <span className={styles.chartEyebrow}>
+              the exhibit · all {entries.length} misses, actual ink
             </span>
-            {Array.from({ length: 10 }, (_, p) => (
-              <span key={`h${p}`} className={styles.failureAxis} aria-hidden>
-                {p}
-              </span>
-            ))}
-            {counts.map((row, t) => (
-              <Fragment key={`r${t}`}>
-                <span className={styles.failureAxis} aria-hidden>
-                  {t}
-                </span>
-                {row.map((n, p) =>
-                  t === p ? (
-                    <span key={`${t}-${p}`} className={styles.failureDiag} aria-hidden>
-                      ·
-                    </span>
-                  ) : n === 0 ? (
-                    <span key={`${t}-${p}`} className={styles.failureZero} aria-hidden />
-                  ) : (
-                    <button
-                      key={`${t}-${p}`}
-                      type="button"
-                      className={styles.failureCell}
-                      style={{ '--heat': (n / maxCount).toFixed(2) } as React.CSSProperties}
-                      data-active={(sel && sel.t === t && sel.p === p) || undefined}
-                      aria-label={`True ${t} predicted ${p}: ${n} ${n === 1 ? 'miss' : 'misses'}. Show the digits.`}
-                      onClick={() => selectCell(t, p)}
-                    >
-                      <span className="tabular">{n}</span>
-                    </button>
-                  ),
-                )}
-              </Fragment>
-            ))}
+            <h4 className={styles.chartTitle}>The mistakes, in the machine&apos;s own material</h4>
           </div>
-
-          <p className={styles.failureNote}>
-            {entries === null ? (
-              'reading the committed failure manifest…'
+          <FailureWall
+            entries={entries}
+            pack={pack}
+            sel={sel}
+            onHoverEntry={setHoveredEntry}
+            onPick={selectCell}
+          />
+          <p className={styles.wallNote} aria-live="polite">
+            {hoveredEntry ? (
+              <>
+                test <b className="tabular">#{hoveredEntry.index}</b> — a{' '}
+                <b className="tabular">{hoveredEntry.true}</b> read as{' '}
+                <b className="tabular">{hoveredEntry.pred}</b> ·{' '}
+                <span className="tabular">
+                  {hoveredEntry.pred} at {(hoveredEntry.predActivation * 100).toFixed(0)}%,{' '}
+                  {hoveredEntry.true} at {(hoveredEntry.trueActivation * 100).toFixed(0)}%
+                </span>
+              </>
             ) : sel ? (
               <>
                 <b className="tabular">
                   {sel.t} → {sel.p}
                 </b>{' '}
-                · {counts[sel.t][sel.p]} of the 299 — hover a digit for its activations
+                isolated · click the lit cell again to release
               </>
             ) : (
-              <>
-                worst cell:{' '}
-                <b className="tabular">
-                  {worst.t} → {worst.p}
-                </b>{' '}
-                ({worst.n} times). Select any lit cell to see the actual digits.
-              </>
+              <>grouped by true digit, 0 through 9 — hover a specimen for its verdict</>
             )}
           </p>
-
-          {sel && (
-            <div className={styles.failureStripRow} aria-live="polite">
-              {pack === null ? (
-                <span className={styles.failureFetching}>fetching the failure pack (234 kB)…</span>
-              ) : (
-                selected.map(({ e, packIndex }) => (
-                  <FailureDigit key={e.index} pack={pack} packIndex={packIndex} entry={e} />
-                ))
-              )}
-            </div>
-          )}
-        </>
+        </div>
       )}
-    </div>
+    </>
   );
 }

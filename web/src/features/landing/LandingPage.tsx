@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { ArrowDown, ArrowUp, ArrowUpRight, BookOpen, Command, Menu, X } from 'lucide-react';
 import { m, useReducedMotion } from 'motion/react';
 import {
+  accuracyWaffle,
   benchMethodology,
   classifyThroughput,
   crossoverLosses,
@@ -11,6 +12,7 @@ import {
   isaLadder,
   kernelBenchmarks,
   kernelSource,
+  networkFacts,
   referenceRecord,
   referenceRun,
   reproduceBenchmarkCommand,
@@ -27,6 +29,7 @@ import { Workbench } from './Workbench';
 import { LaneField } from './LaneField';
 import { FlowMark } from './FlowMark';
 import { GlyphMark } from './GlyphMark';
+import { InkImprint } from './InkImprint';
 import { InputRaster } from './InputRaster';
 import {
   AccuracyWaffle,
@@ -34,6 +37,8 @@ import {
   FailureMap,
   GflopsSlope,
   LaneScale,
+  ReadRace,
+  RecordLedger,
   SimdCensusPanel,
   ThroughputGauge,
 } from './PerfVizLazy';
@@ -391,7 +396,9 @@ function Hero({ controller }: { controller: MnistDemoController }) {
           </div>
           <div>
             <dt>test accuracy</dt>
-            <dd className="tabular">97.01% / 10,000</dd>
+            <dd className="tabular">
+              {accuracyWaffle.pct} / {accuracyWaffle.total.toLocaleString('en-US')}
+            </dd>
           </div>
         </m.dl>
       </Tilt>
@@ -509,15 +516,15 @@ function ProblemAct() {
           <ul className={styles.starterFacts} aria-label="The starter network">
             <li>
               <span>the starter</span>
-              <b className="tabular">784 → 100 → 10</b>
+              <b className="tabular">{networkFacts.topology}</b>
             </li>
             <li>
               <span>parameters</span>
-              <b className="tabular">79,510</b>
+              <b className="tabular">{networkFacts.params.toLocaleString('en-US')}</b>
             </li>
             <li>
               <span>weights (float32)</span>
-              <b className="tabular">318 kB</b>
+              <b className="tabular">{networkFacts.weightsKb} kB</b>
             </li>
             <li>
               <span>who wrote it</span>
@@ -854,14 +861,15 @@ function ProofAct({ controller }: { controller: MnistDemoController }) {
           >
             <div className={styles.liveInstrument}>
               <ThroughputGauge controller={controller} />
+              <ReadRace controller={controller} />
               <div className={styles.liveInstrumentNote}>
                 <span className={styles.miniLabel}>the one live number</span>
                 <p>
                   Everything else here is the <b>committed</b> {referenceRun.machine} run, which you
-                  can re-run. This dial is the exception — it is <em>your</em> machine, timing the
+                  can re-run. This pair is the exception — it is <em>your</em> machine, timing the
                   wasm simd128 kernel against scalar as you draw in the bench at the top. The
-                  committed bars below measure threading and native codegen; the dial measures SIMD
-                  itself.
+                  committed bars below measure threading and native codegen; these instruments
+                  measure SIMD itself.
                 </p>
               </div>
             </div>
@@ -934,6 +942,7 @@ function ProofAct({ controller }: { controller: MnistDemoController }) {
             title="The record, in full"
             lede="The whole tally, the kinder machine it replaced, and the row that embarrasses the headline."
           >
+            <RecordLedger />
             <div className={styles.benchHonesty}>
               <p>
                 <b>The tally:</b> across the twelve sized matrix cases in this run, threading wins{' '}
@@ -1003,7 +1012,7 @@ function ProofAct({ controller }: { controller: MnistDemoController }) {
             id="proof-accuracy"
             n="4.7"
             title="Accuracy, errors included"
-            lede="9,701 of 10,000 — and every one of the 299 misses, mapped and inspectable."
+            lede={`${accuracyWaffle.correct.toLocaleString('en-US')} of ${accuracyWaffle.total.toLocaleString('en-US')} — and every one of the ${accuracyWaffle.errors} misses, mapped and inspectable.`}
           >
             <div className={styles.accuracyGrid}>
               <AccuracyWaffle />
@@ -1082,9 +1091,9 @@ function TryItBand() {
           Every claim on this page is committed. <em>Take the artifacts, not our word.</em>
         </h2>
         <p className={styles.tryLede}>
-          Run records, the wasm census, the failure pack with all 299 misses — in the repository,
-          gated by CI. The System Card tells the same story in full: every kernel, every benchmark
-          cell, the crossover math, the reconciled test counts.
+          Run records, the wasm census, the failure pack with all {accuracyWaffle.errors} misses —
+          in the repository, gated by CI. The System Card tells the same story in full: every
+          kernel, every benchmark cell, the crossover math, the reconciled test counts.
         </p>
         <div className={styles.tryCtas}>
           <MagneticButton
@@ -1149,6 +1158,7 @@ export function LandingPage({ controller }: { controller: MnistDemoController })
   return (
     <main className={styles.page}>
       <LaneField pulse={controller.timing?.n ?? 0} />
+      <InkImprint pixels={controller.inputPixels} />
       <div className={styles.pageContent}>
         <Nav active={active} />
         <ActRail active={active} />

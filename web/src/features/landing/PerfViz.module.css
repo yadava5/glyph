@@ -902,6 +902,203 @@
   font-style: italic;
 }
 
+/* ─────────── the read race ─────────── */
+
+.raceCard {
+  position: relative;
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  padding: 1.4rem 1.5rem;
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 120% at 100% 0%, rgb(56 189 248 / 0.04), transparent 55%), var(--surface);
+}
+
+.raceLanes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.racePane {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: center;
+}
+
+.racePane span {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.racePane canvas {
+  width: min(100%, 132px);
+  aspect-ratio: 1;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.35);
+  image-rendering: pixelated;
+}
+
+.racePane[data-tone='scalar'] canvas {
+  border-top-color: rgb(148 163 184 / 0.5);
+}
+
+.racePane[data-tone='simd'] canvas {
+  border-top-color: rgb(56 189 248 / 0.6);
+}
+
+.racePane[data-empty] canvas {
+  border-style: dashed;
+}
+
+.racePane b {
+  color: var(--text-strong);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.racePane[data-tone='simd'] b {
+  color: var(--sky-soft);
+}
+
+.raceFoot {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.raceFoot b {
+  color: var(--text-soft);
+}
+
+.raceReplay {
+  margin-left: 0.3rem;
+  padding: 0.1rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition:
+    color var(--dur-fast) var(--ease-out-quart),
+    border-color var(--dur-fast) var(--ease-out-quart);
+}
+
+.raceReplay:hover,
+.raceReplay:focus-visible {
+  border-color: var(--line-strong);
+  color: var(--text-strong);
+}
+
+/* ─────────── the record ledger ─────────── */
+
+.ledgerCard {
+  display: grid;
+  gap: 1rem;
+  padding: 1.4rem 1.5rem;
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.ledgerRows {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ledgerRows li {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr) 6.5rem;
+  gap: 0.9rem;
+  align-items: center;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.45s var(--ease-out-quart) var(--d, 0ms),
+    transform 0.45s var(--ease-out-quart) var(--d, 0ms);
+}
+
+.ledgerCard[data-lit] .ledgerRows li {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ledgerRows li {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+.ledgerOp {
+  color: var(--text-soft);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ledgerTrack {
+  position: relative;
+  height: 12px;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.03);
+}
+
+/* the break-even axis */
+.ledgerTrack::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: 50%;
+  width: 1px;
+  background: rgb(255 255 255 / 0.22);
+}
+
+.ledgerBar {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 3px;
+  background: var(--green);
+  opacity: 0.75;
+}
+
+.ledgerRows li[data-loss] .ledgerBar {
+  background: var(--amber);
+}
+
+.ledgerRows li b {
+  color: var(--text-strong);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.ledgerRows li[data-loss] b {
+  color: var(--amber-soft);
+}
+
+.ledgerFlip {
+  grid-column: 2 / -1;
+  margin-top: -0.15rem;
+  color: var(--amber-soft);
+  font-family: var(--font-instrument-serif);
+  font-style: italic;
+  font-size: 0.88rem;
+}
+
 /* ─────────── the failure map ─────────── */
 
 .failureMap {
@@ -998,35 +1195,49 @@
   font-weight: 600;
 }
 
-.failureStripRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  align-items: center;
-  min-height: 3.2rem;
-  padding: 0.7rem;
+/* ─────────── the wall — all 299 at once ─────────── */
+
+/* Spans both accuracyGrid columns: the waffle and the grid are instruments,
+   the wall is the exhibit. */
+.wallBlock {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.5rem;
   border: 1px solid var(--line-soft);
-  border-radius: 10px;
-  background: #0c0d0e;
+  border-top: 2px solid var(--amber);
+  border-radius: 14px;
+  background:
+    radial-gradient(90% 70% at 50% 0%, rgb(245 158 11 / 0.03), transparent 60%), var(--surface);
 }
 
-.failureDigit {
-  width: 46px;
-  height: 46px;
-  border-radius: 6px;
-  background: #000;
-  image-rendering: pixelated;
-  cursor: help;
-  transition: transform var(--dur-fast) var(--ease-out-quart);
+.wallHead {
+  display: grid;
+  gap: 0.15rem;
 }
 
-.failureDigit:hover {
-  transform: scale(1.35);
+.wallCanvasWrap {
+  min-width: 0;
 }
 
-.failureFetching {
-  color: var(--text-dim);
-  font-size: 0.78rem;
+.wallCanvas {
+  display: block;
+  margin-inline: auto;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.wallNote {
+  min-height: 1.3rem;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.wallNote b {
+  color: var(--text-soft);
+  font-weight: 600;
 }
 
 .failureFallback {

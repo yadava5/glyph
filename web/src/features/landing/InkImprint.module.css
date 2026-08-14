@@ -1,0 +1,46 @@
+/* The visitor's last raster as a fixed watermark. Right-of-center so the
+   left-weighted hero column and act prose never sit on top of it at 1024;
+   opacity is capped far below anything that could contest text. */
+
+.imprint {
+  position: fixed;
+  top: 22vh;
+  right: 5vw;
+  z-index: 0;
+  width: min(44vh, 32vw);
+  aspect-ratio: 1;
+  pointer-events: none;
+  opacity: 0.05;
+  transition: opacity 1.4s var(--ease-out-quart);
+}
+
+.imprint[data-empty] {
+  opacity: 0;
+}
+
+.imprint canvas {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  animation: imprintDevelop 1.6s var(--ease-out-quart);
+}
+
+@keyframes imprintDevelop {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .imprint canvas {
+    animation: none;
+  }
+}
+
+/* On stacked (narrow) layouts the content column is full-bleed — there is no
+   quiet margin for a watermark to live in. */
+@media (max-width: 1000px) {
+  .imprint {
+    display: none;
+  }
+}

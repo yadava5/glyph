@@ -73,7 +73,15 @@ for (const rule of forbidden) {
 // imported there would have landed in a chunk no rule looked at and the gate
 // would have reported success. Budget the whole of the shipped JavaScript, and
 // print every chunk so a jump is attributable rather than just over.
-const TOTAL_JS_RAW_KB = 500;
+// Raw raised from 500 to 512 KiB on 2026-08-13: the proof act gained three
+// hand-written canvas instruments (the read race, the record ledger, the
+// 299-specimen failure wall), all in the lazy PerfViz chunk plus ~2 KiB of
+// entry. The gzip budget — the binding constraint, what a visitor downloads —
+// is deliberately unchanged at 165, and the raise left real headroom under it
+// (161.4 KiB gzip measured against this ceiling on the day it moved). Read the
+// live figure off this script's own output rather than trusting that number:
+// it is prose, and nothing gates it.
+const TOTAL_JS_RAW_KB = 512;
 const TOTAL_JS_GZIP_KB = 165;
 
 const jsChunks = assets

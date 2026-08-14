@@ -3,6 +3,7 @@ import { m } from 'motion/react';
 import { DrawingCanvas } from '../../components/DrawingCanvas';
 import { SoftmaxBars } from '../../components/SoftmaxBars';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { networkFacts } from '../performance/benchmarkData';
 import type { MnistDemoController } from '../mnist/useMnistDemoController';
 import styles from './Workbench.module.css';
 
@@ -235,9 +236,9 @@ export function Workbench({ controller }: WorkbenchProps) {
         <ProofLine controller={controller} />
 
         <footer className={styles.statusline}>
-          <span className="tabular">784 → 100 → 10</span>
-          <span className="tabular">79,510 params</span>
-          <span className="tabular">318 kB weights</span>
+          <span className="tabular">{networkFacts.topology}</span>
+          <span className="tabular">{networkFacts.params.toLocaleString('en-US')} params</span>
+          <span className="tabular">{networkFacts.weightsKb} kB weights</span>
           <span>f64x2 dual-accumulator</span>
         </footer>
       </div>

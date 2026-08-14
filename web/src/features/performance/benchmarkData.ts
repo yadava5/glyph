@@ -53,6 +53,25 @@ export const architectureMetrics = {
   outputs: '10 outputs',
 } as const;
 
+/*
+ * The shipped network, stated once. The topology is the single typed fact;
+ * the parameter count and weight size are arithmetic on it (dense layers:
+ * weights + biases; float32 = 4 bytes per parameter, kB decimal to match
+ * docs/WASM.md) — so the three figures the page repeats cannot drift apart.
+ * Until 2026-08-13 all three were typed separately in the workbench footer
+ * and again in act 01.
+ */
+const TOPOLOGY = [784, 100, 10] as const;
+
+export const networkFacts = (() => {
+  const params = TOPOLOGY.slice(1).reduce((sum, n, i) => sum + n * TOPOLOGY[i] + n, 0);
+  return {
+    topology: TOPOLOGY.join(' → '),
+    params,
+    weightsKb: Math.round((params * 4) / 1000),
+  } as const;
+})();
+
 /** Every sized matrix case in the reference run, in family/size order. */
 export const referenceRows = caseRows(reference);
 
@@ -68,6 +87,33 @@ export const signFlip = {
   caseKey: 'benchAxpy/1024',
   december: formatSpeedup(speedup(december.cases['benchAxpy/1024'])),
   reference: formatSlowdown(speedup(reference.cases['benchAxpy/1024'])),
+} as const;
+
+/*
+ * THE RECORD, AS A LEDGER — every sized case in the reference run, win or
+ * lose, for proof 4.5's visual anchor. The flipped row is identified by
+ * parsing signFlip's caseKey rather than naming a family here by hand, and
+ * its note quotes the December figure from the derived record. Bars are
+ * drawn from `ratio` (single ÷ omp) by the component.
+ */
+const flippedCase = parseCase(signFlip.caseKey)!;
+
+export const recordLedger = {
+  rows: referenceRows.map((row) => ({
+    label: row.label,
+    family: row.family,
+    ratio: row.speedup,
+    wins: row.wins,
+    display: row.wins ? formatSpeedup(row.speedup) : formatSlowdown(row.speedup),
+    single: formatNs(row.baselineNs),
+    omp: formatNs(row.ompNs),
+    flipNote:
+      row.family === flippedCase.family && row.size === flippedCase.size
+        ? `a ${signFlip.december} win on the December Air — same code, different machine`
+        : null,
+  })),
+  wins: referenceRecord.wins,
+  losses: referenceRecord.losses,
 } as const;
 
 /*

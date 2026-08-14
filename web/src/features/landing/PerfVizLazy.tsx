@@ -18,6 +18,8 @@ const AccuracyWaffleLazy = lazy(() => mod().then((m) => ({ default: m.AccuracyWa
 const LaneScaleLazy = lazy(() => mod().then((m) => ({ default: m.LaneScale })));
 const SimdCensusPanelLazy = lazy(() => mod().then((m) => ({ default: m.SimdCensusPanel })));
 const FailureMapLazy = lazy(() => mod().then((m) => ({ default: m.FailureMap })));
+const ReadRaceLazy = lazy(() => mod().then((m) => ({ default: m.ReadRace })));
+const RecordLedgerLazy = lazy(() => mod().then((m) => ({ default: m.RecordLedger })));
 
 function Boundary({ children, minH }: { children: ReactNode; minH: number }) {
   return (
@@ -68,5 +70,17 @@ export const SimdCensusPanel = () => (
 export const FailureMap = () => (
   <Boundary minH={420}>
     <FailureMapLazy />
+  </Boundary>
+);
+
+export const ReadRace = ({ controller }: { controller: MnistDemoController }) => (
+  <Boundary minH={320}>
+    <ReadRaceLazy controller={controller} />
+  </Boundary>
+);
+
+export const RecordLedger = () => (
+  <Boundary minH={420}>
+    <RecordLedgerLazy />
   </Boundary>
 );

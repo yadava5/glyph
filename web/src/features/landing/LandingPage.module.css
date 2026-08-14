@@ -332,8 +332,19 @@
   color: var(--text-strong);
 }
 
+/* THE DUET: every two-line title pairs the machine's voice with the hand's.
+   The bright line states the fact in Geist; the muted answer is set in the
+   serif italic — the same "human voice" the ledes already whisper in. This is
+   the page's hand/machine thesis carried by the type itself, not a flourish:
+   glyph is a project about handwriting. 1.04em compensates the serif's
+   smaller x-height so the two lines read at one optical size. */
 .heroTitleMuted {
   color: var(--text-muted);
+  font-family: var(--font-instrument-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.04em;
+  letter-spacing: -0.012em;
 }
 
 .heroTitleMuted em {
@@ -516,8 +527,15 @@
   color: var(--text-strong);
 }
 
+/* The muted half answers in the hand's voice — see the duet note on
+   .heroTitleMuted. */
 .actTitle span:last-child {
   color: var(--text-muted);
+  font-family: var(--font-instrument-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.04em;
+  letter-spacing: -0.012em;
 }
 
 .actLede {
@@ -2075,16 +2093,18 @@
   color: var(--text-strong);
 }
 
-/* proof — live instrument row */
+/* proof — live instrument row: dial and read race side by side, the shared
+   caption beneath both (it explains the pair, so it spans the pair). */
 .liveInstrument {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1rem;
-  align-items: center;
+  align-items: stretch;
 }
 
 .liveInstrumentNote {
   display: grid;
+  grid-column: 1 / -1;
   gap: 0.6rem;
   align-content: center;
 }
