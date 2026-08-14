@@ -103,12 +103,41 @@ reads it, on your machine, with no server.
 <img src="web/public/hero-poster.svg" width="760"
      alt="Glyph animated web demo preview">
 
-Draw a digit, load the sample through the command palette (`Cmd+K` / `Ctrl+K`),
-and inspect real per-class confidence, activation heatmaps and input saliency —
-the panels read `hidden_activations` and `input_grad` off the classifier
-response, they are not decorative. Drawing uses perfect-freehand over an SVG
-canvas with MNIST-style preprocessing (bounding-box crop, 20×20 fit,
-center-of-mass centering) before inference.
+The bench is the fold. A sample digit classifies itself on first sight, and
+every stroke after that races the hand-written simd128 kernel against the same
+math with vector lanes disabled — both timed inside C++, on your machine. The
+per-class confidence, activation heatmaps and input saliency read
+`hidden_activations` and `input_grad` off the classifier response; they are not
+decorative. Drawing uses perfect-freehand over an SVG canvas with MNIST-style
+preprocessing (bounding-box crop, 20×20 fit, center-of-mass centering) before
+inference. A command palette (`Cmd+K` / `Ctrl+K`) reaches the same actions.
+
+Under it sits a proof chapter that tries to make the claims falsifiable rather
+than impressive, indexed 4.1 through 4.8:
+
+| §   | What it shows                                                                     |
+| --- | --------------------------------------------------------------------------------- |
+| 4.1 | The shipped `.wasm`, disassembled — all **154** of its 128-bit vector instructions |
+| 4.2 | The live race, plus your own 28×28 raster read twice: lanes off, then lanes on     |
+| 4.3 | The committed benchmark run the rest of the page quotes                           |
+| 4.4 | Where threading starts to pay, and every case where it loses                       |
+| 4.5 | The full win/loss ledger, including the row that embarrasses the headline          |
+| 4.6 | The pipeline on your ink: input raster, all 100 hidden activations, ten outputs    |
+| 4.7 | Accuracy — and all **299** digits the model gets wrong, drawn as ink               |
+| 4.8 | How to reproduce all of it                                                        |
+
+Two of those are worth calling out because they cut against the pitch rather
+than for it. **4.5** is the only chapter arguing the opposite case: it tallies
+the wins against the losses, and names the operation that was a win on the
+older laptop and is a loss on the reference machine. **4.7** draws all **299**
+misclassified test digits as real ink — grouped by true label, each hoverable
+for its verdict — because a page claiming an accuracy figure should be willing
+to show the errors behind it.
+
+The timing caption reports what was actually measured: the harness runs each
+variant repeatedly inside the module, so the figures are means over many
+forward passes, and it says so rather than presenting a single sample as a
+median.
 
 The app resolves a classifier in three steps, and labels which one it got:
 

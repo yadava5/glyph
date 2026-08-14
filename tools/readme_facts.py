@@ -910,18 +910,55 @@ def census_field(name: str) -> int:
             f"schema changed and docs/WASM.md still quotes it.")
 
 
-for _fid, _key, _pat in [
+# README.md quotes the instruction count too, in its description of proof 4.1.
+# A figure that appears in two files is a figure that can disagree with itself,
+# so both sites are declared against the same source.
+for _fid, _key, _pat, _readme_pat in [
     ("wasmCensusFunctions", "totalFunctions",
-     r"\| Functions in the module \| \*\*(\d+)\*\* \|"),
+     r"\| Functions in the module \| \*\*(\d+)\*\* \|", None),
     ("wasmCensusVectorFunctions", "functionsWithVectorInstructions",
-     r"\| Functions containing any 128-bit vector instruction \| \*\*(\d+)\*\* \|"),
+     r"\| Functions containing any 128-bit vector instruction \| \*\*(\d+)\*\* \|", None),
     ("wasmCensusVectorInstructions", "totalVectorInstructions",
-     r"\| Vector instructions in total \| \*\*(\d+)\*\* \|"),
+     r"\| Vector instructions in total \| \*\*(\d+)\*\* \|",
+     r"disassembled — all \*\*(\d+)\*\* of its 128-bit vector instructions"),
     ("wasmCensusSignatureHits", "signatureHits",
-     r"sequences \| \*\*(\d+)\*\* \|"),
+     r"sequences \| \*\*(\d+)\*\* \|", None),
 ]:
+    _s = [site(_pat, file=WASM_MD)]
+    if _readme_pat:
+        _s.append(site(_readme_pat))
     add(_fid, f"`{_key}` in docs/benchmarks/wasm-simd-census.json", "static",
-        [site(_pat, file=WASM_MD)], (lambda k=_key: census_field(k)))
+        _s, (lambda k=_key: census_field(k)))
+
+
+# -- the misclassified-digit count the landing page draws -----------------
+#
+# README describes proof 4.7 as drawing "all 299 digits the model gets wrong".
+# That count is the length of the committed failure manifest, which
+# tools/export_failures.py --check ties to the pack's bytes, the pack's sha256,
+# and the source CSV's sha256 — so this closes the same loop the census does:
+# evaluation -> pack -> prose.
+
+
+def misclassified_count() -> int:
+    path = os.path.join(REPO, "web/public/failures/misclassified.json")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return len(json.load(fh)["entries"])
+    except FileNotFoundError:
+        die("web/public/failures/misclassified.json is missing. Run "
+            "`python3 tools/export_failures.py --write` (needs data/).")
+    except KeyError:
+        die("web/public/failures/misclassified.json has no `entries` — the "
+            "manifest schema changed and README.md still quotes its length.")
+
+
+add("misclassifiedDigits",
+    "entries in web/public/failures/misclassified.json, drawn by proof 4.7",
+    "static",
+    [site(r"Accuracy — and all \*\*(\d+)\*\* digits the model gets wrong"),
+     site(r"\*\*4\.7\*\* draws all \*\*(\d+)\*\*")],
+    misclassified_count)
 
 
 # -- the shipped WASM artifacts, measured off the committed files ---------
