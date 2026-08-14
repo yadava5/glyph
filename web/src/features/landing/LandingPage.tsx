@@ -29,7 +29,6 @@ import { Workbench } from './Workbench';
 import { LaneField } from './LaneField';
 import { FlowMark } from './FlowMark';
 import { GlyphMark } from './GlyphMark';
-import { InkImprint } from './InkImprint';
 import { InputRaster } from './InputRaster';
 import {
   AccuracyWaffle,
@@ -1158,7 +1157,6 @@ export function LandingPage({ controller }: { controller: MnistDemoController })
   return (
     <main className={styles.page}>
       <LaneField pulse={controller.timing?.n ?? 0} />
-      <InkImprint pixels={controller.inputPixels} />
       <div className={styles.pageContent}>
         <Nav active={active} />
         <ActRail active={active} />
