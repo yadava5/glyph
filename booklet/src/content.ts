@@ -81,7 +81,7 @@ export const TOC = {
     WHY: "the compiler leaves the speed on the floor",
     HOW: "one dot product, four instruction sets",
     INSIDE: "the wasm128 kernel · the live bench · the net",
-    PROOF: "scoped speedups · 97.01% · 37 + 57 tests",
+    PROOF: "scoped speedups · 97.01% · 37 + 16 tests",
     BUILD: "C++ → Emscripten → React · the journey",
   } as Record<string, string>,
   chapterGlyphs: {
@@ -403,7 +403,7 @@ export const INSIDE = {
 // ---------------------------------------------------------------------------
 
 export const PROOF = {
-  divider: { subtitle: "scoped speedups · 97.01% · 37 + 57 tests" },
+  divider: { subtitle: "scoped speedups · 97.01% · 37 + 16 tests" },
 
   speedups: {
     eyebrow: "§04 · THE RECEIPTS",
@@ -485,7 +485,7 @@ export const PROOF = {
       { k: "test_server_api", v: "3 cases · the inference endpoint" },
     ],
     honest:
-      "The 57 is reconciled: 15 e2e tests — 8 in demo.spec.ts, 7 in smoke.spec.ts — across 4 Playwright projects is 60, minus the 3 runs of the reduced-motion visual test that skip outside their own project. 57 pass, 0 fail. An earlier printing said 29, which counted demo.spec.ts alone and silently dropped the smoke suite.",
+      "The count is reconciled: 16 e2e tests — 9 in demo.spec.ts, 7 in smoke.spec.ts — across 5 Playwright projects is 80 runs, minus the 4 runs of the reduced-motion-only test that skip outside their own project. 76 pass, 0 fail. Two earlier printings were wrong here: one said 29, counting demo.spec.ts alone and silently dropping the smoke suite; the next said 57, which was true of a 15-test suite on 4 viewports and outlived both. Every number in this paragraph is now read out of the suite at build time.",
     handoffQuote:
       "A kernel that changes the speed and not the answer is the only kind worth shipping.",
     source: "source · tests/*.cpp (37 TEST_CASE) · web/playwright.config.ts (4 projects) · web/tests/e2e/{demo,smoke}.spec.ts",
@@ -531,7 +531,7 @@ export const BUILD = {
       { area: "THREADS", tech: "OpenMP · size-gated", note: "second axis on large matrix ops" },
       { area: "WASM", tech: "Emscripten 3.1.64 · -msimd128", note: "same C++ → WebAssembly SIMD" },
       { area: "WEB", tech: "React 19 · rolldown-vite 7 · Vercel", note: "the live in-browser benchmark" },
-      { area: "TESTS", tech: "Catch2 · RapidCheck · Playwright", note: "37 C++ · 57 e2e · Google Benchmark" },
+      { area: "TESTS", tech: "Catch2 · RapidCheck · Playwright", note: "37 C++ · 16 e2e × 5 viewports" },
     ],
     source: "source · CMakeLists.txt:1,48 · docs/WASM.md:30 · web/package.json:31,56",
   },

@@ -285,6 +285,10 @@ def playwright_tests() -> int:
     return total
 
 
+def playwright_tests_in(spec: str) -> int:
+    return count_in(f"web/tests/e2e/{spec}", r"^\s*test\(")
+
+
 def playwright_specs() -> int:
     return len([n for n in os.listdir(os.path.join(REPO, "web/tests/e2e"))
                 if n.endswith(".spec.ts")])
@@ -737,8 +741,23 @@ add("playwrightTests",
      site(r"# (\d+) Playwright tests × \d+ viewport projects"),
      site(r"C\+\+ tests and (\d+) in the browser", file=BOOKLET),
      site(r"adds (\d+) Playwright end-to-end tests", file=BOOKLET),
-     site(r'note: "(\d+) tests × \d+ viewport projects"', file=BOOKLET)],
+     site(r'note: "(\d+) tests × \d+ viewport projects"', file=BOOKLET),
+     site(r"97\.01% · 37 \+ (\d+) tests\"", file=BOOKLET),
+     site(r"37 C\+\+ · (\d+) e2e × \d+ viewports", file=BOOKLET),
+     site(r"reconciled: (\d+) e2e tests", file=BOOKLET)],
     playwright_tests)
+
+add("playwrightTestsDemo",
+    "test( declarations in web/tests/e2e/demo.spec.ts",
+    "static",
+    [site(r"(\d+) in demo\.spec\.ts", file=BOOKLET)],
+    lambda: playwright_tests_in("demo.spec.ts"))
+
+add("playwrightTestsSmoke",
+    "test( declarations in web/tests/e2e/smoke.spec.ts",
+    "static",
+    [site(r"(\d+) in smoke\.spec\.ts", file=BOOKLET)],
+    lambda: playwright_tests_in("smoke.spec.ts"))
 
 add("playwrightSpecFiles",
     "*.spec.ts files under web/tests/e2e/",
@@ -752,7 +771,9 @@ add("playwrightProjects",
     [site(r"run against (\d+) viewport projects"),
      site(r"× (\d+) viewport projects"),
      site(r"each run against (\d+) viewport projects", file=BOOKLET),
-     site(r"tests × (\d+) viewport projects", file=BOOKLET)],
+     site(r"tests × (\d+) viewport projects", file=BOOKLET),
+     site(r"across (\d+) Playwright projects", file=BOOKLET),
+     site(r"e2e × (\d+) viewports", file=BOOKLET)],
     playwright_projects)
 
 add("fuzzSeconds",
@@ -1195,6 +1216,12 @@ add("scorecardVersion",
 # arithmetically impossible.
 
 INVARIANTS = [
+    ("the per-spec Playwright counts sum to the stated total",
+     lambda f: f["playwrightTestsDemo"] + f["playwrightTestsSmoke"] == f["playwrightTests"],
+     lambda f: (f"{f['playwrightTestsDemo']} + {f['playwrightTestsSmoke']} = "
+                f"{f['playwrightTestsDemo'] + f['playwrightTestsSmoke']}, "
+                f"not {f['playwrightTests']}")),
+
     ("the per-file case counts sum to the stated total",
      lambda f: (f["testCasesMatrix"] + f["testCasesNeuralNet"]
                 + f["testCasesProperties"] + f["testCasesServerApi"]
