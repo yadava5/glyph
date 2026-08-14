@@ -470,12 +470,12 @@ export const PROOF = {
 
   tests: {
     eyebrow: "§04 · THE GUARANTEE",
-    headline: "37 C++ tests and 57 in the browser.",
+    headline: "37 C++ tests and 16 in the browser.",
     body:
-      "Correctness is enforced, not asserted. The C++ core ships 37 Catch2 test cases — matrix algebra, the network, property-based checks with RapidCheck, and the server API. A clean `ctest` run reports `100% tests passed, 0 tests failed out of 37`. The web app adds 57 passing Playwright end-to-end tests that drive the real demo in a headless browser.",
+      "Correctness is enforced, not asserted. The C++ core ships 37 Catch2 test cases — matrix algebra, the network, property-based checks with RapidCheck, and the server API. A clean `ctest` run reports `100% tests passed, 0 tests failed out of 37`. The web app adds 16 Playwright end-to-end tests, each run against 5 viewport projects, that drive the real demo in a headless browser.",
     stats: [
       { value: "37", label: "C++ tests · Catch2 + RapidCheck", note: "tests/*.cpp · ctest: 37/37" },
-      { value: "57", label: "e2e · Playwright · passing", note: "15 tests × 4 projects − 3 skips" },
+      { value: "16", label: "e2e · Playwright · every viewport", note: "16 tests × 5 viewport projects" },
       { value: "4", label: "ISAs · one shared kernel shape", note: "NeuralNet.cpp" },
     ],
     breakdown: [

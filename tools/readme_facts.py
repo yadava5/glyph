@@ -109,6 +109,10 @@ README = "README.md"
 BENCHMARKS_MD = "BENCHMARKS.md"
 ENVIRONMENT_MD = "docs/benchmarks/ENVIRONMENT.md"
 WASM_MD = "docs/WASM.md"
+# The System Card is generated from this module and then PRINTED, so a number
+# that drifts here is a number that drifts onto paper. It carried "57 in the
+# browser" and "15 tests x 4 projects - 3 skips" long after both were false.
+BOOKLET = "booklet/src/content.ts"
 
 RUNS = "docs/benchmarks/runs"
 
@@ -730,7 +734,10 @@ add("playwrightTests",
     "test( declarations in web/tests/e2e/*.spec.ts",
     "static",
     [site(r"\| (\d+) tests across \d+ spec files"),
-     site(r"# (\d+) Playwright tests × \d+ viewport projects")],
+     site(r"# (\d+) Playwright tests × \d+ viewport projects"),
+     site(r"C\+\+ tests and (\d+) in the browser", file=BOOKLET),
+     site(r"adds (\d+) Playwright end-to-end tests", file=BOOKLET),
+     site(r'note: "(\d+) tests × \d+ viewport projects"', file=BOOKLET)],
     playwright_tests)
 
 add("playwrightSpecFiles",
@@ -743,7 +750,9 @@ add("playwrightProjects",
     "entries in the projects array of web/playwright.config.ts",
     "static",
     [site(r"run against (\d+) viewport projects"),
-     site(r"× (\d+) viewport projects")],
+     site(r"× (\d+) viewport projects"),
+     site(r"each run against (\d+) viewport projects", file=BOOKLET),
+     site(r"tests × (\d+) viewport projects", file=BOOKLET)],
     playwright_projects)
 
 add("fuzzSeconds",
