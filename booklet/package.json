@@ -12,17 +12,17 @@
     "pdf": "node scripts/validate-parity.mjs && node scripts/export-pdf.mjs"
   },
   "dependencies": {
-    "@fontsource/instrument-serif": "^5.1.1",
-    "@fontsource/plus-jakarta-sans": "^5.1.1",
+    "@fontsource/instrument-serif": "^5.3.0",
+    "@fontsource/plus-jakarta-sans": "^5.3.0",
     "qrcode.react": "^4.1.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
     "@vitejs/plugin-react": "^4.3.4",
-    "puppeteer": "^25.7.0",
+    "puppeteer": "^25.9.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.7"
   }
