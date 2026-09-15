@@ -687,11 +687,16 @@ Code of conduct: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 
 ## Authors
 
-- **[Ayush Yadav](https://github.com/yadava5)** — author. C++ kernels, build
-  system, measurement apparatus, and the complete React/TypeScript web
-  application.
-- **[Shree Chaturvedi](https://github.com/ShreeChaturvedi)** — kernel and
-  optimization contributions.
+- **[Ayush Yadav](https://github.com/yadava5)** — the build system, the
+  measurement apparatus (the benchmark harness, the recorded-facts checker and
+  every number in this README), the complete React/TypeScript web application
+  and the demo, and roughly a third of the kernel optimization work.
+- **[Shree Chaturvedi](https://github.com/ShreeChaturvedi)** — most of the
+  kernel optimization work, roughly two thirds of it.
+
+The commit history here is Ayush's alone: this repository was published from
+his working copy, so it carries none of Shree's commits. The split above is the
+split, whatever `git shortlog` says.
 
 ## Acknowledgments
 
