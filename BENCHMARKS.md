@@ -37,7 +37,10 @@ and published as JSON + CSV + SVG under `docs/benchmarks/`.
   Those are small or memory-bound cases where scheduler noise dominates, and
   they should be read as indicative only.
 
-  So: sub-percent for `dot`, not for everything. The headline is the tight one,
+  So: sub-percent for `dot` **at 20 repetitions**, not for everything — and not
+  even for the whole `dot` family at ten, where the openmp+native side of
+  `dot 128` and `dot 256` both sit above one percent in the per-case table in
+  `docs/benchmarks/ENVIRONMENT.md`. The headline is the tight one,
   which is why **3.5×** survives three independent measurements taken on
   different machines with different repetition counts — 3.504× (Dec, 1 rep),
   3.570× (10 rep), 3.536× (20 rep).
