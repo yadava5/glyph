@@ -267,11 +267,11 @@ including the part where OpenBLAS would win large `dot` by roughly 2–3×.
 
 | Category | Technologies |
 | -------- | ------------ |
-| **Framework** | React 19.2, TypeScript 6.0, Vite 7 (`npm:rolldown-vite@7.2.5`) |
-| **Styling** | Tailwind CSS v4.2 tokens, self-hosted Geist / Geist Mono / Instrument Serif |
+| **Framework** | React 19.3, TypeScript 6.0, Vite 7 (`npm:rolldown-vite@7.2.5`) |
+| **Styling** | Tailwind CSS v4.3 tokens, self-hosted Geist / Geist Mono / Instrument Serif |
 | **Motion** | Motion v12.38 |
 | **Drawing** | perfect-freehand 1.2 over an SVG canvas |
-| **E2E** | Playwright 1.59 |
+| **E2E** | Playwright 1.63 |
 
 The landing page ships no WebGL. `web/scripts/check-bundle-budget.mjs` holds the
 entry chunk to 472 KiB raw / 150 KiB gzip, caps **all** shipped JavaScript at
@@ -430,7 +430,7 @@ coverage build's timings describe a binary nobody ships.
 | Fuzzing | ClusterFuzzLite, address sanitizer, 120 s per PR | `fuzzing.yml`, corpus in `.clusterfuzzlite/` |
 | Static analysis | CodeQL, `cpp` and `javascript-typescript` | `codeql.yml`, on push, PR, and weekly |
 | Secrets | gitleaks, full history (`fetch-depth: 0`) | `gitleaks.yml` |
-| Browser E2E | Playwright 1.59 | 16 tests across 2 spec files in `web/tests/e2e/`, run against 5 viewport projects (`web/playwright.config.ts`) |
+| Browser E2E | Playwright 1.63 | 16 tests across 2 spec files in `web/tests/e2e/`, run against 5 viewport projects (`web/playwright.config.ts`) |
 
 The Playwright figure is the count of `test(` declarations in the committed
 specs and the project count from the committed config, not a run summary. The
