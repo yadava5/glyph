@@ -31,11 +31,23 @@ jobs:
         with:
           languages: ${{ matrix.language }}
 
+      # The two steps that can hang are budgeted here, at STEP level, and
+      # deliberately not at job level. A job-level `timeout-minutes` ends the
+      # run as `cancelled`, which is exactly what a supersede by a newer push
+      # looks like — so the one case worth distinguishing (autobuild wedged on
+      # cmake, analyze wedged extracting) would be indistinguishable from
+      # routine churn in the checks list. A step-level timeout ends the run as
+      # `failure`, which is reportable, notifies, and blocks a merge.
+      #
+      # 45 minutes is a hang budget, not a performance target: the cpp matrix
+      # leg normally finishes well inside it, so this only fires on a wedge.
       - name: Autobuild (C/C++)
         if: matrix.language == 'cpp'
         uses: github/codeql-action/autobuild@8aad20d150bbac5944a9f9d289da16a4b0d87c1e
+        timeout-minutes: 45
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e
+        timeout-minutes: 45
         with:
           category: "/language:${{ matrix.language }}"
