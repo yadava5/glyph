@@ -6,6 +6,9 @@ on:
     branches: [main]
   schedule:
     - cron: '0 4 * * 1'
+  # So a full-history scan can be re-run on demand after .gitleaksignore
+  # changes, without waiting for Monday's cron or pushing a no-op commit.
+  workflow_dispatch:
 
 permissions:
   contents: read

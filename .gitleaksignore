@@ -1,0 +1,9 @@
+# Not credentials. All four are benchmark case names — `caseKey: 'bench…'`
+# string literals the landing page, benchmarkData.ts and the e2e spec look up
+# by key — that gitleaks' `generic-api-key` rule matches on entropy alone.
+# Introduced in 1658325a ("derive the landing page's numbers from the run
+# records"); they are public, committed, and carry nothing to revoke.
+1658325a21436ce82cb2f0e80203c9a84bc690d7:web/src/features/landing/LandingPage.tsx:generic-api-key:247
+1658325a21436ce82cb2f0e80203c9a84bc690d7:web/src/features/performance/benchmarkData.ts:generic-api-key:64
+1658325a21436ce82cb2f0e80203c9a84bc690d7:web/tests/e2e/demo.spec.ts:generic-api-key:15
+1658325a21436ce82cb2f0e80203c9a84bc690d7:web/tests/e2e/demo.spec.ts:generic-api-key:16
