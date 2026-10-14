@@ -267,7 +267,7 @@ including the part where OpenBLAS would win large `dot` by roughly 2–3×.
 
 | Category | Technologies |
 | -------- | ------------ |
-| **Framework** | React 19.3, TypeScript 6.0, Vite 7 (`npm:rolldown-vite@7.2.5`) |
+| **Framework** | React 19.2, TypeScript 6.0, Vite 7 (`npm:rolldown-vite@7.2.5`) |
 | **Styling** | Tailwind CSS v4.3 tokens, self-hosted Geist / Geist Mono / Instrument Serif |
 | **Motion** | Motion v12.38 |
 | **Drawing** | perfect-freehand 1.2 over an SVG canvas |
