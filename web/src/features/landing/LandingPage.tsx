@@ -1149,8 +1149,8 @@ function Footer() {
     <footer className={styles.footer} data-reveal>
       <div className={styles.footerMeta}>
         <span>
-          Glyph — a course-provided network, hand-optimized. Optimization by Ayush Yadav;
-          contributor: Shree Chaturvedi.
+          Glyph — a course-provided network, hand-optimized. Optimized by Shree Chaturvedi and Ayush
+          Yadav; Shree wrote about two thirds of the kernels.
         </span>
         <span className={styles.footerLinks}>
           <a href={SYSTEM_CARD_URL} target="_blank" rel="noopener noreferrer">

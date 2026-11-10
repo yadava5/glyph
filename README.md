@@ -64,9 +64,9 @@ visual.
 ### Why it's interesting
 
 - **The starting point is not mine, and that is the whole point.** The MLP,
-  backprop and training loop arrived as coursework. What is mine is the kernel
-  work, the build system, the measurement discipline and the entire web app —
-  see [Implemented vs delegated vs planned](#implemented-vs-delegated-vs-planned)
+  backprop and training loop arrived as coursework. What is mine is about a
+  third of the kernel work, the build system, the measurement and the whole
+  web app; see [Implemented vs delegated vs planned](#implemented-vs-delegated-vs-planned)
   for the line-by-line split.
 - **97.01% on the 10,000-image MNIST test set** — 9,701 correct, macro-F1
   0.9698, regenerable into `benchmarks/mnist_eval.json`, which pins the exact
