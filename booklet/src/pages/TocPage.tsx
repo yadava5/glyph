@@ -53,7 +53,7 @@ export const TocPage: React.FC<{
           </p>
           <div style={{ marginTop: 14 }}>
             <LabelValue label="Author" value={`${BRAND.author} · ${BRAND.year}`} />
-            <LabelValue label="With" value={`${BRAND.contributor} · frontend + review`} />
+            <LabelValue label="With" value={`${BRAND.contributor} · about two thirds of the SIMD kernels`} />
             <LabelValue label="Live" value={BRAND.liveUrl} />
           </div>
         </div>
